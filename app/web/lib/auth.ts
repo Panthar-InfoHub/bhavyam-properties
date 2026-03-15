@@ -34,7 +34,7 @@ export const getCurrentUser = async () => {
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.warn('Error getting user profile details:', profileError);

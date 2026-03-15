@@ -58,6 +58,7 @@ export default function PropertySubmissionForm() {
     zipCode: '',
     cityLocation: '',
     otherLocationDetails: '',
+    mapUrl: '',
     
     // Step 8
     agentName: '',
@@ -130,10 +131,10 @@ export default function PropertySubmissionForm() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, name: keyof typeof formData, maxFiles: number = 5) => {
     if (!e.target.files) return;
-    const filesArray = Array.from(e.target.files);
+    const newFiles = Array.from(e.target.files);
     
     // Validate Size
-    for (const f of filesArray) {
+    for (const f of newFiles) {
       if (f.size > MAX_FILE_SIZE_BYTES) {
         alert(`File ${f.name} exceeds standard 10MB limit!`);
         return;
@@ -141,23 +142,48 @@ export default function PropertySubmissionForm() {
     }
     
     if (maxFiles === 1) {
-      setFormData(prev => ({ ...prev, [name]: filesArray[0] }));
+      setFormData(prev => ({ ...prev, [name]: newFiles[0] }));
     } else {
-      if (filesArray.length > maxFiles) {
-        alert(`You can only upload a maximum of ${maxFiles} files here.`);
-        return;
-      }
-      setFormData(prev => ({ ...prev, [name]: filesArray }));
+      setFormData(prev => {
+        const existingFiles = Array.isArray(prev[name]) ? (prev[name] as File[]) : [];
+        const combined = [...existingFiles, ...newFiles];
+        
+        if (combined.length > maxFiles) {
+          alert(`You can only upload a maximum of ${maxFiles} files here. Taking the first ${maxFiles} only.`);
+          return { ...prev, [name]: combined.slice(0, maxFiles) };
+        }
+        
+        return { ...prev, [name]: combined };
+      });
     }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 11));
+  const removeFile = (fieldName: keyof typeof formData, index: number) => {
+    setFormData(prev => {
+      const current = prev[fieldName];
+      if (Array.isArray(current)) {
+        return { ...prev, [fieldName]: current.filter((_, i) => i !== index) };
+      }
+      return { ...prev, [fieldName]: null };
+    });
+  };
+
+  const nextStep = () => {
+    if (currentStep === 10 && !formData.agreements.termsAgreed) {
+      alert("Please agree to the terms and conditions in Step 10 before proceeding.");
+      return;
+    }
+    setCurrentStep(prev => Math.min(prev + 1, 11));
+  };
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const uploadFileToSupabase = async (file: File, folder: string) => {
+    if (!currentUser) throw new Error("No authenticated user");
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
+    // Path: user_id/category/filename (e.g. "82f3.../bedrooms/abc.jpg")
+    const filePath = `${currentUser.id}/${folder}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage.from('property-media').upload(filePath, file);
     if (uploadError) throw uploadError;
@@ -169,6 +195,12 @@ export default function PropertySubmissionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+    if (!formData.agreements.termsAgreed) {
+      setErrorMsg('You must agree to the terms and conditions in Step 10.');
+      setCurrentStep(10);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg('');
 
@@ -188,7 +220,8 @@ export default function PropertySubmissionForm() {
           city: formData.cityLocation || 'Unspecified',
           area: formData.carpetArea ? formData.carpetArea + ' sqft' : 'Unspecified',
           address: formData.address || 'Unspecified',
-          status: 'pending' // Admin must approve
+          status: 'pending', // Admin must approve
+          map_url: formData.mapUrl || null
         })
         .select()
         .single();
@@ -263,29 +296,80 @@ export default function PropertySubmissionForm() {
 
   // Common UI Layout wrapper for Step logic
   const renderStep = () => {
+    const inputClasses = "w-full border-2 border-gray-200 p-3 rounded-xl outline-none focus:border-[#00b48f] focus:ring-4 focus:ring-teal-500/10 transition-all bg-white text-gray-800 placeholder-gray-400";
+    const labelClasses = "block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1";
+
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 1: Basic Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" name="listingType" placeholder="Listing Type (e.g. Rent, Sell)" onChange={handleChange} value={formData.listingType} className="border p-3 rounded" />
-              <input type="text" name="propertyType" placeholder="Property Type (e.g. Villa, Flat)" onChange={handleChange} value={formData.propertyType} className="border p-3 rounded" />
-              <input type="text" name="pricingType" placeholder="Pricing Type (e.g. Fixed, Negotiable)" onChange={handleChange} value={formData.pricingType} className="border p-3 rounded" />
-              <input type="text" name="yourDemand" placeholder="Your Demand (Amount)" onChange={handleChange} value={formData.yourDemand} className="border p-3 rounded" />
-              <input type="text" name="priceRange" placeholder="Price Range" onChange={handleChange} value={formData.priceRange} className="border p-3 rounded" />
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Basic Information</h3>
+              <p className="text-gray-500 text-sm">Let's start with the core details of your listing.</p>
             </div>
-            <textarea name="propertyDetails" placeholder="Detailed Property Description" rows={4} onChange={handleChange} value={formData.propertyDetails} className="border p-3 rounded w-full mt-4"></textarea>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClasses}>Listing Type</label>
+                <select name="listingType" onChange={handleChange} value={formData.listingType} className={inputClasses}>
+                  <option value="">Select Type</option>
+                  <option value="Sell">For Sell</option>
+                  <option value="Rent">For Rent</option>
+                  <option value="Lease">For Lease</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClasses}>Property Type</label>
+                <select name="propertyType" onChange={handleChange} value={formData.propertyType} className={inputClasses}>
+                  <option value="">Select Category</option>
+                  <option value="Flat">Flat / Apartment</option>
+                  <option value="Villa">Villa</option>
+                  <option value="House">Independent House</option>
+                  <option value="Commercial">Commercial Space</option>
+                  <option value="Plot">Land / Plot</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClasses}>Pricing Type</label>
+                <select name="pricingType" onChange={handleChange} value={formData.pricingType} className={inputClasses}>
+                  <option value="">Select Pricing</option>
+                  <option value="Fixed">Fixed Price</option>
+                  <option value="Negotiable">Negotiable</option>
+                  <option value="Call">Call for Price</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClasses}>Your Demand (₹)</label>
+                <input type="text" name="yourDemand" placeholder="e.g. 45,00,000" onChange={handleChange} value={formData.yourDemand} className={inputClasses} />
+              </div>
+
+              <div>
+                <label className={labelClasses}>Price Range (Optional)</label>
+                <input type="text" name="priceRange" placeholder="e.g. 40L - 50L" onChange={handleChange} value={formData.priceRange} className={inputClasses} />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClasses}>Property Description</label>
+              <textarea name="propertyDetails" placeholder="Tell us about the property, its history, and unique selling points..." rows={5} onChange={handleChange} value={formData.propertyDetails} className={inputClasses}></textarea>
+            </div>
           </div>
         );
       case 2:
         return (
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 2: Property Features</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Property Features</h3>
+              <p className="text-gray-500 text-sm">Select the physical characteristics of the property.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {['Parking', 'Garden', '2 floor', '3 floor', '4 floor', 'Basement', 'Balcony', 'Black road property', 'Apex Road Property', 'Light poll', 'Solar Panel'].map(feature => (
-                 <label key={feature} className="flex items-center gap-2 text-sm text-gray-700">
-                   <input type="checkbox" checked={formData.features.includes(feature)} onChange={() => handleCheckboxArray('features', feature)} className="rounded" /> {feature}
+                 <label key={feature} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                   <input type="checkbox" checked={formData.features.includes(feature)} onChange={() => handleCheckboxArray('features', feature)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                   <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{feature}</span>
                  </label>
               ))}
             </div>
@@ -293,12 +377,16 @@ export default function PropertySubmissionForm() {
         );
       case 3:
         return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 3: Nearby Amenities</h3>
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Nearby Amenities</h3>
+              <p className="text-gray-500 text-sm">Highlight what’s available in the immediate surroundings.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {['Railway Station', 'Bus stand', 'Highway', 'Temple', 'School', 'Hospital', 'Police Station', 'Market', 'Other'].map(item => (
-                 <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
-                   <input type="checkbox" checked={formData.amenities.includes(item)} onChange={() => handleCheckboxArray('amenities', item)} className="rounded" /> {item}
+                 <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                   <input type="checkbox" checked={formData.amenities.includes(item)} onChange={() => handleCheckboxArray('amenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                   <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{item}</span>
                  </label>
               ))}
             </div>
@@ -306,96 +394,231 @@ export default function PropertySubmissionForm() {
         );
       case 4:
          return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 4: Property Details</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <input type="number" name="bedrooms" placeholder="Bedrooms in house" onChange={handleChange} value={formData.bedrooms} className="border p-3 rounded" />
-               <input type="number" name="bathrooms" placeholder="Bathrooms in house" onChange={handleChange} value={formData.bathrooms} className="border p-3 rounded" />
-               <input type="text" name="builtUpArea" placeholder="Total built up Area (sqft)" onChange={handleChange} value={formData.builtUpArea} className="border p-3 rounded" />
-               <input type="text" name="carpetArea" placeholder="Carpet Area (sqft)" onChange={handleChange} value={formData.carpetArea} className="border p-3 rounded" />
-               <input type="text" name="buildYear" placeholder="Build Year" onChange={handleChange} value={formData.buildYear} className="border p-3 rounded" />
-             </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Property Details</h3>
+              <p className="text-gray-500 text-sm">Specific technical and layout measurements.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className={labelClasses}>Bedrooms</label>
+                <input type="number" name="bedrooms" placeholder="0" onChange={handleChange} value={formData.bedrooms} className={inputClasses} min="0" />
+              </div>
+              <div>
+                <label className={labelClasses}>Bathrooms</label>
+                <input type="number" name="bathrooms" placeholder="0" onChange={handleChange} value={formData.bathrooms} className={inputClasses} min="0" />
+              </div>
+              <div>
+                <label className={labelClasses}>Total Built-up Area (sqft)</label>
+                <input type="text" name="builtUpArea" placeholder="e.g. 1500" onChange={handleChange} value={formData.builtUpArea} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Carpet Area (sqft)</label>
+                <input type="text" name="carpetArea" placeholder="e.g. 1200" onChange={handleChange} value={formData.carpetArea} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Build Year</label>
+                <input type="text" name="buildYear" placeholder="e.g. 2022" onChange={handleChange} value={formData.buildYear} className={inputClasses} />
+              </div>
+            </div>
           </div>
         );
       case 5:
+        const renderFileList = (fieldName: keyof typeof formData) => {
+          const files = formData[fieldName];
+          if (!files) return null;
+          const fileArr = (Array.isArray(files) ? files : [files]) as any[];
+          if (fileArr.length === 0) return null;
+          
+          return (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {fileArr.map((f, idx) => {
+                const isFile = f instanceof File;
+                if (!isFile) return null;
+                return (
+                  <div key={idx} className="group flex items-center gap-2 bg-white border border-teal-100 pl-3 pr-1 py-1 rounded-xl shadow-sm hover:shadow-md transition-all animate-in zoom-in duration-300">
+                    <span className="text-[10px] font-bold text-teal-600 truncate max-w-[120px]">{f.name}</span>
+                    <button 
+                      type="button"
+                      onClick={() => removeFile(fieldName, idx)}
+                      className="p-1.5 rounded-lg text-teal-300 hover:bg-teal-50 hover:text-red-500 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        };
+
         return (
-          <div className="space-y-6">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 5: Media Upload <span className="text-sm font-normal text-gray-500">(10mb per file max)</span></h3>
-             
-             <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Bedroom Photos (max 5)</label>
-                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bedroomPhotos', 5)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" />
-                </div>
-                <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Bathroom Photos (max 5)</label>
-                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bathroomPhotos', 5)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-teal-50 file:text-teal-700" />
-                </div>
-                <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Front Photos (max 5)</label>
-                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'frontPhotos', 5)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-teal-50 file:text-teal-700" />
-                </div>
-                <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Inside Photos (max 5)</label>
-                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'insidePhotos', 5)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-teal-50 file:text-teal-700" />
-                </div>
-                <div className="bg-gray-50 p-4 border rounded">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Map Photo (max 1)</label>
-                   <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'mapPhoto', 1)} className="w-full text-sm" />
-                </div>
-                <div className="bg-gray-50 p-4 border rounded">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Property Video (max 1)</label>
-                   <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm" />
-                </div>
-                <div className="col-span-1 md:col-span-2">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Legal Documents Photocopies (max 5)</label>
-                   <input type="file" multiple accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'propertyDocuments', 5)} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700" />
-                </div>
-             </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Media Upload</h3>
+              <p className="text-gray-500 text-sm">High-quality photos significantly increase interest. (Max 10MB/file)</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Bedroom Photos (max 5)</label>
+                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bedroomPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
+                  {renderFileList('bedroomPhotos')}
+               </div>
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Bathroom Photos (max 5)</label>
+                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bathroomPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
+                  {renderFileList('bathroomPhotos')}
+               </div>
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Front Photos (max 5)</label>
+                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'frontPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
+                  {renderFileList('frontPhotos')}
+               </div>
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Inside View Photos (max 5)</label>
+                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'insidePhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
+                  {renderFileList('insidePhotos')}
+               </div>
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Location Map Photo (max 1)</label>
+                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'mapPhoto', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
+                  {renderFileList('mapPhoto')}
+               </div>
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Property Video Tour (max 1)</label>
+                  <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
+                  {renderFileList('propertyVideo')}
+               </div>
+               <div className="col-span-1 md:col-span-2 p-5 border-2 border-double border-[#00579e]/10 rounded-2xl bg-blue-50/10">
+                  <label className={`${labelClasses} text-[#00579e]`}>Legal Photocopies / Documents (max 5)</label>
+                  <input type="file" multiple accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'propertyDocuments', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white hover:bg-blue-600 shadow-sm transition-all" />
+                  {renderFileList('propertyDocuments')}
+               </div>
+            </div>
           </div>
         );
       case 6:
         return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 6: Owner Details</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <input type="text" name="ownerName" placeholder="Owner Name" onChange={handleChange} value={formData.ownerName} className="border p-3 rounded" />
-               <input type="tel" name="contactNumber" placeholder="Contact Number" onChange={handleChange} value={formData.contactNumber} className="border p-3 rounded" />
-               <input type="tel" name="whatsappNumber" placeholder="Whatsapp Number" onChange={handleChange} value={formData.whatsappNumber} className="border p-3 rounded" />
-               <input type="email" name="ownerEmail" placeholder="Owner Email" onChange={handleChange} value={formData.ownerEmail} className="border p-3 rounded" />
-             </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Owner Details</h3>
+              <p className="text-gray-500 text-sm">Confidential contact info for the registered owner.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClasses}>Owner Full Name</label>
+                <input type="text" name="ownerName" placeholder="Full Legal Name" onChange={handleChange} value={formData.ownerName} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Contact Number</label>
+                <input type="tel" name="contactNumber" placeholder="+91 00000 00000" onChange={handleChange} value={formData.contactNumber} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>WhatsApp Number</label>
+                <input type="tel" name="whatsappNumber" placeholder="Same as contact?" onChange={handleChange} value={formData.whatsappNumber} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Official Email</label>
+                <input type="email" name="ownerEmail" placeholder="email@address.com" onChange={handleChange} value={formData.ownerEmail} className={inputClasses} />
+              </div>
+            </div>
           </div>
         );
       case 7:
         return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 7: Location</h3>
-             <input type="text" name="address" placeholder="Strict Address Line" onChange={handleChange} value={formData.address} className="border p-3 rounded w-full" />
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <input type="text" name="zipCode" placeholder="ZIP/Post Code" onChange={handleChange} value={formData.zipCode} className="border p-3 rounded" />
-               <input type="text" name="cityLocation" placeholder="Location / City" onChange={handleChange} value={formData.cityLocation} className="border p-3 rounded" />
-             </div>
-             <textarea name="otherLocationDetails" placeholder="Other directional specifics" rows={2} onChange={handleChange} value={formData.otherLocationDetails} className="border p-3 rounded w-full"></textarea>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Property Location</h3>
+              <p className="text-gray-500 text-sm">Where exactly is this property situated?</p>
+            </div>
+            <div>
+              <label className={labelClasses}>Street Address / Landmark</label>
+              <input type="text" name="address" placeholder="e.g. Near Shiv Temple, Station Road" onChange={handleChange} value={formData.address} className={inputClasses} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClasses}>City / Location</label>
+                <input type="text" name="cityLocation" placeholder="e.g. Mumbai, Navi Mumbai" onChange={handleChange} value={formData.cityLocation} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Zip / Post Code</label>
+                <input type="text" name="zipCode" placeholder="400001" onChange={handleChange} value={formData.zipCode} className={inputClasses} />
+              </div>
+            </div>
+            <div>
+              <label className={labelClasses}>Additional Directionals</label>
+              <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails} className={inputClasses}></textarea>
+            </div>
+            <div className="pt-4 border-t border-gray-100">
+               <label className={labelClasses}>Google Maps Link (Embed or Share URL)</label>
+               <input 
+                 type="text" 
+                 name="mapUrl" 
+                 placeholder="Paste Google Maps link here..." 
+                 onChange={handleChange} 
+                 value={formData.mapUrl} 
+                 className={inputClasses} 
+               />
+               
+               {formData.mapUrl && (
+                 <div className="mt-4 rounded-2xl overflow-hidden border border-gray-100 shadow-inner bg-gray-100 h-48 relative group">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      loading="lazy"
+                      allowFullScreen
+                      src={formData.mapUrl.includes('pb=') || formData.mapUrl.includes('output=embed') ? formData.mapUrl : `https://maps.google.com/maps?q=${encodeURIComponent(formData.mapUrl)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                      className="opacity-90 group-hover:opacity-100 transition-opacity"
+                    ></iframe>
+                    {/* Fallback/Overlay hint if it's a standard link instead of embed */}
+                    {!formData.mapUrl.includes('google.com/maps/embed') && !formData.mapUrl.includes('pb=') && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-center p-6 backdrop-blur-[2px]">
+                        <p className="text-xs font-bold uppercase tracking-widest">
+                          Map Preview will appear here.<br/>
+                          <span className="text-[10px] font-normal opacity-80 mt-1 block">Note: Standard links might not preview, but will work on the final page.</span>
+                        </p>
+                      </div>
+                    )}
+                 </div>
+               )}
+            </div>
           </div>
         );
       case 8:
         return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 8: Agent Details <span className="text-sm font-normal text-gray-500">(If applicable)</span></h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <input type="text" name="agentName" placeholder="Agent Name" onChange={handleChange} value={formData.agentName} className="border p-3 rounded" />
-               <input type="text" name="agentCode" placeholder="Agent Code" onChange={handleChange} value={formData.agentCode} className="border p-3 rounded" />
-             </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Agent Details</h3>
+              <p className="text-gray-500 text-sm">Only if this property is being listed by an intermediary agent.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClasses}>Agent Full Name</label>
+                <input type="text" name="agentName" placeholder="Representative Name" onChange={handleChange} value={formData.agentName} className={inputClasses} />
+              </div>
+              <div>
+                <label className={labelClasses}>Verification Code / ID</label>
+                <input type="text" name="agentCode" placeholder="AGNT-XXXX" onChange={handleChange} value={formData.agentCode} className={inputClasses} />
+              </div>
+            </div>
           </div>
         );
       case 9:
         return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 9: Furnished Amenities</h3>
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {['TV Cable', 'AC', 'Gym', 'Swimming Pool', 'Washing Machine', 'Bed', 'Sofa', 'Refrigerator', 'Wifi', 'Other'].map(item => (
-                 <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
-                   <input type="checkbox" checked={formData.furnishedAmenities.includes(item)} onChange={() => handleCheckboxArray('furnishedAmenities', item)} className="rounded" /> {item}
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-2xl font-black text-gray-800">Furnished Amenities</h3>
+              <p className="text-gray-500 text-sm">What movable assets are included in the price?</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {['TV Case', 'AC Unit', 'Gym Kit', 'Bed', 'Sofa', 'Fridge', 'Wifi', 'Fan', 'Washing Machine', 'Other'].map(item => (
+                 <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                   <input type="checkbox" checked={formData.furnishedAmenities.includes(item)} onChange={() => handleCheckboxArray('furnishedAmenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                   <span className="text-xs font-bold text-gray-700 group-hover:text-teal-700 transition-colors uppercase tracking-tight">{item}</span>
                  </label>
               ))}
             </div>
@@ -403,35 +626,82 @@ export default function PropertySubmissionForm() {
         );
       case 10:
         return (
-          <div className="space-y-4 bg-gray-50 p-6 rounded-lg border border-gray-200">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 10: Agreement Section</h3>
-             <div className="flex flex-col gap-4">
-              <label className="flex items-center gap-3 font-medium text-gray-800">
-                <input type="checkbox" checked={formData.agreements.termsAgreed} onChange={() => handleAgreementCheck('termsAgreed')} className="w-5 h-5 text-teal-600 rounded" /> I agree to Terms and Conditions
-              </label>
-              <label className="flex items-center gap-3 font-medium text-gray-800">
-                <input type="checkbox" checked={formData.agreements.allPhotosUploaded} onChange={() => handleAgreementCheck('allPhotosUploaded')} className="w-5 h-5 text-teal-600 rounded" /> Uploaded all real requested photos
-              </label>
-              <label className="flex items-center gap-3 font-medium text-gray-800">
-                <input type="checkbox" checked={formData.agreements.agreementSigned} onChange={() => handleAgreementCheck('agreementSigned')} className="w-5 h-5 text-teal-600 rounded" /> Agreement Form Signed
-              </label>
-              <label className="flex items-center gap-3 font-medium text-gray-800">
-                <input type="checkbox" checked={formData.agreements.documentsReceived} onChange={() => handleAgreementCheck('documentsReceived')} className="w-5 h-5 text-teal-600 rounded" /> Valid Legal Photocopies ready to be verified
-              </label>
-              <label className="flex items-center gap-3 font-medium text-gray-800">
-                <input type="checkbox" checked={formData.agreements.commissionDiscussed} onChange={() => handleAgreementCheck('commissionDiscussed')} className="w-5 h-5 text-teal-600 rounded" /> Direct Platform Commission percentage discussed with Bhavyam staff
-              </label>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="border-b border-gray-100 pb-4">
+               <h3 className="text-2xl font-black text-gray-800">Final Agreement</h3>
+               <p className="text-gray-500 text-sm">Please verify the following before final submission.</p>
+             </div>
+             <div className="flex flex-col gap-3">
+              {[
+                { id: 'termsAgreed', label: 'I agree to the Bhavyam Properties Terms and Conditions' },
+                { id: 'allPhotosUploaded', label: 'I certify that all uploaded media is real and original' },
+                { id: 'agreementSigned', label: 'Marketing Agreement Form is signed and scanned' },
+                { id: 'documentsReceived', label: 'Property Title Deeds and KYC are ready for audit' },
+                { id: 'commissionDiscussed', label: 'Standard Commission percentage is agreed upon' },
+              ].map(item => (
+                <label key={item.id} className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:border-teal-300 transition-all cursor-pointer shadow-sm group">
+                  <input 
+                    type="checkbox" 
+                    checked={(formData.agreements as any)[item.id]} 
+                    onChange={() => handleAgreementCheck(item.id as any)} 
+                    className="w-6 h-6 rounded-lg border-gray-300 text-teal-600 focus:ring-teal-500 transition-all" 
+                  /> 
+                  <span className="font-bold text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">{item.label}</span>
+                </label>
+              ))}
             </div>
           </div>
         );
       case 11:
          return (
-          <div className="space-y-4">
-             <h3 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Step 11: Questions & Review</h3>
-             <textarea name="questions" placeholder="Do you (owner or agent) have any direct questions for Administration during review?" rows={3} onChange={handleChange} value={formData.questions} className="border p-3 rounded w-full"></textarea>
-             <textarea name="otherNotes" placeholder="Any final private notes?" rows={3} onChange={handleChange} value={formData.otherNotes} className="border p-3 rounded w-full mt-4"></textarea>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="border-b border-gray-100 pb-4">
+               <h3 className="text-2xl font-black text-gray-800">Review & Submit</h3>
+               <p className="text-gray-500 text-sm">Need to tell our administration anything else?</p>
+             </div>
+             <div>
+                <label className={labelClasses}>Inquiries for Reviewer</label>
+                <textarea name="questions" placeholder="Questions for the admin during review..." rows={3} onChange={handleChange} value={formData.questions} className={inputClasses}></textarea>
+             </div>
+             <div>
+                <label className={labelClasses}>Private Admin Notes</label>
+                <textarea name="otherNotes" placeholder="Any internal specifics our team should know?" rows={3} onChange={handleChange} value={formData.otherNotes} className={inputClasses}></textarea>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                   <h5 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <span className="text-teal-500">📋</span> Final Checklist
+                   </h5>
+                   <ul className="space-y-2 text-sm">
+                      <li className={`flex items-center gap-2 ${formData.agreements.termsAgreed ? 'text-green-600' : 'text-red-500 font-bold'}`}>
+                         {formData.agreements.termsAgreed ? '✅' : '❌'} Terms & Conditions agreed
+                      </li>
+                      <li className="flex items-center gap-2 text-gray-600">
+                         {formData.bedroomPhotos.length > 0 ? '✅' : '⚪'} {formData.bedroomPhotos.length} Bedroom Photos
+                      </li>
+                      <li className="flex items-center gap-2 text-gray-600">
+                         {formData.frontPhotos.length > 0 ? '✅' : '⚪'} {formData.frontPhotos.length} Front Photos
+                      </li>
+                      <li className="flex items-center gap-2 text-gray-600">
+                         {formData.propertyDocuments.length > 0 ? '✅' : '⚪'} Legal Documents attached
+                      </li>
+                   </ul>
+                </div>
+
+                <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 flex items-start gap-4 h-full">
+                   <span className="text-2xl text-blue-500 mt-0.5">ℹ️</span>
+                   <div>
+                      <h5 className="font-bold text-blue-900">What happens next?</h5>
+                      <p className="text-xs text-blue-700/80 mt-1 leading-relaxed">
+                         Your property will enter a "Pending" state. Our regional agents will verify your documents within 24-48 hours. You will be notified via email once your listing is public.
+                      </p>
+                   </div>
+                </div>
+             </div>
           </div>
         );
+
       default: return null;
     }
   };
@@ -441,10 +711,30 @@ export default function PropertySubmissionForm() {
        <div className="mb-8 flex flex-col pt-4">
          
          {/* Step Progress Bar visual representation loop */}
-         <div className="hidden md:flex flex-row justify-between mb-8 overflow-hidden">
-            {Array.from({ length: 11 }).map((_, i) => (
-              <div key={i} className={`h-2 flex-1 mx-1 rounded-full overflow-hidden shrink-0 transition-colors ${currentStep > i ? 'bg-teal-500' : 'bg-gray-200'}`} />
-            ))}
+         <div className="mb-10">
+            <div className="flex justify-between items-end mb-3">
+               <div>
+                  <span className="text-[10px] font-bold text-teal-600 uppercase tracking-[0.2em]">Listing Progress</span>
+                  <h4 className="text-xl font-black text-gray-800 leading-tight">Step {currentStep} <span className="text-gray-300 mx-1">/</span> 11</h4>
+               </div>
+               <div className="text-right">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{Math.round((currentStep / 11) * 100)}% Complete</span>
+               </div>
+            </div>
+            <div className="flex flex-row gap-1.5 h-1.5 w-full">
+               {Array.from({ length: 11 }).map((_, i) => (
+               <div 
+                  key={i} 
+                  className={`flex-1 rounded-full transition-all duration-500 ${
+                     currentStep > i 
+                     ? 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
+                     : currentStep === i + 1
+                     ? 'bg-teal-200 animate-pulse'
+                     : 'bg-gray-100'
+                  }`} 
+               />
+               ))}
+            </div>
          </div>
 
          {/* Dynamic UI Content mapped above */}
@@ -477,8 +767,10 @@ export default function PropertySubmissionForm() {
           ) : (
              <button 
                type="submit" 
-               disabled={isSubmitting || !formData.agreements.termsAgreed}
-               className="px-8 py-2 bg-[#00579e] text-white rounded-md hover:bg-[#00427a] disabled:opacity-50 transition-all font-medium shadow-md">
+               disabled={isSubmitting}
+               className={`px-8 py-2 text-white rounded-md transition-all font-medium shadow-md ${
+                 isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#00579e] hover:bg-[#00427a]'
+               }`}>
                {isSubmitting ? 'Uploading Data...' : 'Submit Property for Review'}
              </button>
           )}

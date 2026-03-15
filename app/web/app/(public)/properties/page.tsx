@@ -16,7 +16,8 @@ export default async function PropertiesPage() {
       area,
       status,
       owner:profiles(role),
-      media:property_media(url, media_type)
+      media:property_media(url, media_type),
+      map_url
     `)
     .eq('status', 'approved')
     .order('created_at', { ascending: false });

@@ -11,6 +11,7 @@ interface PropertyCardProps {
     area: string;
     owner?: { role: string } | null;
     media: { url: string }[];
+    map_url?: string | null;
   };
 }
 
@@ -76,6 +77,24 @@ export default function PropertyCard({ property }: PropertyCardProps) {
              <span className="font-medium capitalize">Fixed</span>
           </div>
         </div>
+
+        {property.map_url && (
+          <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-inner bg-gray-50 h-32 relative group">
+             <iframe
+               width="100%"
+               height="100%"
+               style={{ border: 0 }}
+               loading="lazy"
+               src={property.map_url.includes('pb=') || property.map_url.includes('output=embed') ? property.map_url : `https://maps.google.com/maps?q=${encodeURIComponent(property.map_url)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+               className="grayscale hover:grayscale-0 transition-all duration-700 opacity-80 group-hover:opacity-100"
+             ></iframe>
+             <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1 rounded-md border border-gray-100 shadow-sm pointer-events-none">
+                <svg className="w-3 h-3 text-[#00579e]" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V7h2v2z" clipRule="evenodd" />
+                </svg>
+             </div>
+          </div>
+        )}
 
         {/* View Details Push Button */}
         <div className="mt-auto">

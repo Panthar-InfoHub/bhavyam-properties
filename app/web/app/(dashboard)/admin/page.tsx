@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 'reviews' | 'requests';
+type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 'reviews' | 'requests' | 'agents';
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
@@ -17,6 +17,7 @@ export default function AdminDashboardPage() {
   const [interests, setInterests] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [sellerRequests, setSellerRequests] = useState<any[]>([]);
+  const [agentApps, setAgentApps] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter();
@@ -33,14 +34,16 @@ export default function AdminDashboardPage() {
         { data: pays },
         { data: ints },
         { data: revs },
-        { data: reqs }
+        { data: reqs },
+        { data: apps }
       ] = await Promise.all([
-        supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, owner:profiles(first_name, last_name)').order('created_at', { ascending: false }),
+        supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, owner:profiles(first_name, last_name), media:property_media(url, media_type)').order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
         supabase.from('payments').select('id, amount, currency, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false }),
         supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number))').order('created_at', { ascending: false }),
         supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
-        supabase.from('requests').select('id, request_type, message, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false })
+        supabase.from('requests').select('id, request_type, message, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false }),
+        supabase.from('agent_applications').select('id, status, notes, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false })
       ]);
 
       const propList = props || [];
@@ -52,13 +55,15 @@ export default function AdminDashboardPage() {
       setInterests(ints || []);
       setReviews(revs || []);
       setSellerRequests(reqs || []);
+      setAgentApps(apps || []);
 
       const revenue = payList.filter(p => p.status === 'completed').reduce((acc, p) => acc + (p.amount || 0), 0);
       setStats({
         listings: propList.length,
         users: (allUsers || []).length,
         revenue,
-        pending: propList.filter(p => p.status === 'pending').length
+        pending: propList.filter(p => p.status === 'pending').length,
+        pendingAgents: (apps || []).filter(a => a.status === 'pending').length
       });
 
       setIsLoading(false);
@@ -87,14 +92,49 @@ export default function AdminDashboardPage() {
     if (!error) setUsers(prev => prev.map(u => u.id === id ? { ...u, role: 'buyer' } : u));
   };
 
+  const updateInterestStatus = async (id: string, status: string) => {
+    setInterests(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    await supabase.from('interest_requests').update({ status }).eq('id', id);
+  };
+
+  const handleApproveAgent = async (appId: string, userName: string) => {
+    const uniqueHash = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const cleanName = userName.substring(0, 3).toUpperCase();
+    const newCode = `BHA-AGT-${cleanName}-${uniqueHash}`;
+
+    const { error } = await supabase.rpc('approve_agent_application', {
+       app_id: appId,
+       generated_code: newCode
+    });
+
+    if (error) {
+       alert("Failed to approve agent: " + error.message);
+    } else {
+       setAgentApps(prev => prev.map(a => a.id === appId ? { ...a, status: 'approved' } : a));
+    }
+  };
+
+  const handleRejectAgent = async (appId: string) => {
+    const { error } = await supabase.rpc('reject_agent_application', {
+       app_id: appId
+    });
+
+    if (error) {
+       alert("Failed to reject agent: " + error.message);
+    } else {
+       setAgentApps(prev => prev.map(a => a.id === appId ? { ...a, status: 'rejected' } : a));
+    }
+  };
+
   const navItems: { key: Section; label: string; icon: string }[] = [
     { key: 'overview', label: 'Analytics', icon: '📊' },
     { key: 'properties', label: 'Properties', icon: '🏠' },
     { key: 'users', label: 'Users', icon: '👥' },
-    { key: 'payments', label: 'Payments', icon: '💳' },
-    { key: 'interests', label: 'Interest Tickets', icon: '📋' },
-    { key: 'reviews', label: 'Reviews', icon: '⭐' },
+    { key: 'agents', label: 'Agent Apps', icon: '🎖️' },
     { key: 'requests', label: 'Seller Requests', icon: '📝' },
+    { key: 'interests', label: 'Interests', icon: '📋' },
+    { key: 'payments', label: 'Payments', icon: '💳' },
+    { key: 'reviews', label: 'Reviews', icon: '⭐' },
   ];
 
   if (isLoading) {
@@ -141,11 +181,12 @@ export default function AdminDashboardPage() {
         {section === 'overview' && (
           <div>
             <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Analytics Overview</h1>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
               {[
                 { label: 'Total Listings', value: stats.listings, color: 'blue', icon: '🏠' },
                 { label: 'Pending Review', value: stats.pending, color: 'yellow', icon: '⏳' },
                 { label: 'Active Users', value: stats.users, color: 'teal', icon: '👥' },
+                { label: 'Pending Agents', value: (stats as any).pendingAgents || 0, color: 'purple', icon: '🎖️' },
                 { label: 'Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, color: 'green', icon: '💰' },
               ].map(card => (
                 <div key={card.label} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -181,23 +222,40 @@ export default function AdminDashboardPage() {
             <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Property Moderation</h1>
             <div className="flex flex-col gap-4">
               {properties.map(p => (
-                <div key={p.id} className={`bg-white rounded-xl border shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 ${p.status === 'pending' ? 'border-l-yellow-400' : p.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
-                  <div>
-                    <h3 className="font-bold text-gray-800">{p.property_type} in {p.city}</h3>
-                    <p className="text-xs text-gray-500 mt-1">Owner: {p.owner?.first_name} {p.owner?.last_name} · {p.listing_type} · {new Date(p.created_at).toLocaleDateString()}</p>
-                    <span className={`mt-2 inline-block text-xs font-bold px-2 py-1 rounded uppercase ${p.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : p.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{p.status}</span>
+                <div key={p.id} className={`bg-white rounded-xl border shadow-sm p-6 flex flex-col gap-4 border-l-4 ${p.status === 'pending' ? 'border-l-yellow-400' : p.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg">{p.property_type} in {p.city}</h3>
+                      <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">Owner: {p.owner?.first_name} {p.owner?.last_name} · {p.listing_type} · {new Date(p.created_at).toLocaleDateString()}</p>
+                      <span className={`mt-2 inline-block text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter ${p.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : p.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{p.status}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {p.status !== 'approved' && (
+                        <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Approve</button>
+                      )}
+                      {p.status !== 'rejected' && (
+                        <button onClick={() => updatePropertyStatus(p.id, 'rejected')} className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reject</button>
+                      )}
+                      {p.status !== 'pending' && (
+                        <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reset</button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {p.status !== 'approved' && (
-                      <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Approve</button>
-                    )}
-                    {p.status !== 'rejected' && (
-                      <button onClick={() => updatePropertyStatus(p.id, 'rejected')} className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reject</button>
-                    )}
-                    {p.status !== 'pending' && (
-                      <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reset</button>
-                    )}
-                  </div>
+
+                  {/* Media Preview */}
+                  {p.media && p.media.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {p.media.slice(0, 8).map((m: any, idx: number) => (
+                        <a key={idx} href={m.url} target="_blank" rel="noreferrer" className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:ring-2 hover:ring-teal-500 transition-all">
+                          {m.media_type === 'image' || m.url.match(/\.(jpg|jpeg|png)$/i) ? (
+                            <img src={m.url} className="w-full h-full object-cover" alt="Property asset" />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">DOC</div>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -285,24 +343,47 @@ export default function AdminDashboardPage() {
         {/* ─── INTEREST TICKETS ─── */}
         {section === 'interests' && (
           <div>
-            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Buyer Interest Tickets</h1>
+            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Buyer Leads</h1>
             <div className="flex flex-col gap-4">
               {interests.map(req => (
-                <div key={req.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col md:flex-row gap-4">
+                <div key={req.id} className={`bg-white rounded-xl border shadow-sm p-5 flex flex-col md:flex-row gap-6 border-l-4 ${req.status === 'contacted' ? 'border-l-teal-400' : 'border-l-yellow-400'}`}>
                   <div className="flex-1">
-                    <p className="font-bold text-gray-800">{req.user?.first_name} {req.user?.last_name}</p>
-                    <p className="text-xs text-gray-500">📞 {req.user?.phone_number} · ✉️ {req.user?.email}</p>
-                    <p className="text-sm text-gray-600 mt-2 italic border-l-2 border-teal-300 pl-3">"{req.message}"</p>
+                    <p className="font-bold text-gray-800 text-lg">{req.user?.first_name} {req.user?.last_name}</p>
+                    <p className="text-xs text-gray-500 font-bold mb-3 uppercase tracking-tighter">📞 {req.user?.phone_number} · ✉️ {req.user?.email}</p>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 relative">
+                       <p className="text-[10px] text-gray-400 font-black uppercase mb-2">Message from Buyer</p>
+                       <p className="text-sm text-gray-700 italic border-l-2 border-teal-300 pl-3 leading-relaxed">"{req.message}"</p>
+                    </div>
                   </div>
-                  <div className="text-sm flex flex-col gap-1 text-gray-600">
-                    <p className="font-semibold">{req.property?.property_type} in {req.property?.city}</p>
-                    <p className="text-xs text-gray-400">Owner: {req.property?.owner?.first_name} {req.property?.owner?.last_name}</p>
-                    <p className="text-xs text-gray-400">📞 {req.property?.owner?.phone_number || 'N/A'}</p>
-                    <p className="text-xs text-gray-400 mt-2">{new Date(req.created_at).toLocaleDateString()}</p>
+                  <div className="w-full md:w-64 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 flex flex-col justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Target Property</p>
+                      <p className="font-bold text-gray-800 leading-tight">{req.property?.property_type}</p>
+                      <p className="text-xs text-gray-500 mb-4">{req.property?.city}</p>
+                      
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Owner Contact</p>
+                      <p className="text-sm font-bold text-[#00579e]">{req.property?.owner?.first_name} {req.property?.owner?.last_name}</p>
+                      <p className="text-xs text-gray-500">{req.property?.owner?.phone_number || 'No Phone'}</p>
+                    </div>
+
+                    <div className="mt-6">
+                       {req.status === 'pending' ? (
+                         <button 
+                           onClick={() => updateInterestStatus(req.id, 'contacted')}
+                           className="w-full bg-[#00579e] hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest py-2.5 rounded-lg transition-all shadow-sm"
+                         >
+                           Mark Contacted
+                         </button>
+                       ) : (
+                         <div className="text-center py-2 bg-teal-50 text-teal-700 border border-teal-100 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                           Successfully Contacted
+                         </div>
+                       )}
+                    </div>
                   </div>
                 </div>
               ))}
-              {interests.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400">No interest tickets yet.</div>}
+              {interests.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400 shadow-sm">No buyer interest leads currently in the system.</div>}
             </div>
           </div>
         )}
@@ -350,7 +431,7 @@ export default function AdminDashboardPage() {
                   <div className="flex-1">
                     <p className="font-bold text-gray-800">{req.user?.first_name} {req.user?.last_name} <span className="text-gray-400 font-normal">— {req.user?.email}</span></p>
                     <p className="text-xs text-gray-500 mb-1">Property: {req.property?.property_type} in {req.property?.city}</p>
-                    <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded uppercase tracking-wider">{req.request_type.replace('_', ' ')}</span>
+                    <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded uppercase tracking-wider">{req.request_type?.replace('_', ' ')}</span>
                     <p className="text-sm text-gray-600 mt-2 italic">"{req.message}"</p>
                     <p className="text-xs text-gray-400 mt-2">{new Date(req.created_at).toLocaleDateString()}</p>
                   </div>
@@ -368,6 +449,47 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
               {sellerRequests.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400">No seller requests yet.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ─── AGENTS APPS ─── */}
+        {section === 'agents' && (
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Agent Applications</h1>
+            <div className="flex flex-col gap-4">
+              {agentApps.map(app => (
+                <div key={app.id} className={`bg-white rounded-xl border shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 border-l-4 ${app.status === 'pending' ? 'border-l-yellow-400' : app.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800 text-lg">{app.user?.first_name} {app.user?.last_name}</p>
+                    <p className="text-xs text-gray-500 mb-2">📞 {app.user?.phone_number} | ✉️ {app.user?.email}</p>
+                    <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 mb-3">
+                       <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 leading-none">Qualification Note</p>
+                       <p className="text-sm text-gray-700 italic leading-snug">"{app.notes}"</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                       <span className="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
+                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${app.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : app.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>
+                          {app.status}
+                       </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0 md:pt-2">
+                    {app.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleApproveAgent(app.id, app.user?.first_name || 'UNK')} className="bg-[#00b48f] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors shadow-sm">Gen ID & Approve</button>
+                        <button onClick={() => handleRejectAgent(app.id)} className="bg-white text-red-500 border border-red-200 text-xs font-bold px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">Reject Application</button>
+                      </>
+                    )}
+                    {app.status === 'approved' && (
+                        <div className="text-teal-600 flex items-center gap-1 font-bold text-xs bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
+                           <span>✅</span> Verified Agent
+                        </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {agentApps.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400 shadow-sm">No applications in system queue.</div>}
             </div>
           </div>
         )}
