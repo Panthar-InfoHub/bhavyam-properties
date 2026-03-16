@@ -44,7 +44,7 @@ export default async function PropertyDetailsPage({ params }: { params: { id: st
   }).format(property.price);
 
   return (
-    <main className="bg-white min-h-screen">
+    <main className="bg-white min-h-screen pt-20">
       {/* Dynamic Header Layout */}
       <div className="relative w-full h-[60vh] bg-gray-100 flex items-center justify-center overflow-hidden">
         <img 

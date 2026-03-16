@@ -126,7 +126,7 @@ export default function SellerDashboardPage() {
             <svg className="w-16 h-16 text-gray-200 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
             <h3 className="text-xl font-bold text-gray-600 mb-2">No Property Listed Yet</h3>
             <p className="text-gray-400 mb-6 text-sm">As a seller, you may submit one property for admin review.</p>
-            <Link href="/dashboard/submit-property" className="bg-[#00b48f] hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">
+            <Link href="/submit-property" className="bg-[#00b48f] hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">
               Submit My Property
             </Link>
           </div>

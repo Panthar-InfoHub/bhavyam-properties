@@ -3,9 +3,11 @@ import PropertyCard from '@/components/property/PropertyCard';
 
 export const revalidate = 60; // ISR cache regeneration
 
-export default async function PropertiesPage() {
+export default async function PropertiesPage({ searchParams }: { searchParams: { type?: string } }) {
+  const { type } = await searchParams;
+  
   // Directly pull 'approved' properties from the database safely
-  const { data: properties, error } = await supabase
+  let query = supabase
     .from('properties')
     .select(`
       id,
@@ -19,15 +21,20 @@ export default async function PropertiesPage() {
       media:property_media(url, media_type),
       map_url
     `)
-    .eq('status', 'approved')
-    .order('created_at', { ascending: false });
+    .eq('status', 'approved');
+
+  if (type) {
+    query = query.eq('listing_type', type);
+  }
+
+  const { data: properties, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     console.error('Fetch properties error:', error.message);
   }
 
   return (
-    <main className="bg-[#fbfcfa] min-h-screen py-16 px-4 md:px-12">
+    <main className="bg-[#fbfcfa] min-h-screen pt-28 pb-16 px-4 md:px-12">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-gray-200 pb-6">
           <div>

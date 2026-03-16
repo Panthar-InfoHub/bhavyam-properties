@@ -103,7 +103,7 @@ export default function AgentDashboardPage() {
               </div>
            </div>
 
-           <Link href="/dashboard/submit-property" className="bg-linear-to-br from-[#00b48f] to-teal-400 hover:from-teal-400 hover:to-teal-300 transition-all p-6 rounded-2xl shadow-xl shadow-teal-500/20 text-white flex flex-col justify-center items-center text-center transform hover:-translate-y-1">
+           <Link href="/submit-property" className="bg-linear-to-br from-[#00b48f] to-teal-400 hover:from-teal-400 hover:to-teal-300 transition-all p-6 rounded-2xl shadow-xl shadow-teal-500/20 text-white flex flex-col justify-center items-center text-center transform hover:-translate-y-1">
               <svg className="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               <h3 className="text-lg font-bold">Submit New Listing</h3>
               <p className="text-teal-100 text-xs mt-1 uppercase tracking-widest font-semibold">Bypass Max Limit</p>
