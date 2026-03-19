@@ -46,6 +46,8 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           .from('properties')
           .select(`
             address,
+            map_url,
+            price,
             media:property_media (url, media_type)
           `)
           .eq('id', propertyId)
@@ -154,6 +156,30 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
     }
   };
 
+  const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
+  const images = securedData?.media?.filter((m: any) => m.media_type === 'image') || [];
+  const otherMedia = securedData?.media?.filter((m: any) => m.media_type !== 'image') || [];
+
+  const handlePrevImage = useCallback(() => {
+    setCarouselIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : images.length - 1));
+  }, [images.length]);
+  
+  const handleNextImage = useCallback(() => {
+    setCarouselIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : 0));
+  }, [images.length]);
+
+  // Keyboard navigation for carousel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (carouselIndex === null) return;
+      if (e.key === 'Escape') setCarouselIndex(null);
+      if (e.key === 'ArrowLeft') handlePrevImage();
+      if (e.key === 'ArrowRight') handleNextImage();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [carouselIndex, handlePrevImage, handleNextImage]);
+
   if (loading) {
     return (
       <div className="bg-zinc-900 rounded-3xl p-8 shadow-2xl h-full flex items-center justify-center">
@@ -161,6 +187,18 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       </div>
     );
   }
+
+  const getMapEmbedUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('pb=') || url.includes('output=embed')) return url;
+    const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (match) return `https://maps.google.com/maps?q=${match[1]},${match[2]}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+    const placeMatch = url.match(/\/place\/([^\/]+)/);
+    if (placeMatch) return `https://maps.google.com/maps?q=${encodeURIComponent(placeMatch[1].replace(/\+/g, ' '))}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+    return url.includes('goo.gl') ? null : `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  };
+
+  const mapEmbedUrl = securedData?.map_url ? getMapEmbedUrl(securedData.map_url) : null;
 
   return (
     <>
@@ -174,6 +212,57 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
             setPendingType(null);
           }}
         />
+      )}
+
+      {/* Full Screen Carousel Modal */}
+      {carouselIndex !== null && images.length > 0 && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300"
+          onClick={() => setCarouselIndex(null)}
+        >
+           <div 
+             className="relative w-full h-full flex flex-col items-center justify-center px-4 md:px-20"
+             onClick={(e) => e.stopPropagation()}
+           >
+             <div className="w-full max-w-5xl flex justify-end mb-4 z-[10000]">
+               <button 
+                 onClick={(e) => { e.stopPropagation(); setCarouselIndex(null); }} 
+                 className="flex items-center gap-2 bg-black/50 hover:bg-black/80 text-white/70 hover:text-white px-4 py-2 rounded-full transition-all border border-white/20 shadow-xl"
+               >
+                 <span className="text-xs font-bold uppercase tracking-widest">Close Gallery</span>
+                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+               </button>
+             </div>
+             
+             <button onClick={handlePrevImage} className="absolute left-4 md:left-10 text-white/50 hover:text-white hover:scale-110 transition-all p-4 z-[10000] hidden sm:block">
+               <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+             </button>
+             
+             <img 
+               src={images[carouselIndex].url} 
+               className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
+               alt="Property view"
+               key={carouselIndex}
+             />
+             
+             <button onClick={handleNextImage} className="absolute right-4 md:right-10 text-white/50 hover:text-white hover:scale-110 transition-all p-4 z-[10000] hidden sm:block">
+               <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+             </button>
+           </div>
+           
+           <div 
+             className="absolute bottom-6 w-full flex justify-center items-center gap-2 px-4 z-[10000]"
+             onClick={(e) => e.stopPropagation()}
+           >
+             {images.length > 1 && images.map((_: any, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={() => setCarouselIndex(idx)}
+                  className={`transition-all duration-300 rounded-full ${idx === carouselIndex ? 'w-8 h-2 bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]' : 'w-2 h-2 bg-white/40 hover:bg-white/70'}`}
+                />
+             ))}
+           </div>
+        </div>
       )}
 
       {securedData ? (
@@ -194,11 +283,66 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           </div>
           
           <div className="space-y-4">
+            
+            <div className="bg-teal-500/10 p-5 rounded-2xl border border-teal-500/20">
+              <p className="text-teal-400 text-[10px] uppercase font-black mb-2 flex items-center gap-1.5">
+                 <span>💰</span> Actual Asking Price
+              </p>
+              <p className="font-black text-white text-3xl">
+                 {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(securedData.price)}
+              </p>
+            </div>
+
+            {/* Premium Photo Grid for Carousel */}
+            {images.length > 0 && (
+              <div className="bg-zinc-800/40 p-5 rounded-2xl border border-zinc-700/50">
+                <p className="text-zinc-500 text-[10px] uppercase font-black mb-4 flex items-center gap-1.5">
+                   <span className="text-teal-500">📸</span> Premium Photo Gallery
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {images.map((img: any, i: number) => (
+                    <div 
+                      key={i} 
+                      onClick={() => setCarouselIndex(i)}
+                      className={`relative rounded-xl overflow-hidden cursor-pointer group bg-zinc-800 ${i === 0 && images.length % 2 !== 0 ? 'col-span-2 aspect-video' : 'aspect-square'}`}
+                    >
+                      <img src={img.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100" alt="Thumbnail" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <svg className="w-8 h-8 text-white drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="bg-zinc-800/40 p-5 rounded-2xl border border-zinc-700/50">
               <p className="text-zinc-500 text-[10px] uppercase font-black mb-2 flex items-center gap-1.5">
                  <span className="text-teal-500">📍</span> Exact Physical Address
               </p>
-              <p className="font-bold text-white text-lg leading-relaxed">{securedData.address}</p>
+              <p className="font-bold text-white text-lg leading-relaxed mb-4">{securedData.address}</p>
+              
+              {securedData.map_url && (
+                <div className="w-full">
+                  {mapEmbedUrl ? (
+                    <div className="rounded-xl overflow-hidden border border-zinc-700 h-48 mb-3">
+                      <iframe
+                         width="100%"
+                         height="100%"
+                         style={{ border: 0 }}
+                         loading="lazy"
+                         allowFullScreen
+                         src={mapEmbedUrl}
+                         className="grayscale hover:grayscale-0 transition-all duration-700"
+                      ></iframe>
+                    </div>
+                  ) : null}
+                  <a href={securedData.map_url} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 rounded-xl transition-colors text-sm">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Open in Google Maps
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20">
@@ -210,20 +354,23 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
               </p>
             </div>
 
-            {/* Media list */}
-            {(securedData.media?.length > 0) && (
+            {/* Other Media list (Docs, Video Links) */}
+            {otherMedia.length > 0 && (
               <div className="bg-zinc-800/40 p-5 rounded-2xl border border-zinc-700/50">
-                <p className="text-zinc-500 text-[10px] uppercase font-black mb-4">Secured Media & Assets</p>
+                <p className="text-zinc-500 text-[10px] uppercase font-black mb-4 flex items-center gap-1.5">
+                   <span className="text-teal-500">📄</span> Secured Legal Assets
+                </p>
                 <div className="flex flex-col gap-3">
-                   {securedData.media?.map((m: any, i: number) => (
+                   {otherMedia.map((m: any, i: number) => (
                      <a key={i} href={m.url} target="_blank" className={`flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl text-sm transition-all border group ${m.media_type === 'video' ? 'text-teal-400 border-teal-500/20 hover:bg-teal-500/10' : 'text-blue-400 border-blue-500/20 hover:bg-blue-500/10'}`}>
                        <span className="text-xl group-hover:scale-110 transition-transform">{m.media_type === 'video' ? '🎥' : '📄'}</span> 
-                       {m.media_type === 'video' ? 'Watch Tour' : `Legal Photocopy ${i+1}`}
+                       {m.media_type === 'video' ? 'Watch Video Tour' : `Legal Photocopy ${i+1}`}
                      </a>
                    ))}
                 </div>
               </div>
             )}
+
           </div>
         </div>
       ) : (

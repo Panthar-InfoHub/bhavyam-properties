@@ -37,11 +37,18 @@ export default async function PropertyDetailsPage({ params }: { params: { id: st
     ? property.media[0].url
     : 'https://placehold.co/1200x600/eeeeee/999999?text=Image+Unavailable';
 
-  const formattedPrice = new Intl.NumberFormat('en-IN', {
+  const priceStr = property.price.toString();
+  const firstDigit = priceStr.charAt(0);
+  const remainingLen = priceStr.length - 1;
+  const dummyPriceStr = firstDigit + '0'.repeat(remainingLen);
+  
+  const formattedDummy = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    maximumSignificantDigits: 3
-  }).format(property.price);
+    maximumFractionDigits: 0
+  }).format(parseInt(dummyPriceStr));
+  
+  const formattedPrice = formattedDummy.replace(/0/g, 'x');
 
   return (
     <main className="bg-white min-h-screen pt-20">
@@ -113,35 +120,6 @@ export default async function PropertyDetailsPage({ params }: { params: { id: st
                     For an extensive 3D walkthrough, granular amenity reviews, blueprint analysis and direct legal contact, you must formally proceed deeper into the system.
                  </p>
               </div>
-              
-              {/* Interactive Map Preview (New Feature) */}
-              {property.map_url && (
-                <div className="mt-12 group">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-[#00579e] text-white p-1.5 rounded-lg">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </span>
-                    <h3 className="text-xl font-black text-gray-800 tracking-tight">Neighborhood Insight</h3>
-                  </div>
-                  <div className="rounded-3xl overflow-hidden border-4 border-gray-50 shadow-2xl h-80 bg-gray-100 relative">
-                     <iframe
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        loading="lazy"
-                        allowFullScreen
-                        src={property.map_url.includes('pb=') || property.map_url.includes('output=embed') ? property.map_url : `https://maps.google.com/maps?q=${encodeURIComponent(property.map_url)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
-                        className="grayscale-25 hover:grayscale-0 transition-all duration-1000"
-                     ></iframe>
-                  </div>
-                  <p className="mt-4 text-xs text-gray-400 font-medium uppercase tracking-widest text-center">
-                    Visual approximation of property location via Secure Bhavyam Proxy
-                  </p>
-                </div>
-              )}
 
               {/* Lead Generation Button block */}
               <InterestButton propertyId={property.id} />
