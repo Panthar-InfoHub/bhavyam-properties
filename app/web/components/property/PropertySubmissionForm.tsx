@@ -563,28 +563,53 @@ export default function PropertySubmissionForm() {
                  className={inputClasses} 
                />
                
-               {formData.mapUrl && (
-                 <div className="mt-4 rounded-2xl overflow-hidden border border-gray-100 shadow-inner bg-gray-100 h-48 relative group">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      loading="lazy"
-                      allowFullScreen
-                      src={formData.mapUrl.includes('pb=') || formData.mapUrl.includes('output=embed') ? formData.mapUrl : `https://maps.google.com/maps?q=${encodeURIComponent(formData.mapUrl)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
-                      className="opacity-90 group-hover:opacity-100 transition-opacity"
-                    ></iframe>
-                    {/* Fallback/Overlay hint if it's a standard link instead of embed */}
-                    {!formData.mapUrl.includes('google.com/maps/embed') && !formData.mapUrl.includes('pb=') && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-center p-6 backdrop-blur-[2px]">
-                        <p className="text-xs font-bold uppercase tracking-widest">
-                          Map Preview will appear here.<br/>
-                          <span className="text-[10px] font-normal opacity-80 mt-1 block">Note: Standard links might not preview, but will work on the final page.</span>
-                        </p>
-                      </div>
-                    )}
-                 </div>
-               )}
+               {(() => {
+                 const getMapEmbedUrl = (url: string) => {
+                   if (!url) return '';
+                   if (url.includes('pb=') || url.includes('output=embed')) return url;
+                   const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                   if (match) return `https://maps.google.com/maps?q=${match[1]},${match[2]}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                   const placeMatch = url.match(/\/place\/([^\/]+)/);
+                   if (placeMatch) return `https://maps.google.com/maps?q=${encodeURIComponent(placeMatch[1].replace(/\+/g, ' '))}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                   return url.includes('goo.gl') ? null : `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                 };
+                 const embedUrl = formData.mapUrl ? getMapEmbedUrl(formData.mapUrl) : null;
+                 return formData.mapUrl ? (
+                   <div className="mt-4 rounded-2xl overflow-hidden border border-gray-100 shadow-inner bg-gray-100 h-48 relative group flex flex-col items-center justify-center">
+                      {embedUrl ? (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          src={embedUrl}
+                          className="opacity-90 group-hover:opacity-100 transition-opacity absolute inset-0 z-0"
+                        ></iframe>
+                      ) : (
+                        <div className="z-10 text-center px-4">
+                          <p className="text-gray-500 font-bold mb-2 text-sm">Shortlink Detected</p>
+                          <a href={formData.mapUrl} target="_blank" rel="noreferrer" className="inline-block bg-[#00579e] text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-blue-800 transition-colors">
+                            Test Link in New Tab
+                          </a>
+                        </div>
+                      )}
+                      
+                      {!embedUrl && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-0"></div>
+                      )}
+                      
+                      {embedUrl && !formData.mapUrl.includes('google.com/maps/embed') && !formData.mapUrl.includes('pb=') && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-center p-6 backdrop-blur-[2px] opacity-0 hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                          <p className="text-xs font-bold uppercase tracking-widest">
+                            Converted to Embed Format<br/>
+                            <span className="text-[10px] font-normal opacity-80 mt-1 block">Your link was automatically optimized for viewing.</span>
+                          </p>
+                        </div>
+                      )}
+                   </div>
+                 ) : null;
+               })()}
             </div>
           </div>
         );
