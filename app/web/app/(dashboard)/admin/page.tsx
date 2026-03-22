@@ -10,7 +10,7 @@ type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
-  const [stats, setStats] = useState({ listings: 0, users: 0, revenue: 0, pending: 0 });
+  const [stats, setStats] = useState({ listings: 0, users: 0, revenue: 0, pending: 0, pendingAgents: 0 });
   const [properties, setProperties] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
                 { label: 'Total Listings', value: stats.listings, color: 'blue', icon: '🏠' },
                 { label: 'Pending Review', value: stats.pending, color: 'yellow', icon: '⏳' },
                 { label: 'Active Users', value: stats.users, color: 'teal', icon: '👥' },
-                { label: 'Pending Agents', value: (stats as any).pendingAgents || 0, color: 'purple', icon: '🎖️' },
+                { label: 'Pending Agents', value: stats.pendingAgents, color: 'purple', icon: '🎖️' },
                 { label: 'Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, color: 'green', icon: '💰' },
               ].map(card => (
                 <div key={card.label} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
