@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 'reviews' | 'requests' | 'agents';
+type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 'reviews' | 'agents';
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
@@ -16,11 +16,34 @@ export default function AdminDashboardPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [interests, setInterests] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [sellerRequests, setSellerRequests] = useState<any[]>([]);
   const [agentApps, setAgentApps] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState('');
+
+  // Filter & Sort State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('All'); 
+  const [sortBy, setSortBy] = useState('Time'); 
 
   const router = useRouter();
+
+  const filteredAndSortedProperties = properties
+     .filter(p => filterType === 'All' || p.listing_type?.toLowerCase() === filterType.toLowerCase())
+     .filter(p => {
+        if (!searchQuery) return true;
+        const s = searchQuery.toLowerCase();
+        return p.property_type?.toLowerCase().includes(s) || p.city?.toLowerCase().includes(s);
+     })
+     .sort((a, b) => {
+        if (sortBy === 'PriceDesc') {
+           return (b.price || 0) - (a.price || 0);
+        }
+        if (sortBy === 'PriceAsc') {
+           return (a.price || 0) - (b.price || 0);
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+     });
 
   useEffect(() => {
     const init = async () => {
@@ -34,15 +57,13 @@ export default function AdminDashboardPage() {
         { data: pays },
         { data: ints },
         { data: revs },
-        { data: reqs },
         { data: apps }
       ] = await Promise.all([
-        supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, owner:profiles(first_name, last_name), media:property_media(url, media_type)').order('created_at', { ascending: false }),
+        supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, admin_feedback, owner:profiles(first_name, last_name, role, agent_code), media:property_media(url, media_type)').order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
         supabase.from('payments').select('id, amount, currency, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false }),
         supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number))').order('created_at', { ascending: false }),
         supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
-        supabase.from('requests').select('id, request_type, message, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false }),
         supabase.from('agent_applications').select('id, status, notes, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false })
       ]);
 
@@ -54,16 +75,15 @@ export default function AdminDashboardPage() {
       setPayments(payList);
       setInterests(ints || []);
       setReviews(revs || []);
-      setSellerRequests(reqs || []);
       setAgentApps(apps || []);
 
-      const revenue = payList.filter(p => p.status === 'completed').reduce((acc, p) => acc + (p.amount || 0), 0);
+      const revenue = payList.filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
       setStats({
         listings: propList.length,
         users: (allUsers || []).length,
         revenue,
-        pending: propList.filter(p => p.status === 'pending').length,
-        pendingAgents: (apps || []).filter(a => a.status === 'pending').length
+        pending: propList.filter((p: any) => p.status === 'pending').length,
+        pendingAgents: (apps || []).filter((a: any) => a.status === 'pending').length
       });
 
       setIsLoading(false);
@@ -71,9 +91,11 @@ export default function AdminDashboardPage() {
     init();
   }, [router]);
 
-  const updatePropertyStatus = async (id: string, status: string) => {
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-    await supabase.from('properties').update({ status }).eq('id', id);
+  const updatePropertyStatus = async (id: string, status: string, note?: string) => {
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, status, admin_feedback: note } : p));
+    await supabase.from('properties').update({ status, admin_feedback: note } as any).eq('id', id);
+    setRejectingId(null);
+    setFeedback('');
   };
 
   const updateReviewStatus = async (id: string, status: string) => {
@@ -81,15 +103,20 @@ export default function AdminDashboardPage() {
     await supabase.from('reviews').update({ status }).eq('id', id);
   };
 
-  const updateRequestStatus = async (id: string, status: string) => {
-    setSellerRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    await supabase.from('requests').update({ status }).eq('id', id);
-  };
-
   const suspendUser = async (id: string) => {
     if (!confirm('Suspend this user?')) return;
     const { error } = await supabase.from('profiles').update({ role: 'buyer' } as any).eq('id', id);
     if (!error) setUsers(prev => prev.map(u => u.id === id ? { ...u, role: 'buyer' } : u));
+  };
+
+  const updateUserRole = async (id: string, newRole: string) => {
+    if (newRole === 'admin' && !confirm('Promote this user to ADMIN? This will give them full control.')) return;
+    const { error } = await supabase.from('profiles').update({ role: newRole } as any).eq('id', id);
+    if (!error) {
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
+    } else {
+      alert("Failed to update user role: " + error.message);
+    }
   };
 
   const updateInterestStatus = async (id: string, status: string) => {
@@ -131,7 +158,6 @@ export default function AdminDashboardPage() {
     { key: 'properties', label: 'Properties', icon: '🏠' },
     { key: 'users', label: 'Users', icon: '👥' },
     { key: 'agents', label: 'Agent Apps', icon: '🎖️' },
-    { key: 'requests', label: 'Seller Requests', icon: '📝' },
     { key: 'interests', label: 'Interests', icon: '📋' },
     { key: 'payments', label: 'Payments', icon: '💳' },
     { key: 'reviews', label: 'Reviews', icon: '⭐' },
@@ -154,7 +180,7 @@ export default function AdminDashboardPage() {
               section === item.key 
                 ? 'bg-[#00579e] text-white shadow-md' 
                 : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            } cursor-pointer`}
           >
             <span>{item.icon}</span>
             {item.label}
@@ -170,7 +196,7 @@ export default function AdminDashboardPage() {
             <button
               key={item.key}
               onClick={() => setSection(item.key)}
-              className={`shrink-0 text-xs font-bold px-4 py-2 rounded-full ${section === item.key ? 'bg-[#00579e] text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
+              className={`shrink-0 text-xs font-bold px-4 py-2 rounded-full cursor-pointer ${section === item.key ? 'bg-[#00579e] text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
             >
               {item.icon} {item.label}
             </button>
@@ -202,7 +228,6 @@ export default function AdminDashboardPage() {
                 { label: 'Properties Approved', value: properties.filter(p => p.status === 'approved').length, sub: 'of ' + stats.listings + ' total' },
                 { label: 'Pending Interests', value: interests.filter(i => i.status === 'pending').length, sub: 'buyer leads awaiting' },
                 { label: 'Pending Reviews', value: reviews.filter(r => r.status === 'pending').length, sub: 'awaiting moderation' },
-                { label: 'Seller Requests', value: sellerRequests.filter(r => r.status === 'pending').length, sub: 'edit / delete / docs' },
                 { label: 'Completed Payments', value: payments.filter(p => p.status === 'completed').length, sub: 'unlocked details' },
                 { label: 'Agents Active', value: users.filter(u => u.role === 'agent').length, sub: 'of ' + stats.users + ' users' },
               ].map(item => (
@@ -220,33 +245,106 @@ export default function AdminDashboardPage() {
         {section === 'properties' && (
           <div>
             <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Property Moderation</h1>
+            
+            <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-center">
+               <input 
+                  type="text" 
+                  placeholder="Search city, property type..." 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2 rounded-lg flex-1 shadow-sm focus:border-teal-500 placeholder-gray-400 cursor-pointer"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+               />
+               <select 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2 rounded-lg shadow-sm focus:border-teal-500 cursor-pointer"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+               >
+                  <option value="All">All Types</option>
+                  <option value="Rent">Rent</option>
+                  <option value="Sell">Sell</option>
+               </select>
+               <select 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2 rounded-lg shadow-sm focus:border-teal-500 cursor-pointer"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+               >
+                  <option value="Time">Sort by: Time (Newest)</option>
+                  <option value="PriceDesc">Sort by: Price (High to Low)</option>
+                  <option value="PriceAsc">Sort by: Price (Low to High)</option>
+               </select>
+            </div>
+
             <div className="flex flex-col gap-4">
-              {properties.map(p => (
+              {filteredAndSortedProperties.map(p => (
                 <div key={p.id} className={`bg-white rounded-xl border shadow-sm p-6 flex flex-col gap-4 border-l-4 ${p.status === 'pending' ? 'border-l-yellow-400' : p.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <h3 className="font-bold text-gray-800 text-lg">{p.property_type} in {p.city}</h3>
-                      <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">Owner: {p.owner?.first_name} {p.owner?.last_name} · {p.listing_type} · {new Date(p.created_at).toLocaleDateString()}</p>
+                      <Link href={`/properties/${p.id}`} className="font-bold text-gray-800 text-lg hover:underline hover:text-teal-600 block transition-colors cursor-pointer">
+                        {p.property_type} in {p.city}
+                      </Link>
+                      <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">
+                        Owner: {p.owner?.first_name} {p.owner?.last_name} 
+                        {p.owner?.role === 'agent' && (
+                          <span className="ml-2 bg-blue-50 text-[#00579e] px-2 py-0.5 rounded text-[9px] font-black border border-blue-100">
+                             ID: {p.owner?.agent_code || 'N/A'}
+                          </span>
+                        )}
+                        <span className="mx-2">·</span> {p.listing_type} <span className="mx-2">·</span> ₹{p.price?.toLocaleString('en-IN')} <span className="mx-2">·</span> {new Date(p.created_at).toLocaleDateString()}
+                      </p>
                       <span className={`mt-2 inline-block text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter ${p.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : p.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{p.status}</span>
                     </div>
-                    <div className="flex gap-2">
-                      {p.status !== 'approved' && (
-                        <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Approve</button>
-                      )}
-                      {p.status !== 'rejected' && (
-                        <button onClick={() => updatePropertyStatus(p.id, 'rejected')} className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reject</button>
-                      )}
-                      {p.status !== 'pending' && (
-                        <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors">Reset</button>
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex gap-2">
+                        {p.status !== 'approved' && (
+                          <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Approve</button>
+                        )}
+                        {p.status !== 'rejected' && (
+                          <button 
+                            onClick={() => {
+                              if (rejectingId === p.id) {
+                                if (!feedback) return alert('Please enter a reason for rejection');
+                                updatePropertyStatus(p.id, 'rejected', feedback);
+                              } else {
+                                setRejectingId(p.id);
+                              }
+                            }} 
+                            className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+                          >
+                            {rejectingId === p.id ? 'Confirm Reject' : 'Reject'}
+                          </button>
+                        )}
+                        {p.status !== 'pending' && (
+                          <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Reset</button>
+                        )}
+                      </div>
+                      
+                      {rejectingId === p.id && (
+                        <div className="w-full max-w-xs animate-in slide-in-from-top-2 duration-300">
+                           <textarea 
+                             autoFocus
+                             placeholder="Provide improvement notes for the agent..."
+                             className="w-full bg-red-50/50 border border-red-100 p-2 rounded-lg text-xs outline-none focus:border-red-300 placeholder-red-300 text-red-900 font-medium"
+                             value={feedback}
+                             onChange={(e) => setFeedback(e.target.value)}
+                           />
+                           <button onClick={() => setRejectingId(null)} className="text-[10px] font-black text-gray-500 mt-1 uppercase tracking-widest hover:text-red-600 transition-colors cursor-pointer">Cancel Rejection</button>
+                        </div>
                       )}
                     </div>
                   </div>
+
+                  {p.admin_feedback && (
+                    <div className="bg-yellow-50/50 border border-yellow-100 p-3 rounded-lg">
+                      <p className="text-[10px] font-black text-yellow-600 uppercase mb-1">Previous Rejection Note</p>
+                      <p className="text-sm text-yellow-800 italic">"{p.admin_feedback}"</p>
+                    </div>
+                  )}
 
                   {/* Media Preview */}
                   {p.media && p.media.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                       {p.media.slice(0, 8).map((m: any, idx: number) => (
-                        <a key={idx} href={m.url} target="_blank" rel="noreferrer" className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:ring-2 hover:ring-teal-500 transition-all">
+                        <a key={idx} href={m.url} target="_blank" rel="noreferrer" className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:ring-2 hover:ring-teal-500 transition-all cursor-pointer">
                           {m.media_type === 'image' || m.url.match(/\.(jpg|jpeg|png)$/i) ? (
                             <img src={m.url} className="w-full h-full object-cover" alt="Property asset" />
                           ) : (
@@ -258,6 +356,11 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
               ))}
+              {filteredAndSortedProperties.length === 0 && (
+                <div className="p-8 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+                  No properties found for the selected filters.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -283,14 +386,27 @@ export default function AdminDashboardPage() {
                         <td className="p-4 text-sm text-gray-500">{u.email}</td>
                         <td className="p-4 text-sm text-gray-500">{u.phone_number || '—'}</td>
                         <td className="p-4">
-                          <span className={`text-xs font-bold uppercase px-2 py-1 rounded tracking-wider ${u.role === 'admin' ? 'bg-purple-50 text-purple-700' : u.role === 'agent' ? 'bg-blue-50 text-blue-700' : u.role === 'seller' ? 'bg-orange-50 text-orange-700' : 'bg-gray-50 text-gray-600'}`}>
-                            {u.role}
-                          </span>
+                          <select 
+                            value={u.role} 
+                            onChange={(e) => updateUserRole(u.id, e.target.value)}
+                            disabled={u.role === 'admin' && users.filter(usr => usr.role === 'admin').length <= 1} // Prevent removing the last admin
+                            className={`text-xs font-bold uppercase px-2 py-1 rounded tracking-wider border-none outline-none cursor-pointer ${
+                              u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 
+                              u.role === 'agent' ? 'bg-blue-100 text-blue-700' : 
+                              u.role === 'seller' ? 'bg-orange-100 text-orange-700' : 
+                              'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="agent">Agent</option>
+                            <option value="seller">Seller</option>
+                            <option value="buyer">Buyer</option>
+                          </select>
                         </td>
                         <td className="p-4 text-sm text-gray-500 whitespace-nowrap">{new Date(u.created_at).toLocaleDateString()}</td>
                         <td className="p-4">
-                          {u.role !== 'admin' && (
-                            <button onClick={() => suspendUser(u.id)} className="text-xs font-bold text-red-500 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                          {u.role !== 'admin' && u.role !== 'buyer' && (
+                            <button onClick={() => suspendUser(u.id)} className="text-xs font-bold text-red-500 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition-colors cursor-pointer">
                               Suspend
                             </button>
                           )}
@@ -370,7 +486,7 @@ export default function AdminDashboardPage() {
                        {req.status === 'pending' ? (
                          <button 
                            onClick={() => updateInterestStatus(req.id, 'contacted')}
-                           className="w-full bg-[#00579e] hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest py-2.5 rounded-lg transition-all shadow-sm"
+                           className="w-full bg-[#00579e] hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest py-2.5 rounded-lg transition-all shadow-sm cursor-pointer"
                          >
                            Mark Contacted
                          </button>
@@ -421,37 +537,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ─── SELLER REQUESTS ─── */}
-        {section === 'requests' && (
-          <div>
-            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Seller Requests</h1>
-            <div className="flex flex-col gap-4">
-              {sellerRequests.map(req => (
-                <div key={req.id} className={`bg-white rounded-xl border shadow-sm p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-l-4 ${req.status === 'pending' ? 'border-l-yellow-400' : req.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-800">{req.user?.first_name} {req.user?.last_name} <span className="text-gray-400 font-normal">— {req.user?.email}</span></p>
-                    <p className="text-xs text-gray-500 mb-1">Property: {req.property?.property_type} in {req.property?.city}</p>
-                    <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded uppercase tracking-wider">{req.request_type?.replace('_', ' ')}</span>
-                    <p className="text-sm text-gray-600 mt-2 italic">"{req.message}"</p>
-                    <p className="text-xs text-gray-400 mt-2">{new Date(req.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    {req.status === 'pending' && (
-                      <>
-                        <button onClick={() => updateRequestStatus(req.id, 'approved')} className="bg-[#00b48f] text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-teal-600 transition-colors">Approve</button>
-                        <button onClick={() => updateRequestStatus(req.id, 'rejected')} className="bg-red-50 text-red-500 border border-red-200 text-xs font-bold px-3 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">Reject</button>
-                      </>
-                    )}
-                    {req.status !== 'pending' && (
-                      <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${req.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{req.status}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {sellerRequests.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400">No seller requests yet.</div>}
-            </div>
-          </div>
-        )}
 
         {/* ─── AGENTS APPS ─── */}
         {section === 'agents' && (
