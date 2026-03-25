@@ -13,7 +13,7 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
   const [pendingType, setPendingType] = useState<'single' | 'plan' | null>(null);
   const [isUnlocking, setIsUnlocking] = useState<string | null>(null); // 'single' or 'plan'
   const [securedData, setSecuredData] = useState<any>(null);
-  const [accessType, setAccessType] = useState<'plan' | 'unlock' | null>(null);
+  const [accessType, setAccessType] = useState<'plan' | 'unlock' | 'admin' | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const router = useRouter();
 
@@ -33,12 +33,19 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
         // We don't force it immediately, only on interaction
       }
 
-      // 1. Check RPC for access
-      const { data: hasAccess, error: accessError } = await supabase.rpc('check_property_access', {
-        p_property_id: propertyId
-      });
+      const isAdmin = currentUser.profile?.role === 'admin';
 
-      if (accessError) throw accessError;
+      // 1. Check RPC for access (or bypass if Admin)
+      let hasAccess = false;
+      if (isAdmin) {
+        hasAccess = true;
+      } else {
+        const { data: rpcAccess, error: accessError } = await supabase.rpc('check_property_access', {
+          p_property_id: propertyId
+        });
+        if (accessError) throw accessError;
+        hasAccess = rpcAccess;
+      }
 
       if (hasAccess) {
         // Fetch the data - EXCLUDING owner details per new privacy policy
@@ -56,21 +63,26 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
         if (fetchError) throw fetchError;
         setSecuredData(secureProp);
 
-        // Determine if it's via plan or specific unlock
-        const { data: unlock } = await supabase
-          .from('property_unlocks')
-          .select('expires_at')
-          .eq('user_id', currentUser.id)
-          .eq('property_id', propertyId)
-          .gt('expires_at', new Date().toISOString())
-          .maybeSingle();
-
-        if (unlock) {
-          setAccessType('unlock');
-          setExpiresAt(unlock.expires_at);
+        if (isAdmin) {
+          setAccessType('admin');
+          setExpiresAt('2099-12-31T23:59:59Z'); // Unlimited access representation
         } else {
-          setAccessType('plan');
-          setExpiresAt(currentUser.profile?.subscription_expires_at);
+          // Determine if it's via plan or specific unlock
+          const { data: unlock } = await supabase
+            .from('property_unlocks')
+            .select('expires_at')
+            .eq('user_id', currentUser.id)
+            .eq('property_id', propertyId)
+            .gt('expires_at', new Date().toISOString())
+            .maybeSingle();
+
+          if (unlock) {
+            setAccessType('unlock');
+            setExpiresAt(unlock.expires_at);
+          } else {
+            setAccessType('plan');
+            setExpiresAt(currentUser.profile?.subscription_expires_at);
+          }
         }
       }
     } catch (err) {
@@ -238,12 +250,14 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
              </button>
              
-             <img 
-               src={images[carouselIndex].url} 
-               className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
-               alt="Property view"
-               key={carouselIndex}
-             />
+             <div className="w-full flex justify-center items-center">
+               <img 
+                 src={images[carouselIndex].url} 
+                 className="w-full max-w-5xl h-[60vh] md:h-[80vh] object-contain bg-black/30 rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
+                 alt="Property view"
+                 key={carouselIndex}
+               />
+             </div>
              
              <button onClick={handleNextImage} className="absolute right-4 md:right-10 text-white/50 hover:text-white hover:scale-110 transition-all p-4 z-[10000] hidden sm:block">
                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -271,10 +285,10 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
              <div>
                 <h3 className="text-2xl font-bold text-[#00b48f] tracking-tight">Access Granted</h3>
                 <p className="text-xs text-zinc-400 mt-1 uppercase tracking-widest font-bold">
-                  Via {accessType === 'plan' ? 'Pro Monthly Plan' : 'Individual 7-Day Unlock'}
+                  Via {accessType === 'admin' ? 'Admin Privileges' : accessType === 'plan' ? 'Pro Monthly Plan' : 'Individual 7-Day Unlock'}
                 </p>
              </div>
-             {expiresAt && (
+             {accessType !== 'admin' && expiresAt && (
                <div className="text-right">
                   <p className="text-[10px] text-zinc-500 uppercase font-black">Valid Until</p>
                   <p className="text-xs font-bold text-teal-400">{new Date(expiresAt).toLocaleDateString()}</p>

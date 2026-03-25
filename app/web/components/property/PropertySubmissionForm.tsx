@@ -221,7 +221,8 @@ export default function PropertySubmissionForm() {
           area: formData.carpetArea ? formData.carpetArea + ' sqft' : 'Unspecified',
           address: formData.address || 'Unspecified',
           status: 'pending', // Admin must approve
-          map_url: formData.mapUrl || null
+          map_url: formData.mapUrl || null,
+          description: formData.propertyDetails || 'No details provided'
         })
         .select()
         .single();
