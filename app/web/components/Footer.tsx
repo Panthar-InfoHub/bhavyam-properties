@@ -7,7 +7,13 @@ export default function Footer() {
   const pathname = usePathname();
 
   // Hide footer on dashboard/admin routes which are typically full-app views
-  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin") || pathname?.startsWith("/user") || pathname?.startsWith("/seller")) {
+  if (
+    (pathname?.startsWith("/dashboard") || 
+     pathname?.startsWith("/admin") || 
+     pathname?.startsWith("/user") || 
+     pathname?.startsWith("/seller")) &&
+    pathname !== "/user/apply-agent"
+  ) {
     return null;
   }
 
