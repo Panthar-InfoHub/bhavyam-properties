@@ -15,6 +15,7 @@ export default function PropertyDetailsPage() {
 
   const [property, setProperty] = useState<any>(null);
   const [latestListings, setLatestListings] = useState<any[]>([]);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +46,21 @@ export default function PropertyDetailsPage() {
       }
       setProperty(prop);
 
-      // 2. Fetch Latest Listings
+      // 2. Performance Access Check
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Check for Admin or Pro Plan
+        const { data: profile } = await supabase.from('profiles').select('role, subscription_plan, subscription_expires_at').eq('id', user.id).single();
+        if (profile?.role === 'admin' || (profile?.subscription_plan !== 'free' && (!profile?.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date()))) {
+           setIsUnlocked(true);
+        } else {
+           // Check for specific unlock
+           const { data: rpcAccess } = await supabase.rpc('check_property_access', { p_property_id: id });
+           if (rpcAccess) setIsUnlocked(true);
+        }
+      }
+
+      // 3. Fetch Latest Listings
       const { data: latest } = await supabase
         .from('properties')
         .select('id, property_type, listing_type, price, city, media:property_media(url, media_type)')
@@ -73,54 +88,104 @@ export default function PropertyDetailsPage() {
     ? property.media[0].url
     : 'https://placehold.co/1200x600/eeeeee/999999?text=Image+Unavailable';
 
+  // Format Prices
+  const actualPrice = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(property.price);
+
   const priceStr = property.price?.toString() || '0';
   const firstDigit = priceStr.charAt(0);
   const remainingLen = priceStr.length - 1;
   const dummyPriceStr = firstDigit + '0'.repeat(remainingLen);
-  
   const formattedDummy = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0
   }).format(parseInt(dummyPriceStr));
-  
-  const formattedPrice = formattedDummy.replace(/0/g, 'x');
+  const maskedPrice = formattedDummy.replace(/0/g, 'x');
+
+  const displayedPrice = isUnlocked ? actualPrice : maskedPrice;
 
   return (
     <main className="bg-[#fbfcfa] min-h-screen pt-20">
-      {/* Dynamic Header Layout */}
-      <div className="relative w-full h-[60vh] bg-gray-100 flex items-center justify-center overflow-hidden">
+      {/* Hero Section with Immersive Backdrop */}
+      <div className="relative w-full h-[70vh] bg-zinc-900 group">
         <img 
            src={mainImage}
            alt={property.property_type} 
-           className="w-full h-full object-cover filter brightness-75"
+           className="w-full h-full object-cover opacity-60 transition-transform duration-10000 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent"></div>
         
-        <div className="absolute bottom-12 left-0 w-full px-6 md:px-16">
-           <div className="max-w-[1400px] xl:max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6">
-              <div className="text-white text-left">
-                 <div className="flex items-center gap-3 mb-4">
-                   <span className="bg-[#00b48f] text-white text-xs font-bold px-3 py-1 rounded-sm uppercase tracking-widest shadow-md">
-                    {property.listing_type}
-                   </span>
-                   <span className="bg-white/20 backdrop-blur-sm text-white border border-white/30 text-xs font-semibold px-3 py-1 rounded-sm uppercase tracking-widest">
-                    {property.property_type}
-                   </span>
+        {/* Complex Gradient Overlays for Readability */}
+        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-transparent to-[#fbfcfa]"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-black/60 via-transparent to-transparent"></div>
+
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+           <div className="max-w-[1400px] xl:max-w-7xl w-full px-6 md:px-16 flex flex-col md:flex-row justify-between items-end gap-12 pointer-events-auto">
+              
+              {/* Left Title Area */}
+              <div className="text-white text-left animate-in slide-in-from-left-8 duration-700">
+                 <div className="flex flex-wrap items-center gap-3 mb-6">
+                    <span className="bg-[#00b48f] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                       {property.listing_type}
+                    </span>
+                    <span className="bg-white/10 backdrop-blur-md text-white border border-white/20 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em]">
+                       {property.property_type}
+                    </span>
+                    <span className="bg-blue-500/20 backdrop-blur-md text-blue-200 border border-blue-400/30 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] flex items-center gap-1.5">
+                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                       Verified
+                    </span>
                  </div>
-                 <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-2 drop-shadow-md">
-                   {property.property_type} in {property.city}
+                 
+                 <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-4 leading-tight drop-shadow-2xl">
+                    <span className="block text-[#00ecbd] opacity-40 text-2xl font-black tracking-[0.3em] uppercase mb-2">Available in {property.city}</span>
+                    {property.property_type.split(' ')[0]} <br/>
+                    <span className="text-white/40">{property.property_type.split(' ').slice(1).join(' ') || 'Estate'}</span>
                  </h1>
-                 <p className="text-xl md:text-2xl font-light text-gray-200">
-                   General Location Overview
-                 </p>
+                 
+                 <div className="flex items-center gap-6 mt-8">
+                    <div className="flex flex-col">
+                       <span className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Region</span>
+                       <span className="text-white font-bold text-lg">{property.city}</span>
+                    </div>
+                    <div className="w-px h-10 bg-white/20"></div>
+                    <div className="flex flex-col">
+                       <span className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Total Scale</span>
+                       <span className="text-white font-bold text-lg">{property.area}</span>
+                    </div>
+                 </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl shadow-2xl flex flex-col items-end">
-                 <p className="text-gray-200 text-sm uppercase tracking-widest font-semibold mb-1 w-full text-right">Asking Price</p>
-                 <span className="text-4xl font-black text-white">{formattedPrice}</span>
+
+              {/* Right Price Highlight Card */}
+              <div className="relative group/price animate-in slide-in-from-right-8 duration-700 delay-200">
+                 <div className="absolute -inset-1 bg-[#00b48f] rounded-4xl blur opacity-25 group-hover/price:opacity-50 transition duration-1000"></div>
+                 <div className="relative bg-zinc-950/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-4xl shadow-2xl flex flex-col items-end min-w-[300px]">
+                    <p className="text-[#00ecbd] text-[10px] uppercase tracking-[0.4em] font-black mb-4 w-full text-right opacity-80 underline decoration-[#00b48f] decoration-2 underline-offset-8">Asking Price</p>
+                    <div className="flex items-baseline gap-2">
+                       <span className="text-6xl md:text-7xl font-black text-white tracking-tighter">{displayedPrice}</span>
+                    </div>
+                    <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-6 bg-zinc-900 px-4 py-2 rounded-lg border border-zinc-800">
+                       Negotiable Payment Plan Available
+                    </p>
+                 </div>
               </div>
            </div>
         </div>
+      </div>
+
+      {/* Modern Floating Header Bar for Mobile Actions */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-xl border-t border-gray-100 p-4 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+         <div className="flex flex-col">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pricing</span>
+            <span className="text-lg font-black text-[#00579e]">{displayedPrice}</span>
+         </div>
+         <Link href="#interest-form" className="bg-[#00b48f] text-white px-8 py-3 rounded-full font-black text-sm uppercase tracking-widest shadow-lg active:scale-95">
+            Express Interest
+         </Link>
       </div>
 
       {/* Main Body Details Container */}
@@ -198,9 +263,18 @@ export default function PropertyDetailsPage() {
                         <div className="flex-1">
                            <h4 className="font-bold text-gray-800 text-sm group-hover:text-[#00579e] transition-colors line-clamp-1">{l.property_type}</h4>
                            <p className="text-xs text-gray-500 font-semibold mb-1 line-clamp-1">{l.city}</p>
-                           <p className="text-sm font-black text-[#00b48f]">
-                             {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(l.price)}
-                           </p>
+                            <p className="text-sm font-black text-[#00b48f]">
+                              {(() => {
+                                if (isUnlocked) {
+                                  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(l.price);
+                                }
+                                const pStr = l.price.toString();
+                                const fDigit = pStr.charAt(0);
+                                const dPriceStr = fDigit + '0'.repeat(pStr.length - 1);
+                                const fDummy = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(parseInt(dPriceStr));
+                                return fDummy.replace(/0/g, 'x');
+                              })()}
+                            </p>
                         </div>
                       </Link>
                     ))}

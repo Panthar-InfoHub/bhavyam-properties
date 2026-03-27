@@ -30,9 +30,9 @@ export default function AgentCTASection() {
            {/* The Man Image - Negative margin to break out of the banner slightly */}
            {/* placehold since we don't have the explicit man image */}
            <img 
-             src="https://placehold.co/400x500/transparent/333?text=Agent+Image" 
+             src="/images/image copy.png" 
              alt="Real Estate Agent" 
-             className="relative z-10 h-[280px] md:h-[340px] object-contain -mb-2 md:-mt-16"
+             className="relative z-10 h-[280px] md:h-[340px] w-auto object-contain -mb-2 md:-mt-16"
            />
         </div>
 

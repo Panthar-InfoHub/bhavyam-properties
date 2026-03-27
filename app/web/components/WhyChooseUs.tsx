@@ -1,4 +1,7 @@
+'use client';
+
 import Image from 'next/image';
+import Link from 'next/link';
 import VideoPopup from './VideoPopup';
 
 export default function WhyChooseUs() {
@@ -29,14 +32,14 @@ export default function WhyChooseUs() {
            
            {/* Main Green Background Shape */}
            <div 
-             className="absolute top-8 bottom-0 left-6 w-[80%] md:w-[75%] bg-[#00c194] z-0 shadow-lg" 
+             className="absolute top-8 bottom-0 left-6 w-[85%] md:w-[80%] bg-[#00c194] z-0 shadow-lg" 
              style={{ clipPath: 'polygon(0 0, 85% 0, 100% 100%, 0% 100%)' }}
            >
            </div>
 
            {/* Wavy lines bottom left overlaying the green shape */}
            <div className="absolute bottom-6 left-10 z-20">
-             <svg width="50" height="25" viewBox="0 0 60 30" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+             <svg width="60" height="30" viewBox="0 0 60 30" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M0 5 Q 7.5 0, 15 5 T 30 5 T 45 5 T 60 5" />
                 <path d="M0 15 Q 7.5 10, 15 15 T 30 15 T 45 15 T 60 15" />
                 <path d="M0 25 Q 7.5 20, 15 25 T 30 25 T 45 25 T 60 25" />
@@ -44,16 +47,15 @@ export default function WhyChooseUs() {
            </div>
            
            {/* The Image Wrapper overlaying the green background */}
-           {/* Using aspect-video dynamically prevents awkward cropping */}
-           <div className="relative z-10 ml-8 md:ml-12 mt-4 mr-0 shadow-2xl overflow-hidden aspect-[16/10] bg-[#f8fcfb] rounded-sm flex items-center justify-center">
+           <div className="relative z-10 ml-8 md:ml-12 mt-4 mr-0 shadow-2xl overflow-hidden aspect-video bg-white rounded-lg flex items-center justify-center border border-white/50">
               <img 
                 src="/images/image.png" 
-                alt="Agents meeting clients" 
-                className="w-full h-full object-contain p-4"
+                alt="Innovative Solutions" 
+                className="w-full h-full object-cover"
               />
-              <VideoPopup videoId="4jnzf1yj48M" className="absolute inset-0 m-auto w-[72px] h-[72px]">
-                <button className="w-full h-full bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all hover:scale-105 shadow-[0_8px_30px_rgb(0,0,0,0.12)] group border border-gray-100">
-                   <div className="w-0 h-0 border-t-[9px] border-t-transparent border-l-[16px] border-l-[#00c194] border-b-[9px] border-b-transparent ml-2 group-hover:border-l-[#00a880] transition-colors"></div>
+              <VideoPopup videoId="4jnzf1yj48M" className="absolute inset-0 m-auto w-[80px] h-[80px]">
+                <button className="w-full h-full bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white transition-all hover:scale-110 shadow-2xl group">
+                   <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-[#00c194] border-b-[10px] border-b-transparent ml-2"></div>
                 </button>
               </VideoPopup>
            </div>
@@ -64,43 +66,30 @@ export default function WhyChooseUs() {
            
            {/* Cursive Watermark Text */}
            <div 
-             className="absolute -top-10 left-0 text-[80px] md:text-[110px] leading-none font-black text-[#00c194]/[0.05] select-none z-[-1] pointer-events-none tracking-widest whitespace-nowrap" 
+             className="absolute -top-14 left-0 text-[100px] md:text-[140px] leading-none font-black text-[#00c194]/[0.08] select-none z-[-1] pointer-events-none tracking-tight whitespace-nowrap" 
              style={{ fontFamily: "'Brush Script MT', 'Comic Sans MS', cursive" }}
            >
-             Choose
+             About
            </div>
 
            <div className="relative z-10">
-             <p className="text-[#00c194] font-bold text-[13px] tracking-widest uppercase mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00c194]"></span>
-                Why Choose Our Properties
-             </p>
-             <h2 className="text-[32px] md:text-[40px] leading-[1.2] font-black text-[#1a1a1a] tracking-tight mb-5 md:mb-6">
-               The experts in local and <br className="hidden lg:block" /> International property
-             </h2>
-             <p className="text-gray-500 text-[15px] md:text-[16px] leading-relaxed mb-8 max-w-[95%] font-medium">
-               "Experienced agents in local and international property. Guiding you to the perfect investment, wherever it may be."
-             </p>
-             
-             <ul className="space-y-4 mb-10 text-[#1a1a1a] font-semibold text-[15px]">
-               {[
-                 'Outstanding property', 
-                 'Modern City Locations', 
-                 'Specialist services', 
-                 'Market-leading research'
-               ].map((item, idx) => (
-                 <li key={idx} className="flex items-center gap-3">
-                   <svg className="w-[18px] h-[18px] text-[#00c194]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                   </svg>
-                   {item}
-                 </li>
-               ))}
-             </ul>
-
-             <button className="bg-[#e4f8f4] text-[#00c194] font-bold text-[13px] uppercase tracking-wider px-9 py-[14px] hover:bg-[#00c194] hover:text-white transition-colors duration-300 shadow-sm">
-                Read More
-             </button>
+              <p className="text-[#00c194] font-black text-[14px] tracking-[0.3em] uppercase mb-4 flex items-center gap-2">
+                 <span className="w-2 h-2 rounded-full bg-[#00c194] animate-pulse"></span>
+                 About Us
+              </p>
+              <h2 className="text-[34px] md:text-[44px] leading-[1.15] font-black text-[#1a1a1a] tracking-tighter mb-6">
+                Innovative Solutions for Modern <br className="hidden lg:block" /> Living With Bhavyam
+              </h2>
+              <p className="text-gray-500 text-[15px] md:text-[16px] leading-relaxed mb-6 font-medium">
+                At Bhavyam Properties, we are committed to turning your real estate dreams into reality. Specializing in residential and commercial property solutions, we pride ourselves on delivering excellence through integrity, innovation, and customer-centric service.
+              </p>
+              <p className="text-gray-500 text-[15px] md:text-[16px] leading-relaxed mb-10 font-medium">
+                From identifying prime properties to providing seamless transaction support, we're here every step of the way. Our goal is to create lasting value and trusted relationships.
+              </p>
+              
+              <Link href="/about" className="bg-[#e4f8f4] text-[#00c194] font-black text-[13px] uppercase tracking-widest px-10 py-5 hover:bg-[#00c194] hover:text-white transition-all shadow-sm rounded-sm">
+                 Read More
+              </Link>
            </div>
         </div>
 

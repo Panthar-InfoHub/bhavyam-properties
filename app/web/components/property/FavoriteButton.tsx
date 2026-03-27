@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function FavoriteButton({ propertyId }: { propertyId: string }) {
   const [isFavorited, setIsFavorited] = useState(false);
@@ -23,7 +24,7 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
         .select('*')
         .eq('user_id', user.id)
         .eq('property_id', propertyId)
-        .maybeSingle(); // Better than single() to avoid throwing generic errors if 0 rows found
+        .maybeSingle(); 
         
       if (data) {
         setIsFavorited(true);
@@ -34,11 +35,12 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
   }, [propertyId]);
 
   const toggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault(); // In case this button is rendered inside a Link wrapping the entire card
+    e.stopPropagation();
+    e.preventDefault(); 
     
-    const user = await getCurrentUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      alert("Please login to save properties to your favorites.");
+      toast.error("Please login to save properties.");
       router.push('/login');
       return;
     }
@@ -56,6 +58,7 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
           
         if (error) throw error;
         setIsFavorited(false);
+        toast.success("Removed from favorites", { icon: '💔' });
       } else {
         // Add to favorites
         const { error } = await supabase
@@ -64,10 +67,11 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
           
         if (error) throw error;
         setIsFavorited(true);
+        toast.success("Added to favorites!", { icon: '❤️' });
       }
     } catch (err: any) {
       console.error('Favorite Toggle Error:', err);
-      alert('Failed to update favorite: ' + err.message);
+      toast.error('Something went wrong. Please try again.');
     } finally {
        setIsLoading(false);
     }
