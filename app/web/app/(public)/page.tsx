@@ -1,4 +1,14 @@
 import Hero from '@/components/Hero';
+import LatestProperties from '@/components/LatestProperties';
+import WhyChooseUs from '@/components/WhyChooseUs';
+import ServicesSection from '@/components/ServicesSection';
+import MissionVisionSection from '@/components/MissionVisionSection';
+import ExpertSolutionsSection from '@/components/ExpertSolutionsSection';
+import VideoTourSection from '@/components/VideoTourSection';
+import CounterSection from '@/components/CounterSection';
+import TestimonialsSection from '@/components/TestimonialsSection';
+import BlogSection from '@/components/BlogSection';
+import AgentCTASection from '@/components/AgentCTASection';
 import Link from 'next/link';
 
 export default function Home() {
@@ -6,6 +16,26 @@ export default function Home() {
     <main className="flex-1 flex flex-col">
       <Hero />
       
+      <LatestProperties />
+
+      <WhyChooseUs />
+
+      <ServicesSection />
+      
+      <MissionVisionSection />
+      
+      <ExpertSolutionsSection />
+
+      <VideoTourSection />
+
+      <TestimonialsSection />
+
+      <BlogSection />
+
+      <CounterSection />
+
+      <AgentCTASection />
+
       {/* Subsequent sections could go here */}
       <section className="py-24 px-8 bg-white">
         <div className="max-w-7xl mx-auto text-center">
