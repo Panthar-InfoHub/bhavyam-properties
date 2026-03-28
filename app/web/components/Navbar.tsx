@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCurrentUser, signOutUser } from '@/lib/auth';
+import { supabase } from '@/lib/supabaseClient';
 
 interface NavbarProps {
   transparent?: boolean;
@@ -15,17 +16,56 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
   
   // Auto-set transparent for homepage if not explicitly passed
   const transparent = propTransparent ?? (pathname === '/');
 
-  // Handle Auth
+  // Handle Auth & Wishlist Count
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchAuthAndWishlist = async () => {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
+
+      if (currentUser) {
+        // Initial Fetch
+        const { count, error } = await supabase
+          .from('favorites')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', currentUser.id);
+        
+        if (!error) setWishlistCount(count || 0);
+
+        // Realtime Subscription
+        const channel = supabase
+          .channel('wishlist-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'favorites',
+              filter: `user_id=eq.${currentUser.id}`,
+            },
+            async () => {
+              // Re-fetch count on any change
+              const { count: newCount } = await supabase
+                .from('favorites')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', currentUser.id);
+              setWishlistCount(newCount || 0);
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } else {
+        setWishlistCount(0);
+      }
     };
-    fetchUser();
+    fetchAuthAndWishlist();
   }, [pathname]);
 
   const handleSignOut = async () => {
@@ -111,7 +151,11 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
           {/* Badge */}
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#00b48f] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white">0</span>
+          {wishlistCount > 0 && (
+            <span className={`absolute -top-1 -right-1 w-5 h-5 bg-[#00b48f] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 ${isLight ? 'border-[#112743]' : 'border-white'} animate-in zoom-in duration-300`}>
+              {wishlistCount}
+            </span>
+          )}
         </Link>
 
         {user ? (

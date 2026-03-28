@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ProfileSettings from '@/components/dashboard/ProfileSettings';
 
 export default function UserDashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({ favorites: 0, interests: 0, reviews: 0 });
   const [recentInterests, setRecentInterests] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -118,97 +120,113 @@ export default function UserDashboardPage() {
             </div>
           </div>
 
-          {/* Upgrade CTA */}
-          <Link
-            href="/user/apply-agent"
-            className="shrink-0 flex items-center gap-2 bg-linear-to-r from-[#00b48f] to-teal-400 hover:from-teal-400 hover:to-teal-300 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-md shadow-teal-500/20 transition-all hover:-translate-y-0.5"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            Become an Agent
-          </Link>
-        </div>
-
-        {/* ── Stats Row ── */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Saved Properties', value: stats.favorites, icon: '❤️', href: '/user/favorites', color: 'text-rose-500' },
-            { label: 'Interest Requests', value: stats.interests, icon: '📋', href: null, color: 'text-blue-500' },
-            { label: 'Reviews Written', value: stats.reviews, icon: '⭐', href: null, color: 'text-yellow-500' },
-          ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-start">
-              <span className="text-2xl mb-2">{stat.icon}</span>
-              <p className="text-3xl font-black text-gray-800">{stat.value}</p>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{stat.label}</p>
-              {stat.href && (
-                <Link href={stat.href} className="text-xs text-teal-600 font-semibold mt-2 hover:underline">
-                  View all →
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* ── Quick Actions ── */}
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Browse Properties', icon: '🏠', href: '/properties' },
-              { label: 'My Favorites',      icon: '❤️', href: '/user/favorites' },
-              { label: 'Apply as Agent',    icon: '🏢', href: '/user/apply-agent' },
-              { label: 'Submit Property',   icon: '➕', href: '/submit-property' },
-            ].map(action => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="bg-white hover:bg-gray-50 border border-gray-100 shadow-sm rounded-xl p-4 flex flex-col items-center text-center gap-2 transition-all hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <span className="text-2xl">{action.icon}</span>
-                <span className="text-xs font-bold text-gray-700 leading-tight">{action.label}</span>
-              </Link>
-            ))}
+          {/* Navigation Tabs (Overview / Settings) */}
+          <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 self-center">
+             <button 
+               onClick={() => setActiveTab('overview')}
+               className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'overview' ? 'bg-[#112743] text-white shadow-xl' : 'text-gray-400 hover:text-gray-600'}`}
+             >
+               Overview
+             </button>
+             <button 
+               onClick={() => setActiveTab('settings')}
+               className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-[#112743] text-white shadow-xl' : 'text-gray-400 hover:text-gray-600'}`}
+             >
+               Profile Info
+             </button>
           </div>
         </div>
 
-        {/* ── Recent Interest Requests ── */}
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Recent Interest Requests</h2>
-          {recentInterests.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center text-gray-400">
-              <p className="text-4xl mb-3">📋</p>
-              <p className="font-semibold">No interest requests yet.</p>
-              <p className="text-sm mt-1">Browse properties and click "Express Interest" to get started.</p>
-              <Link href="/properties" className="mt-4 inline-block text-teal-600 text-sm font-bold hover:underline">
-                Browse Properties →
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {recentInterests.map(req => (
-                <div key={req.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-gray-800">
-                      {(req.property as any)?.property_type} in {(req.property as any)?.city}
-                    </p>
-                    <p className="text-sm text-gray-500 italic mt-1">"{req.message}"</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(req.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
-                  </div>
-                  <span className={`shrink-0 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${
-                    req.status === 'pending'  ? 'bg-yellow-50 text-yellow-700' :
-                    req.status === 'approved' ? 'bg-teal-50 text-teal-700'    :
-                                                'bg-red-50 text-red-600'
-                  }`}>
-                    {req.status}
-                  </span>
+        {/* ── Conditional Render Content ── */}
+        {activeTab === 'overview' ? (
+          <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* ── Stats Row ── */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Saved Properties', value: stats.favorites, icon: '❤️', href: '/user/favorites', color: 'text-rose-500' },
+                { label: 'Interest Requests', value: stats.interests, icon: '📋', href: null, color: 'text-blue-500' },
+                { label: 'Reviews Written', value: stats.reviews, icon: '⭐', href: null, color: 'text-yellow-500' },
+              ].map(stat => (
+                <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-start">
+                  <span className="text-2xl mb-2">{stat.icon}</span>
+                  <p className="text-3xl font-black text-gray-800">{stat.value}</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                  {stat.href && (
+                    <Link href={stat.href} className="text-xs text-teal-600 font-semibold mt-2 hover:underline">
+                      View all →
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>
-          )}
-        </div>
+
+            {/* ── Quick Actions ── */}
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Quick Actions</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Browse Properties', icon: '🏠', href: '/properties' },
+                  { label: 'My Favorites',      icon: '❤️', href: '/user/favorites' },
+                  { label: 'Apply as Agent',    icon: '🏢', href: '/user/apply-agent' },
+                  { label: 'Submit Property',   icon: '➕', href: '/submit-property' },
+                ].map(action => (
+                  <Link
+                    key={action.label}
+                    href={action.href}
+                    className="bg-white hover:bg-gray-50 border border-gray-100 shadow-sm rounded-xl p-4 flex flex-col items-center text-center gap-2 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <span className="text-2xl">{action.icon}</span>
+                    <span className="text-xs font-bold text-gray-700 leading-tight">{action.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Recent Interest Requests ── */}
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Recent Interest Requests</h2>
+              {recentInterests.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center text-gray-400">
+                  <p className="text-4xl mb-3">📋</p>
+                  <p className="font-semibold">No interest requests yet.</p>
+                  <p className="text-sm mt-1">Browse properties and click "Express Interest" to get started.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {recentInterests.map(req => (
+                    <div key={req.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-gray-800">
+                          {(req.property as any)?.property_type} in {(req.property as any)?.city}
+                        </p>
+                        <p className="text-sm text-gray-500 italic mt-1">"{req.message}"</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(req.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${
+                        req.status === 'pending'  ? 'bg-yellow-50 text-yellow-700' :
+                        req.status === 'approved' ? 'bg-teal-50 text-teal-700'    :
+                                                    'bg-red-50 text-red-600'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Profile Settings Component */
+          <ProfileSettings 
+            profile={profile} 
+            onUpdate={(updated) => {
+              setProfile(updated);
+              setActiveTab('overview');
+            }} 
+          />
+        )}
 
       </div>
     </div>
