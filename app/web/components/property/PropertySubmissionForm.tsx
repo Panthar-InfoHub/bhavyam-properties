@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -92,12 +93,19 @@ export default function PropertySubmissionForm() {
       setCurrentUser(user);
       
       const role = user.profile?.role;
-      if (role === 'seller') {
-         // Rule: Sellers can only submit 1 property
+      // Admin and Agent have no limits. Seller and Buyer (non-agents) have 1 property/month limit.
+      if (role === 'seller' || role === 'buyer') {
+         // Get the first and last day of the current month
+         const now = new Date();
+         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
          const { count, error } = await supabase
           .from('properties')
           .select('*', { count: 'exact', head: true })
-          .eq('owner_id', user.id);
+          .eq('owner_id', user.id)
+          .gte('created_at', firstDay)
+          .lte('created_at', lastDay);
           
          if (count && count >= 1) {
            setIsAllowed(false);
@@ -288,9 +296,18 @@ export default function PropertySubmissionForm() {
 
   if (!isAllowed) {
     return (
-      <div className="bg-red-50 text-red-500 p-8 rounded-xl border border-red-200">
-        <h3 className="text-xl font-bold mb-2">Limit Reached</h3>
-        <p>As a registered Seller, you are currently limited to publishing exactly 1 property via your dashboard. Upgrade to an Agent profile or contact Administration for an expansion limit increase.</p>
+      <div className="bg-red-50 text-red-500 p-8 rounded-[2.5rem] border border-red-100 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in duration-500 shadow-xl">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center text-4xl mb-2">🚫</div>
+        <h3 className="text-2xl font-black uppercase tracking-tighter text-red-900">Monthly Limit Reached</h3>
+        <p className="max-w-md font-medium text-red-700/80 leading-relaxed">
+          As a non-agent user, you are currently limited to publishing exactly <span className="font-bold underline">1 property per month</span> via your dashboard. 
+        </p>
+        <div className="w-full max-w-sm bg-white p-6 rounded-3xl border border-red-50 shadow-sm mt-4">
+           <p className="text-sm font-bold text-gray-800 mb-4">Want to list unlimited properties?</p>
+           <Link href="/user/apply-agent" className="block w-full bg-[#112743] hover:bg-black text-white py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all">
+              Apply as Professional Agent
+           </Link>
+        </div>
       </div>
     );
   }

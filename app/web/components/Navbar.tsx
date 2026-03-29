@@ -130,6 +130,9 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
           <Link href="/properties" className={`transition-colors ${pathname === '/properties' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>All Properties</Link>
         </li>
         <li>
+          <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
+        </li>
+        <li>
           <Link href="/user/apply-agent" className={`transition-colors ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Join Us</Link>
         </li>
         <li>

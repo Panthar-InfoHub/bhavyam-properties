@@ -7,7 +7,7 @@ import ProfileSettings from '@/components/dashboard/ProfileSettings';
 
 export default function UserDashboardPage() {
   const [profile, setProfile] = useState<any>(null);
-  const [stats, setStats] = useState({ favorites: 0, interests: 0, reviews: 0 });
+  const [stats, setStats] = useState({ favorites: 0, interests: 0, reviews: 0, transactions: 0 });
   const [recentInterests, setRecentInterests] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
@@ -41,11 +41,13 @@ export default function UserDashboardPage() {
         { count: favCount },
         { count: intCount },
         { count: revCount },
+        { count: txCount },
         { data: recentInts }
       ] = await Promise.all([
         supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
         supabase.from('interest_requests').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
         supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
+        supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
         supabase
           .from('interest_requests')
           .select('id, status, message, created_at, property:properties(property_type, city)')
@@ -58,6 +60,7 @@ export default function UserDashboardPage() {
         favorites: favCount || 0,
         interests: intCount || 0,
         reviews:   revCount || 0,
+        transactions: txCount || 0,
       });
       setRecentInterests(recentInts || []);
       setIsLoading(false);
@@ -145,15 +148,15 @@ export default function UserDashboardPage() {
               {[
                 { label: 'Saved Properties', value: stats.favorites, icon: '❤️', href: '/user/favorites', color: 'text-rose-500' },
                 { label: 'Interest Requests', value: stats.interests, icon: '📋', href: null, color: 'text-blue-500' },
-                { label: 'Reviews Written', value: stats.reviews, icon: '⭐', href: null, color: 'text-yellow-500' },
+                { label: 'Total Transactions', value: stats.transactions, icon: '💸', href: '/user/transactions', color: 'text-emerald-500' },
               ].map(stat => (
-                <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-start">
+                <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-start transition-all hover:shadow-md">
                   <span className="text-2xl mb-2">{stat.icon}</span>
-                  <p className="text-3xl font-black text-gray-800">{stat.value}</p>
+                  <p className={`text-3xl font-black ${stat.color || 'text-gray-800'}`}>{stat.value}</p>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{stat.label}</p>
                   {stat.href && (
-                    <Link href={stat.href} className="text-xs text-teal-600 font-semibold mt-2 hover:underline">
-                      View all →
+                    <Link href={stat.href} className="text-xs text-teal-600 font-bold mt-4 hover:text-[#112743] flex items-center gap-1 transition-colors group">
+                      View all <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </Link>
                   )}
                 </div>

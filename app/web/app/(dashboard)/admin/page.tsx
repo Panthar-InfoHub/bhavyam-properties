@@ -5,15 +5,16 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
-type Section = 'overview' | 'properties' | 'users' | 'payments' | 'interests' | 'reviews' | 'agents';
+type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'reviews' | 'agents';
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
   const [stats, setStats] = useState({ listings: 0, users: 0, revenue: 0, pending: 0, pendingAgents: 0 });
   const [properties, setProperties] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [interests, setInterests] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [agentApps, setAgentApps] = useState<any[]>([]);
@@ -61,7 +62,7 @@ export default function AdminDashboardPage() {
       ] = await Promise.all([
         supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, admin_feedback, owner:profiles(first_name, last_name, role, agent_code), media:property_media(url, media_type)').order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
-        supabase.from('payments').select('id, amount, currency, status, created_at, user:profiles(first_name, last_name, email), property:properties(property_type, city)').order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*, user:profiles(first_name, last_name, email), property:properties(id, property_type, city)').order('created_at', { ascending: false }),
         supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number))').order('created_at', { ascending: false }),
         supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
         supabase.from('agent_applications').select('id, status, notes, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false })
@@ -72,12 +73,12 @@ export default function AdminDashboardPage() {
 
       setProperties(propList);
       setUsers(allUsers || []);
-      setPayments(payList);
+      setTransactions(pays || []);
       setInterests(ints || []);
       setReviews(revs || []);
       setAgentApps(apps || []);
 
-      const revenue = payList.filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
+      const revenue = (pays || []).filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
       setStats({
         listings: propList.length,
         users: (allUsers || []).length,
@@ -115,7 +116,7 @@ export default function AdminDashboardPage() {
     if (!error) {
       setUsers(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
     } else {
-      alert("Failed to update user role: " + error.message);
+      toast.error("Failed to update user role: " + error.message);
     }
   };
 
@@ -135,7 +136,7 @@ export default function AdminDashboardPage() {
     });
 
     if (error) {
-       alert("Failed to approve agent: " + error.message);
+       toast.error("Failed to approve agent: " + error.message);
     } else {
        setAgentApps(prev => prev.map(a => a.id === appId ? { ...a, status: 'approved' } : a));
     }
@@ -147,7 +148,7 @@ export default function AdminDashboardPage() {
     });
 
     if (error) {
-       alert("Failed to reject agent: " + error.message);
+       toast.error("Failed to reject agent: " + error.message);
     } else {
        setAgentApps(prev => prev.map(a => a.id === appId ? { ...a, status: 'rejected' } : a));
     }
@@ -157,9 +158,9 @@ export default function AdminDashboardPage() {
     { key: 'overview', label: 'Analytics', icon: '📊' },
     { key: 'properties', label: 'Properties', icon: '🏠' },
     { key: 'users', label: 'Users', icon: '👥' },
-    { key: 'agents', label: 'Agent Apps', icon: '🎖️' },
+    { key: 'agents', label: 'Agent Applications', icon: '🎖️' },
     { key: 'interests', label: 'Interests', icon: '📋' },
-    { key: 'payments', label: 'Payments', icon: '💳' },
+    { key: 'transactions', label: 'Transactions', icon: '💸' },
     { key: 'reviews', label: 'Reviews', icon: '⭐' },
   ];
 
@@ -228,7 +229,7 @@ export default function AdminDashboardPage() {
                 { label: 'Properties Approved', value: properties.filter(p => p.status === 'approved').length, sub: 'of ' + stats.listings + ' total' },
                 { label: 'Pending Interests', value: interests.filter(i => i.status === 'pending').length, sub: 'buyer leads awaiting' },
                 { label: 'Pending Reviews', value: reviews.filter(r => r.status === 'pending').length, sub: 'awaiting moderation' },
-                { label: 'Completed Payments', value: payments.filter(p => p.status === 'completed').length, sub: 'unlocked details' },
+                { label: 'Completed Transactions', value: transactions.filter(p => p.status === 'completed').length, sub: 'revenue generating' },
                 { label: 'Agents Active', value: users.filter(u => u.role === 'agent').length, sub: 'of ' + stats.users + ' users' },
               ].map(item => (
                 <div key={item.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -302,7 +303,7 @@ export default function AdminDashboardPage() {
                           <button 
                             onClick={() => {
                               if (rejectingId === p.id) {
-                                if (!feedback) return alert('Please enter a reason for rejection');
+                                if (!feedback) return toast.error('Please enter a reason for rejection');
                                 updatePropertyStatus(p.id, 'rejected', feedback);
                               } else {
                                 setRejectingId(p.id);
@@ -420,34 +421,52 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ─── PAYMENTS ─── */}
-        {section === 'payments' && (
+        {/* ─── TRANSACTIONS ─── */}
+        {section === 'transactions' && (
           <div>
-            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Payment Transactions</h1>
+            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Global Audit Logs</h1>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      {['User', 'Property', 'Amount', 'Status', 'Date'].map(h => (
+                      {['User', 'Type', 'Property', 'Amount', 'Status', 'Date'].map(h => (
                         <th key={h} className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {payments.map(pay => (
-                      <tr key={pay.id} className="hover:bg-gray-50">
-                        <td className="p-4"><p className="font-semibold text-gray-800">{pay.user?.first_name} {pay.user?.last_name}</p><p className="text-xs text-gray-400">{pay.user?.email}</p></td>
-                        <td className="p-4 text-sm text-gray-600">{pay.property?.property_type} in {pay.property?.city}</td>
-                        <td className="p-4 font-bold text-gray-800">{pay.currency} {pay.amount}</td>
+                    {transactions.map(tx => (
+                      <tr key={tx.id} className="hover:bg-gray-50">
                         <td className="p-4">
-                          <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${pay.status === 'completed' ? 'bg-teal-50 text-teal-700' : 'bg-yellow-50 text-yellow-700'}`}>{pay.status}</span>
+                          <Link href={`/admin/users/${tx.user?.id}`} className="font-bold text-[#00579e] hover:underline block">
+                            {tx.user?.first_name} {tx.user?.last_name}
+                          </Link>
+                          <p className="text-[10px] text-gray-400 font-bold">{tx.user?.email}</p>
                         </td>
-                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">{new Date(pay.created_at).toLocaleDateString()}</td>
+                        <td className="p-4">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${tx.payment_type === 'subscription' ? 'bg-blue-50 text-blue-600' : 'bg-teal-50 text-teal-600'}`}>
+                            {tx.payment_type}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {tx.property ? (
+                            <Link href={`/properties/${tx.property.id}`} className="text-sm text-blue-600 hover:underline font-bold">
+                              {tx.property.property_type} in {tx.property.city}
+                            </Link>
+                          ) : (
+                            <span className="text-sm text-gray-400 uppercase tracking-tighter font-bold font-mono">Platform Plan</span>
+                          )}
+                        </td>
+                        <td className="p-4 font-bold text-gray-800">₹{tx.amount}</td>
+                        <td className="p-4">
+                          <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${tx.status === 'completed' ? 'bg-teal-50 text-teal-700' : 'bg-yellow-50 text-yellow-700'}`}>{tx.status}</span>
+                        </td>
+                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">{new Date(tx.created_at).toLocaleDateString()}</td>
                       </tr>
                     ))}
-                    {payments.length === 0 && (
-                      <tr><td colSpan={5} className="p-8 text-center text-gray-400">No transactions yet.</td></tr>
+                    {transactions.length === 0 && (
+                      <tr><td colSpan={6} className="p-8 text-center text-gray-400">No transactions yet.</td></tr>
                     )}
                   </tbody>
                 </table>

@@ -4,18 +4,30 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import PhoneVerificationModal from '@/components/auth/PhoneVerificationModal';
+import toast from 'react-hot-toast';
+import Script from 'next/script';
 
 export default function PropertyUnlocker({ propertyId }: { propertyId: string }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [pendingType, setPendingType] = useState<'single' | 'plan' | null>(null);
-  const [isUnlocking, setIsUnlocking] = useState<string | null>(null); // 'single' or 'plan'
+  const [plans, setPlans] = useState<any[]>([]);
+  const [pendingPlan, setPendingPlan] = useState<any | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState<string | null>(null); // planId
   const [securedData, setSecuredData] = useState<any>(null);
   const [accessType, setAccessType] = useState<'plan' | 'unlock' | 'admin' | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    async function fetchPlans() {
+      const { data } = await supabase.from('plans').select('*').eq('is_active', true);
+      setPlans(data || []);
+    }
+    fetchPlans();
+  }, []);
 
   const fetchAccess = useCallback(async () => {
     setLoading(true);
@@ -26,11 +38,6 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       if (!currentUser) {
         setLoading(false);
         return;
-      }
-
-      // Check if phone number is missing
-      if (!currentUser.profile?.phone_number && showPhoneModal === false) {
-        // We don't force it immediately, only on interaction
       }
 
       const isAdmin = currentUser.profile?.role === 'admin';
@@ -48,13 +55,15 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       }
 
       if (hasAccess) {
-        // Fetch the data - EXCLUDING owner details per new privacy policy
+        // Fetch the data
         const { data: secureProp, error: fetchError } = await supabase
           .from('properties')
           .select(`
             address,
             map_url,
             price,
+            owner_id,
+            owner:profiles (id, first_name, last_name, phone_number, role),
             media:property_media (url, media_type)
           `)
           .eq('id', propertyId)
@@ -65,9 +74,8 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
         if (isAdmin) {
           setAccessType('admin');
-          setExpiresAt('2099-12-31T23:59:59Z'); // Unlimited access representation
+          setExpiresAt('2099-12-31T23:59:59Z');
         } else {
-          // Determine if it's via plan or specific unlock
           const { data: unlock } = await supabase
             .from('property_unlocks')
             .select('expires_at')
@@ -90,79 +98,75 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
     } finally {
       setLoading(false);
     }
-  }, [propertyId, showPhoneModal]);
+  }, [propertyId]);
 
   useEffect(() => {
     fetchAccess();
   }, [fetchAccess]);
 
-  const handleUnlockRequest = (type: 'single' | 'plan') => {
+  const handleUnlockRequest = (plan: any) => {
     if (!user) {
       router.push('/login');
       return;
     }
 
     if (!user.profile?.phone_number) {
-      setPendingType(type);
+      setPendingPlan(plan);
       setShowPhoneModal(true);
       return;
     }
 
-    executeUnlock(type);
+    executeUnlock(plan);
   };
 
-  const executeUnlock = async (type: 'single' | 'plan') => {
-    setIsUnlocking(type);
+  const executeUnlock = async (plan: any) => {
+    setIsUnlocking(plan.id);
     try {
-      // Simulate Payment Gateway
+      // Direct Simulation: Artificial delay for premium feel
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      if (type === 'single') {
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 7); // 1 week
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User session not found");
 
-        const { error } = await supabase.from('property_unlocks').upsert({
+      // 1. Log Transaction
+      const { error: txError } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        property_id: propertyId,
+        amount: plan.price,
+        currency: 'INR',
+        status: 'completed',
+        payment_type: plan.type,
+      });
+      if (txError) throw txError;
+
+      // 2. Update Access
+      if (plan.type === 'subscription') {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + (plan.duration_days || 30));
+
+        const { error: profError } = await supabase.from('profiles').update({
+          subscription_plan: plan.name,
+          subscription_expires_at: expiry.toISOString(),
+          plan_id: plan.id
+        }).eq('id', user.id);
+        if (profError) throw profError;
+      } else if (plan.type === 'single_unlock' && propertyId) {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + (plan.duration_days || 7));
+
+        const { error: unlockError } = await supabase.from('property_unlocks').upsert({
           user_id: user.id,
           property_id: propertyId,
           expires_at: expiry.toISOString()
         });
-        if (error) throw error;
-
-        // Also record payment
-        await supabase.from('payments').insert({
-          user_id: user.id,
-          property_id: propertyId,
-          amount: 49, 
-          status: 'completed',
-          currency: 'INR'
-        });
-
-      } else {
-        // 30-day Pro Plan
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30);
-
-        const { error: profileError } = await supabase.from('profiles').update({
-          subscription_plan: 'pro_499',
-          subscription_expires_at: expiry.toISOString()
-        }).eq('id', user.id);
-
-        if (profileError) throw profileError;
-
-        await supabase.from('payments').insert({
-          user_id: user.id,
-          amount: 499,
-          status: 'completed',
-          currency: 'INR'
-        });
+        if (unlockError) throw unlockError;
       }
 
-      // Refresh data
-      await fetchAccess();
-      alert(type === 'single' ? "Property Unlocked for 7 Days!" : "Pro Plan Activated Successfully!");
+      toast.success(plan.type === 'subscription' ? "Subscription Active!" : "Property Details Unlocked!");
+      fetchAccess();
 
     } catch (err: any) {
-      alert("Transaction failed: " + err.message);
+      toast.error(err.message || "Transaction failed");
     } finally {
       setIsUnlocking(null);
     }
@@ -214,14 +218,15 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       {showPhoneModal && user && (
         <PhoneVerificationModal 
           userId={user.id}
           onClose={() => setShowPhoneModal(false)}
           onSuccess={() => {
             setShowPhoneModal(false);
-            if (pendingType) executeUnlock(pendingType);
-            setPendingType(null);
+            if (pendingPlan) executeUnlock(pendingPlan);
+            setPendingPlan(null);
           }}
         />
       )}
@@ -229,7 +234,7 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       {/* Full Screen Carousel Modal */}
       {carouselIndex !== null && images.length > 0 && (
         <div 
-          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300"
+          className="fixed inset-0 z-9999 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300"
           onClick={() => setCarouselIndex(null)}
         >
            <div 
@@ -363,9 +368,36 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
               <p className="text-blue-400 text-[10px] uppercase font-black mb-2 flex items-center gap-1.5">
                  <span>ℹ️</span> Support Note
               </p>
-              <p className="text-sm text-zinc-300 leading-relaxed">
-                Owner contact details are kept confidential. To schedule a visit or negotiate, please use the <strong>Interest Form</strong>. An admin will facilitate the connection.
-              </p>
+              {accessType === 'admin' ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-zinc-300 leading-relaxed">
+                    You are viewing this as an <strong>Admin</strong>. Direct contact and ownership data is visible.
+                  </p>
+                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-700/50 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-500 font-bold uppercase tracking-widest">Listed By</span>
+                      <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded uppercase font-black tracking-tighter text-[9px]">
+                        {securedData.owner?.role || 'User'}
+                      </span>
+                    </div>
+                    <Link 
+                      href={`/admin/users/${securedData.owner?.id}`}
+                      className="text-white font-black text-lg hover:text-teal-400 transition-colors flex items-center gap-2"
+                    >
+                      {securedData.owner?.first_name} {securedData.owner?.last_name}
+                      <svg className="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </Link>
+                    <div className="flex items-center gap-2 text-sm text-zinc-300">
+                      <span className="text-teal-500">📞</span>
+                      <span className="font-mono">{securedData.owner?.phone_number || 'No contact provided'}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  Owner contact details are kept confidential. To schedule a visit or negotiate, please use the <strong>Interest Form</strong>. An admin will facilitate the connection.
+                </p>
+              )}
             </div>
 
             {/* Other Media list (Docs, Video Links) */}
@@ -404,47 +436,36 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           </div>
 
           <div className="space-y-4">
-            <button 
-              onClick={() => handleUnlockRequest('single')}
-              disabled={!!isUnlocking}
-              className="group w-full bg-zinc-800 hover:bg-zinc-700 p-5 rounded-2xl transition-all border border-zinc-700/50 text-left relative overflow-hidden active:scale-95"
-            >
-              <div className="flex justify-between items-center relative z-10">
-                <div>
-                  <p className="text-xs font-black text-teal-400 uppercase tracking-widest mb-1">Instant Access</p>
-                  <h4 className="text-white font-bold text-lg">Unlock for 7 Days</h4>
+            {plans.map((plan) => (
+              <button 
+                key={plan.id}
+                onClick={() => handleUnlockRequest(plan)}
+                disabled={!!isUnlocking}
+                className={`group w-full p-5 rounded-2xl transition-all text-left relative overflow-hidden active:scale-95 shadow-lg ${
+                  plan.type === 'subscription' 
+                    ? 'bg-[#00b48f] hover:bg-teal-400 border-none' 
+                    : 'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50'
+                }`}
+              >
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <p className={`text-xs font-black uppercase tracking-widest mb-1 ${plan.type === 'subscription' ? 'text-white/70' : 'text-teal-400'}`}>
+                      {plan.type === 'subscription' ? 'Best Value' : 'Instant Access'}
+                    </p>
+                    <h4 className="text-white font-bold text-lg">{plan.name}</h4>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white font-black text-xl">₹{plan.price}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-white font-black text-xl">₹49</p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-1.5 text-[10px] text-zinc-400 font-bold uppercase tracking-tighter relative z-10">
-                <span>✓ Map Coordinates</span>
-                <span className="opacity-30">•</span>
-                <span>✓ Direct Call</span>
-              </div>
-              {isUnlocking === 'single' && <div className="absolute inset-0 bg-teal-500/10 animate-pulse"></div>}
-            </button>
-
-            <button 
-              onClick={() => handleUnlockRequest('plan')}
-              disabled={!!isUnlocking}
-              className="group w-full bg-[#00b48f] hover:bg-teal-400 p-5 rounded-2xl transition-all text-left relative overflow-hidden shadow-lg active:scale-95"
-            >
-              <div className="flex justify-between items-center relative z-10">
-                <div>
-                  <p className="text-xs font-black text-white/70 uppercase tracking-widest mb-1">Best Value</p>
-                  <h4 className="text-white font-black text-lg">Monthly Pro Plan</h4>
-                </div>
-                <div className="text-right">
-                  <p className="text-white font-black text-xl">₹499</p>
-                </div>
-              </div>
-              <p className="text-[10px] text-white/80 font-bold uppercase mt-3 relative z-10">
-                Unlock ALL properties for 30 days
-              </p>
-              {isUnlocking === 'plan' && <div className="absolute inset-0 bg-white/20 animate-pulse"></div>}
-            </button>
+                <p className={`text-[10px] font-bold uppercase mt-3 relative z-10 ${plan.type === 'subscription' ? 'text-white/80' : 'text-zinc-400'}`}>
+                  {plan.description}
+                </p>
+                {isUnlocking === plan.id && (
+                  <div className={`absolute inset-0 animate-pulse ${plan.type === 'subscription' ? 'bg-white/20' : 'bg-teal-500/10'}`}></div>
+                )}
+              </button>
+            ))}
           </div>
 
           <p className="text-[9px] text-zinc-600 mt-8 text-center font-bold uppercase tracking-widest leading-loose">
