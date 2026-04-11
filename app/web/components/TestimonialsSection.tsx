@@ -2,21 +2,21 @@
 
 export default function TestimonialsSection() {
   return (
-    <section className="py-24 px-4 md:px-8 bg-[#effbf8] relative overflow-hidden">
+    <section className="py-24 px-4 md:px-8 bg-[var(--color-cloud)] relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10 text-center">
         
         {/* Header */}
         <div className="mb-16 relative">
            <div 
-             className="absolute md:-top-16 left-1/2 -translate-x-1/2 text-[80px] md:text-[140px] leading-none font-black text-[#00c194]/5 select-none z-[-1] pointer-events-none tracking-widest whitespace-nowrap" 
-             style={{ fontFamily: "'Brush Script MT', 'Comic Sans MS', cursive" }}
+             className="absolute md:-top-16 left-1/2 -translate-x-1/2 text-[80px] md:text-[140px] leading-none font-black text-[var(--color-emerald-heritage)] opacity-5 select-none z-[-1] pointer-events-none tracking-[-0.04em] whitespace-nowrap" 
            >
              Testimonials
            </div>
-           <p className="text-[#00c194] font-bold text-[13px] tracking-widest uppercase mb-4">
+           <p className="text-[var(--color-emerald-heritage)] font-bold text-[10px] md:text-sm tracking-[0.2em] uppercase mb-4 flex justify-center items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-emerald-heritage)]"></span>
               CUSTOMER REVIEWS
            </p>
-           <h2 className="text-[32px] md:text-[40px] font-black text-[#1a1a1a] tracking-tight">
+           <h2 className="text-[32px] md:text-[40px] font-black text-[var(--color-near-black)] tracking-[-0.04em]">
              What Our Customer Say
            </h2>
         </div>
@@ -25,14 +25,14 @@ export default function TestimonialsSection() {
         <div className="relative max-w-5xl mx-auto flex items-center justify-center">
            
            {/* Left Arrow */}
-           <button className="absolute -left-5 md:-left-8 z-20 w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-[#00c194] hover:text-white transition-colors text-gray-600">
+           <button className="absolute -left-5 md:-left-8 z-20 w-[50px] h-[50px] bg-[var(--color-pure-white)] rounded-full flex items-center justify-center shadow-[var(--shadow-ambient)] hover:bg-[var(--color-emerald-heritage)] hover:text-white transition-colors text-[var(--color-slate)] border border-white/50 group">
              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
              </svg>
            </button>
 
            {/* Main Card */}
-           <div className="bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.05)] w-full flex flex-col md:flex-row overflow-hidden relative z-10 border border-gray-50">
+           <div className="bg-[var(--color-pure-white)] rounded-3xl shadow-[var(--shadow-ambient)] w-full flex flex-col md:flex-row overflow-hidden relative z-10">
               
               {/* Image Side */}
               <div className="md:w-5/12 h-[300px] md:h-auto relative">
@@ -44,13 +44,13 @@ export default function TestimonialsSection() {
               </div>
 
               {/* Content Side */}
-              <div className="md:w-7/12 p-8 md:p-14 text-left flex flex-col justify-center bg-white relative">
+              <div className="md:w-7/12 p-8 md:p-14 text-left flex flex-col justify-center bg-[var(--color-pure-white)] relative">
                  
                  {/* Quote Mark Watermark */}
-                 <div className="absolute top-10 left-8 text-[120px] font-serif leading-none text-gray-100 select-none z-0">
+                 <div className="absolute top-10 left-8 text-[120px] font-serif leading-none text-[var(--color-emerald-heritage)] opacity-10 select-none z-0">
                    "
                  </div>
-                 <div className="absolute bottom-10 right-10 text-[120px] font-serif leading-none text-[#00c194]/10 select-none z-0 rotate-180">
+                 <div className="absolute bottom-10 right-10 text-[120px] font-serif leading-none text-[var(--color-emerald-heritage)] opacity-10 select-none z-0 rotate-180">
                    "
                  </div>
 
@@ -63,14 +63,14 @@ export default function TestimonialsSection() {
                       ))}
                     </div>
 
-                    <p className="text-gray-500 text-[17px] md:text-[18px] leading-relaxed italic mb-8 font-medium">
+                    <p className="text-[var(--color-slate)] text-[17px] md:text-[18px] leading-relaxed italic mb-8 font-medium">
                       Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aliquid expedita recusandae ipsam quas fugit aperiam nihil nemo delectus laudantium? Enim est quibusdam dicta a.
                     </p>
 
                     <div>
-                      <h4 className="text-[22px] font-bold text-[#1a1a1a] mb-1">John Doe</h4>
-                      <p className="text-[#00c194] font-semibold text-[14px]">
-                        • WordPress Developer
+                      <h4 className="text-[22px] font-bold text-[var(--color-near-black)] mb-1 tracking-[-0.04em]">John Doe</h4>
+                      <p className="text-[var(--color-emerald-heritage)] font-bold text-[14px] uppercase tracking-[0.1em]">
+                        WordPress Developer
                       </p>
                     </div>
                  </div>
@@ -78,7 +78,7 @@ export default function TestimonialsSection() {
            </div>
 
            {/* Right Arrow */}
-           <button className="absolute -right-5 md:-right-8 z-20 w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-[#00c194] hover:text-white transition-colors text-gray-600">
+           <button className="absolute -right-5 md:-right-8 z-20 w-[50px] h-[50px] bg-[var(--color-pure-white)] rounded-full flex items-center justify-center shadow-[var(--shadow-ambient)] hover:bg-[var(--color-emerald-heritage)] hover:text-white transition-colors text-[var(--color-slate)] border border-white/50 group">
              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
              </svg>

@@ -1,0 +1,278 @@
+# Homepage Premium Redesign — Implementation Plan
+
+## Overview
+
+Redesign all 10 sections of the Bhavyam Properties homepage to achieve a premium, editorial luxury aesthetic. The redesign is guided by the **"Majestic Heritage" design system** generated via Stitch MCP, with the full reference design available locally.
+
+### Generated Design Assets
+- **Screenshot:** [homepage-screenshot.png](file:///d:/Codes/Panthar/bhavyam-properties/app/web/.stitch/designs/homepage-screenshot.png) — full homepage mockup
+- **HTML Reference:** [homepage.html](file:///d:/Codes/Panthar/bhavyam-properties/app/web/.stitch/designs/homepage.html) — open in browser for live preview
+- **Design System:** [DESIGN.md](file:///d:/Codes/Panthar/bhavyam-properties/app/web/.stitch/DESIGN.md) — design tokens reference
+
+> [!TIP]
+> Open `.stitch/designs/homepage.html` in your browser right now to see the full generated redesign mockup.
+
+---
+
+## Design System: "Majestic Heritage"
+
+**Stitch Project ID:** `9201326407984821461` | **Screen ID:** `578e514cf45946b6a06ee5c0a46901ae`
+
+| Token | Current | Redesigned |
+|---|---|---|
+| **Primary Color** | `#00c194` (flat green) | `#112743` Deep Navy + `#006B54` Emerald Heritage |
+| **Accent** | `#00b48f` / `#00d09c` (similar greens) | `#00B48F` Emerald Mint + `#00ECBD` / `#38FECE` Electric Mint |
+| **Backgrounds** | `#effbf8` / `#f2fcf9` (light green tints) | `#F9FAF8` Warm Ivory + `#F3F4F2` Cloud |
+| **Dark Sections** | `#112743` ✅ (keep) | `#001229` → `#112743` gradient |
+| **Typography** | Geist (default), inconsistent weights | Inter — Black (900) headlines, Medium (500) body |
+| **Border Radius** | Mixed (`rounded-sm` to `rounded-xl`) | Consistent 16–24px rounded, pill-shaped buttons |
+| **Shadows** | `shadow-sm` / `shadow-2xl` (harsh) | Ambient shadows (Y:24, Blur:80, 4% opacity) |
+| **Borders** | `border-gray-100` solid lines | "No-Line" rule — background shifts only |
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Please open the HTML mockup** at `d:\Codes\Panthar\bhavyam-properties\app\web\.stitch\designs\homepage.html` in your browser to review the visual direction before I proceed.
+
+> [!WARNING]
+> The user rule states **"Do not modify the functionality of existing components"**. This redesign is purely visual (CSS, classes, layout). All existing logic (Supabase queries, filter state, animated counters, video popups, Razorpay integration) will be preserved exactly as-is.
+
+---
+
+## Proposed Changes — Section by Section
+
+Each section below will be modified in its respective component file. **Only Tailwind classes and markup structure** will change — no logic changes.
+
+---
+
+### 1. Hero Section
+#### [MODIFY] [Hero.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/Hero.tsx)
+
+**Current Issues:**
+- Emoji icons (🌱🏢🏪💼🏠🗺️) look unprofessional
+- Search bar is generic white box
+- `rounded-2xl` on mobile, `rounded-full` on desktop — inconsistent
+
+**Redesign:**
+- Replace emoji icons with Lucide React icons for property type pills
+- Apply glassmorphism to search bar: `bg-white/70 backdrop-blur-xl border border-white/30`
+- Pill-shaped property type tags with glassmorphism: `bg-white/10 backdrop-blur-md rounded-full border border-white/20`
+- Refined gradient overlay: `bg-gradient-to-r from-[#001229]/80 via-[#112743]/50 to-transparent`
+- Typography: headline `font-black tracking-[-0.04em]`, tagline `tracking-[0.2em] uppercase`
+- Search button: `bg-[#006B54] hover:bg-[#38FECE] hover:text-[#001229] rounded-full`
+- Smoother curved SVG divider with ivory (`#F9FAF8`) fill instead of white
+
+---
+
+### 2. Latest Properties Section
+#### [MODIFY] [LatestProperties.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/LatestProperties.tsx)
+
+**Current Issues:**
+- Cards are `rounded-none` (sharp edges)
+- Complex "hanging badge" SVG is visually noisy
+- Footer divider line feels heavy
+
+**Redesign:**
+- Cards: `rounded-2xl` with ambient shadow
+- Remove SVG hanging badge — replace with simple floating pill badge: `rounded-full bg-[#006B54] px-4 py-1`
+- Property type badge: `rounded-full` pill style
+- Filter tab pills: refined with `bg-[#006B54]` active state, ghost outline for inactive
+- Remove bottom divider line — use white background contrast
+- "Details" button: `rounded-full` pill shape
+- Background: `#F9FAF8` Warm Ivory
+
+---
+
+### 3. About / Why Choose Us Section
+#### [MODIFY] [WhyChooseUs.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/WhyChooseUs.tsx)
+
+**Current Issues:**
+- Green trapezoid shape looks dated (`clipPath: polygon(...)`)
+- "Brush Script MT" cursive watermark looks cheap
+- `rounded-sm` button feels sharp
+
+**Redesign:**
+- Replace trapezoid with a soft rounded rectangle: `rounded-3xl bg-[#006B54]`
+- Remove cursive watermark entirely — replace with subtle `text-[#006B54]/5` large Inter Black text
+- Image container: `rounded-2xl overflow-hidden` with ambient shadow
+- "Read More" button: `rounded-full bg-[#006B54] text-white hover:bg-[#38FECE] hover:text-[#001229]`
+- Dot pattern: keep but reduce opacity further
+
+---
+
+### 4. Services Section
+#### [MODIFY] [ServicesSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/ServicesSection.tsx)
+
+**Current Issues:**
+- Cards have `rounded-lg` and `border-gray-50` (visible border)
+- Cursive "Our Service" watermark looks dated
+- Background `#effbf8` is a slightly different green tint
+
+**Redesign:**
+- Cards: `rounded-2xl` with no border, pure white on `#F3F4F2` background for natural lift
+- Remove cursive watermark — replace with subtle Inter label
+- Icon containers: `rounded-2xl bg-[#006B54]/10 p-4` soft tinted background
+- Hover: `hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(25,28,27,0.04)]`
+- Background: `#F3F4F2` (Cloud)
+
+---
+
+### 5. Expert Solutions Section
+#### [MODIFY] [ExpertSolutionsSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/ExpertSolutionsSection.tsx)
+
+**Current Issues:**
+- Four slightly different green shades are monotonous
+- `rounded-lg` cards with basic hover
+- Cursive watermark
+
+**Redesign:**
+- Gradient progression: `#006B54` → `#00B48F` → `#00ECBD` → `#38FECE` (more dramatic range)
+- Cards: `rounded-3xl` with generous padding
+- Add glassmorphism overlay on hover: `hover:bg-white/10 hover:backdrop-blur-sm`
+- Remove cursive watermark
+- Background: `#F9FAF8`
+
+---
+
+### 6. Video Tour Section
+#### [MODIFY] [VideoTourSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/VideoTourSection.tsx)
+
+**Current Issues:**
+- "Brush Script MT" cursive "Property For All" watermark looks cheap
+- White content card has `rounded-sm` (sharp)
+- Play button styling is basic
+
+**Redesign:**
+- Replace cursive watermark with large Inter Black text at very low opacity
+- Content card: `rounded-3xl shadow-[0_24px_80px_rgba(25,28,27,0.06)]`
+- Play button: refined with `bg-[#006B54]` circle, `hover:bg-[#38FECE]` glow effect
+- Enhanced parallax overlay: add subtle gradient
+
+---
+
+### 7. Statistics / Counter Section
+#### [MODIFY] [CounterSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/CounterSection.tsx)
+
+**Current Issues:**
+- `bg-linear-to-b` (Tailwind v4 syntax may not render in all browsers)
+- Cursive "Numbers" watermark
+- Counter circles border too subtle
+
+**Redesign:**
+- Use gradient: `bg-gradient-to-br from-[#001229] to-[#112743]`
+- Remove cursive watermark — replace with Inter
+- Counter circles: `border-2 border-white/20 hover:border-[#38FECE]` with glow
+- Add shimmer/pulse animation on hover
+- City skyline: keep but add subtle opacity gradient
+
+---
+
+### 8. Testimonials Section
+#### [MODIFY] [TestimonialsSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/TestimonialsSection.tsx)
+
+**Current Issues:**
+- Placeholder image (`placehold.co`)
+- Cursive watermark
+- `border-gray-50` visible border
+- Static carousel (no functionality)
+
+**Redesign:**
+- Replace placeholder with a generated or stock image
+- Card: `rounded-3xl` with no border, ambient shadow
+- Remove cursive watermark
+- Navigation arrows: `rounded-full bg-[#006B54] text-white` style
+- Quote marks: use `text-[#006B54]/10` instead of `text-gray-100`
+- Background: `#F3F4F2`
+
+---
+
+### 9. Blog Section
+#### [MODIFY] [BlogSection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/BlogSection.tsx)
+
+**Current Issues:**
+- Placeholder images
+- Cursive watermark
+- Cards have visible `border-gray-100`
+
+**Redesign:**
+- Card: `rounded-3xl` with no border, ambient shadow
+- Date badge: `rounded-xl` instead of sharp rectangle
+- "See All Blogs" button: `rounded-full` pill
+- "Read More" link: `text-[#006B54] hover:text-[#38FECE]`
+- Remove cursive watermark
+- Background: `#F9FAF8`
+
+---
+
+### 10. Agent CTA Section
+#### [MODIFY] [AgentCTASection.tsx](file:///d:/Codes/Panthar/bhavyam-properties/app/web/components/AgentCTASection.tsx)
+
+**Current Issues:**
+- `rounded-xl` background container
+- `rounded-sm` button (sharp)
+- Abstract green blob uses `clipPath` (dated)
+
+**Redesign:**
+- Container: `rounded-3xl` with subtle gradient background
+- "Register Now" button: `rounded-full bg-[#006B54] hover:bg-[#38FECE]`
+- Replace clip-path blob with soft `rounded-3xl` accent shape
+- Keep city background SVG but reduce opacity further
+
+---
+
+### 11. Global Styles
+#### [MODIFY] [globals.css](file:///d:/Codes/Panthar/bhavyam-properties/app/web/app/globals.css)
+
+**Changes:**
+- Add CSS custom properties for the design system tokens
+- Add ambient shadow utility classes
+- Add glassmorphism utility classes
+- Smooth scroll behavior
+
+---
+
+## Files Changed Summary
+
+| Component | File | Change Type |
+|---|---|---|
+| Hero | `components/Hero.tsx` | Visual only |
+| Latest Properties | `components/LatestProperties.tsx` | Visual only |
+| About / Why Choose Us | `components/WhyChooseUs.tsx` | Visual only |
+| Services | `components/ServicesSection.tsx` | Visual only |
+| Expert Solutions | `components/ExpertSolutionsSection.tsx` | Visual only |
+| Video Tour | `components/VideoTourSection.tsx` | Visual only |
+| Counters | `components/CounterSection.tsx` | Visual only |
+| Testimonials | `components/TestimonialsSection.tsx` | Visual only |
+| Blog | `components/BlogSection.tsx` | Visual only |
+| Agent CTA | `components/AgentCTASection.tsx` | Visual only |
+| Global Styles | `app/globals.css` | CSS tokens + utilities |
+
+> [!NOTE]
+> **Zero functionality changes.** All Supabase queries, state management, click handlers, video popup logic, animated counters, and navigation links remain untouched.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Placeholder images**: The Blog and Testimonials sections currently use `placehold.co` images. Should I generate real placeholder images using the image generation tool, or keep them as-is?
+> 2. **Cursive watermarks**: The current design uses "Brush Script MT" cursive watermarks behind each section heading. The redesign removes them. Are you OK with this, or do you want an alternative decorative element?
+> 3. **Emoji icons in Hero**: I plan to replace emojis (🌱🏢🏪) with Lucide React SVG icons. `lucide-react` is already a dependency. Confirmed OK?
+
+---
+
+## Verification Plan
+
+### Visual Testing
+- Run `npm run dev` and visually compare each section against the Stitch mockup
+- Test responsive behavior on mobile/tablet viewpoints
+- Verify hover animations and transitions are smooth
+
+### Functional Testing
+- Confirm property search filters still work
+- Confirm property cards still link correctly
+- Confirm video popup still opens
+- Confirm animated counters still trigger on scroll
+- Confirm navigation and footer links are unchanged

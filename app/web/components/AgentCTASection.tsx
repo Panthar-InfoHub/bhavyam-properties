@@ -1,10 +1,10 @@
 export default function AgentCTASection() {
   return (
-    <section className="bg-white py-12 px-4 md:px-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto relative bg-[#eaf7f4] rounded-xl flex flex-col md:flex-row items-center justify-between shadow-sm">
+    <section className="bg-[var(--color-pure-white)] py-12 px-4 md:px-8 overflow-hidden">
+      <div className="max-w-7xl mx-auto relative bg-gradient-to-r from-[var(--color-cloud)] to-[var(--color-warm-ivory)] border border-[var(--color-ghost)]/20 rounded-3xl flex flex-col md:flex-row items-center justify-between shadow-[var(--shadow-ambient)]">
         
         {/* Faint Background Buildings */}
-        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none overflow-hidden rounded-xl">
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none overflow-hidden rounded-3xl">
            <img 
              src="/images/video-bg-2.svg" 
              alt="City Background"
@@ -12,12 +12,11 @@ export default function AgentCTASection() {
            />
         </div>
 
-        {/* Left Graphics (Man + House + Blob) */}
+        {/* Left Graphics (Man + House + Soft Shape) */}
         <div className="relative w-full md:w-[40%] h-[200px] md:h-auto flex justify-center md:justify-start items-end z-10 pt-8 pl-0 md:pl-16">
-           {/* Abstract Green Blob behind him */}
+           {/* Soft Rounded Shape behind him */}
            <div 
-             className="absolute bottom-0 left-1/2 md:left-24 -translate-x-1/2 md:translate-x-0 w-[180px] h-[220px] bg-[#00c194] rounded-t-full rounded-bl-3xl z-0"
-             style={{ clipPath: 'polygon(50% 0%, 100% 30%, 100% 100%, 0 100%, 0 30%)' }} // Approx abstract shape
+             className="absolute bottom-0 left-1/2 md:left-24 -translate-x-1/2 md:translate-x-0 w-[180px] h-[220px] bg-[var(--color-emerald-heritage)] rounded-t-full rounded-bl-3xl z-0"
            ></div>
            
            {/* Dot Pattern */}
@@ -40,15 +39,15 @@ export default function AgentCTASection() {
         <div className="relative z-10 w-full md:w-[60%] flex flex-col md:flex-row items-center justify-between p-10 md:py-16 md:pr-16 text-center md:text-left gap-8">
            
            <div>
-             <h2 className="text-[28px] md:text-[36px] font-black text-[#1a1a1a] mb-2 tracking-tight">
+             <h2 className="text-[28px] md:text-[36px] font-black text-[var(--color-near-black)] mb-2 tracking-[-0.04em]">
                Become a Real Estate Agent
              </h2>
-             <p className="text-gray-500 font-medium text-[15px] md:text-[16px]">
+             <p className="text-[var(--color-slate)] font-medium text-[15px] md:text-[16px]">
                We only work with the best companies around the globe to survey
              </p>
            </div>
            
-           <button className="whitespace-nowrap bg-[#00c194] text-white font-bold text-[15px] px-8 py-3.5 hover:bg-[#00a67f] shadow-[0_4px_15px_rgba(0,193,148,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-sm">
+           <button className="whitespace-nowrap bg-[var(--color-deep-navy)] text-white font-bold text-[14px] uppercase tracking-[0.1em] px-8 py-4 hover:bg-[var(--color-electric-mint-glow)] hover:text-black shadow-[0_4px_15px_rgba(17,39,67,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-full">
              Register Now
            </button>
            
