@@ -71,7 +71,7 @@ export default function CounterSection() {
         <div className="text-center mb-16 relative">
            {/* Background Watermark */}
            <div 
-             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[70px] md:text-[100px] leading-none font-black text-white/5 select-none z-[-1] pointer-events-none tracking-[-0.04em] whitespace-nowrap" 
+             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[50px] md:text-[100px] leading-none font-black text-white/5 select-none z-[-1] pointer-events-none tracking-[-0.04em] whitespace-nowrap" 
            >
              Numbers
            </div>

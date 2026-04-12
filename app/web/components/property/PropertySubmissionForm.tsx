@@ -23,6 +23,7 @@ export default function PropertySubmissionForm() {
     // Step 1
     listingType: '',
     propertyType: '',
+    propertyTypeOther: '',
     pricingType: '',
     yourDemand: '',
     priceRange: '',
@@ -31,6 +32,7 @@ export default function PropertySubmissionForm() {
     // Step 2 & 3
     features: [] as string[],
     amenities: [] as string[],
+    amenitiesOther: '',
     
     // Step 4
     bedrooms: '',
@@ -46,6 +48,7 @@ export default function PropertySubmissionForm() {
     insidePhotos: [] as File[],
     mapPhoto: null as File | null,
     propertyDocuments: [] as File[],
+    floorPlan: null as File | null,
     propertyVideo: null as File | null,
     
     // Step 6
@@ -67,6 +70,7 @@ export default function PropertySubmissionForm() {
     
     // Step 9
     furnishedAmenities: [] as string[],
+    furnishedAmenitiesOther: '',
     
     // Step 10
     agreements: {
@@ -212,6 +216,32 @@ export default function PropertySubmissionForm() {
     setIsSubmitting(true);
     setErrorMsg('');
 
+    // Validation for required fields
+    if (formData.frontPhotos.length === 0) {
+      setErrorMsg('At least one Front Photo is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.propertyVideo) {
+      setErrorMsg('Property Video is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (formData.propertyDocuments.length === 0) {
+      setErrorMsg('Basic legal documents are required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.floorPlan) {
+      setErrorMsg('Floor Plan document is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // 1. Calculate base numeric price
       const numericPrice = parseFloat(formData.yourDemand.replace(/[^0-9.-]+/g,"")) || 0;
@@ -261,6 +291,14 @@ export default function PropertySubmissionForm() {
         uploadPromises.push(
           uploadFileToSupabase(formData.mapPhoto, 'maps').then(url => {
               mediaRecords.push({ property_id: propertyRecord.id, url, media_type: 'map' });
+          })
+        );
+      }
+      
+      if (formData.floorPlan) {
+        uploadPromises.push(
+          uploadFileToSupabase(formData.floorPlan, 'floor-plans').then(url => {
+              mediaRecords.push({ property_id: propertyRecord.id, url, media_type: 'document' });
           })
         );
       }
@@ -341,12 +379,27 @@ export default function PropertySubmissionForm() {
                 <label className={labelClasses}>Property Type</label>
                 <select name="propertyType" onChange={handleChange} value={formData.propertyType} className={inputClasses}>
                   <option value="">Select Category</option>
+                  <option value="Agriculture">Agriculture Land</option>
                   <option value="Flat">Flat / Apartment</option>
                   <option value="Villa">Villa</option>
                   <option value="House">Independent House</option>
                   <option value="Commercial">Commercial Space</option>
                   <option value="Plot">Land / Plot</option>
+                  <option value="Other">Other</option>
                 </select>
+                {formData.propertyType === 'Other' && (
+                  <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className={labelClasses}>Please Specify Property Type</label>
+                    <input 
+                      type="text" 
+                      name="propertyTypeOther" 
+                      placeholder="e.g. Penthouse, Studio, etc." 
+                      onChange={handleChange} 
+                      value={formData.propertyTypeOther} 
+                      className={inputClasses} 
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -408,6 +461,19 @@ export default function PropertySubmissionForm() {
                  </label>
               ))}
             </div>
+            {formData.amenities.includes('Other') && (
+              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className={labelClasses}>Please Specify Other Amenities</label>
+                <input 
+                  type="text" 
+                  name="amenitiesOther" 
+                  placeholder="e.g. Park, Community Center, etc." 
+                  onChange={handleChange} 
+                  value={formData.amenitiesOther} 
+                  className={inputClasses} 
+                />
+              </div>
+            )}
           </div>
         );
       case 4:
@@ -489,29 +555,25 @@ export default function PropertySubmissionForm() {
                   <label className={labelClasses}>Bathroom Photos (max 5)</label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bathroomPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
                   {renderFileList('bathroomPhotos')}
-               </div>
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Front Photos (max 5)</label>
+                  <label className={labelClasses}>Front Photos (max 5) <span className="text-[#00b48f]">* Recommended</span></label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'frontPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
                   {renderFileList('frontPhotos')}
                </div>
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Inside View Photos (max 5)</label>
-                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'insidePhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
-                  {renderFileList('insidePhotos')}
-               </div>
-               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Location Map Photo (max 1)</label>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'mapPhoto', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
-                  {renderFileList('mapPhoto')}
-               </div>
-               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Property Video Tour (max 1)</label>
-                  <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
+                  <label className={labelClasses}>Property Video Tour (max 1) <span className="text-red-500">* Required</span></label>
+                  <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white shadow-sm transition-all" />
                   {renderFileList('propertyVideo')}
                </div>
+
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Floor Plan (max 1) <span className="text-red-500">* Required</span></label>
+                  <input type="file" accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'floorPlan', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white shadow-sm transition-all" />
+                  {renderFileList('floorPlan')}
+               </div>
+
                <div className="col-span-1 md:col-span-2 p-5 border-2 border-double border-[#00579e]/10 rounded-2xl bg-blue-50/10">
-                  <label className={`${labelClasses} text-[#00579e]`}>Legal Photocopies / Documents (max 5)</label>
+                  <label className={`${labelClasses} text-[#00579e]`}>Legal Photocopies / Documents (max 5) <span className="text-red-500">* Required</span></label>
                   <input type="file" multiple accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'propertyDocuments', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white hover:bg-blue-600 shadow-sm transition-all" />
                   {renderFileList('propertyDocuments')}
                </div>
@@ -571,7 +633,7 @@ export default function PropertySubmissionForm() {
               <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails} className={inputClasses}></textarea>
             </div>
             <div className="pt-4 border-t border-gray-100">
-               <label className={labelClasses}>Google Maps Link (Embed or Share URL)</label>
+               <label className={labelClasses}>Google Maps Link (Share URL)</label>
                <input 
                  type="text" 
                  name="mapUrl" 
@@ -665,6 +727,19 @@ export default function PropertySubmissionForm() {
                  </label>
               ))}
             </div>
+            {formData.furnishedAmenities.includes('Other') && (
+              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className={labelClasses}>Please Specify Other Furnishings</label>
+                <input 
+                  type="text" 
+                  name="furnishedAmenitiesOther" 
+                  placeholder="e.g. Microwave, Curtains, etc." 
+                  onChange={handleChange} 
+                  value={formData.furnishedAmenitiesOther} 
+                  className={inputClasses} 
+                />
+              </div>
+            )}
           </div>
         );
       case 10:
@@ -721,13 +796,16 @@ export default function PropertySubmissionForm() {
                          {formData.agreements.termsAgreed ? '✅' : '❌'} Terms & Conditions agreed
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.bedroomPhotos.length > 0 ? '✅' : '⚪'} {formData.bedroomPhotos.length} Bedroom Photos
+                         {formData.frontPhotos.length > 0 ? '✅' : '❌'} Front Photo (Min 1 required)
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.frontPhotos.length > 0 ? '✅' : '⚪'} {formData.frontPhotos.length} Front Photos
+                         {formData.propertyVideo ? '✅' : '❌'} Property Video tour required
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.propertyDocuments.length > 0 ? '✅' : '⚪'} Legal Documents attached
+                         {formData.floorPlan ? '✅' : '❌'} Floor Plan required
+                      </li>
+                      <li className="flex items-center gap-2 text-gray-600">
+                         {formData.propertyDocuments.length > 0 ? '✅' : '❌'} Legal Documents attached
                       </li>
                    </ul>
                 </div>

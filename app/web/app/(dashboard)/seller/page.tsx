@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function SellerDashboardPage() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -108,7 +109,17 @@ export default function SellerDashboardPage() {
   };
 
   if (isLoading) {
-    return <div className="p-24 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div></div>;
+    return (
+      <PremiumLoader 
+        messages={[
+          "Fetching seller profile",
+          "Loading your asset list",
+          "Synchronizing market activity",
+          "Preparing your dashboard"
+        ]}
+        duration={1500}
+      />
+    );
   }
 
   return (

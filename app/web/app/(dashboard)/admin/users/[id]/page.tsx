@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
@@ -62,9 +63,15 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-[#fbfcfa]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent" />
-      </div>
+      <PremiumLoader 
+        messages={[
+          "Pulling comprehensive user profile",
+          "fetching listed asset history",
+          "Validating account status",
+          "Synchronizing administrative data"
+        ]}
+        duration={1500}
+      />
     );
   }
 

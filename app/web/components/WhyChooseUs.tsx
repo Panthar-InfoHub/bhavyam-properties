@@ -64,7 +64,7 @@ export default function WhyChooseUs() {
            
            {/* Background Watermark Text */}
            <div 
-             className="absolute -top-14 left-0 text-[100px] md:text-[140px] leading-none font-black text-[var(--color-emerald-heritage)] opacity-5 select-none z-[-1] pointer-events-none tracking-[-0.04em] whitespace-nowrap" 
+             className="absolute -top-14 left-1/2 md:left-0 -translate-x-1/2 md:translate-x-0 text-[80px] md:text-[140px] leading-none font-black text-[var(--color-emerald-heritage)] opacity-5 select-none z-[-1] pointer-events-none tracking-[-0.04em] whitespace-nowrap" 
            >
              About
            </div>

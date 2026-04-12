@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function AgentDashboardPage() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -24,7 +25,7 @@ export default function AgentDashboardPage() {
       }
       
       const p = user.profile;
-      if (p?.role !== 'agent') {
+      if (p?.role !== 'agent' && p?.role !== 'admin') {
          router.push('/dashboard/user/apply-agent');
          return;
       }
@@ -71,7 +72,17 @@ export default function AgentDashboardPage() {
   }, [router]);
 
   if (isLoading) {
-     return <div className="p-24 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div></div>;
+    return (
+      <PremiumLoader 
+        messages={[
+          "Fetching agent portfolio",
+          "Analyzing listing performance",
+          "Synchronizing client leads",
+          "Preparing professional dashboard"
+        ]}
+        duration={1500}
+      />
+    );
   }
 
   const totalListings = properties.length;

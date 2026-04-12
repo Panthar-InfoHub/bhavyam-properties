@@ -9,7 +9,7 @@ interface Plan {
   price: number;
   duration_days: number;
   features: string[] | string;
-  type: 'subscription' | 'single_unlock';
+  type: 'subscription' | 'single_unlock' | 'credit_pack';
 }
 
 export default function PlanCard({ 
@@ -24,10 +24,15 @@ export default function PlanCard({
   const features = typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features;
 
   return (
-    <div className={`relative bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl flex flex-col h-full ${plan.type === 'subscription' ? 'border-[#00ecbd]/30 ring-4 ring-[#00ecbd]/5' : ''}`}>
+    <div className={`relative bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl flex flex-col h-full ${plan.type === 'subscription' ? 'border-[#00ecbd]/30 ring-4 ring-[#00ecbd]/5' : plan.type === 'credit_pack' ? 'border-purple-200' : ''}`}>
       {plan.type === 'subscription' && (
         <div className="absolute top-0 right-10 -translate-y-1/2 bg-[#00ecbd] text-[#112743] text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-widest shadow-lg">
           Best Value
+        </div>
+      )}
+      {plan.type === 'credit_pack' && (
+        <div className="absolute top-0 right-10 -translate-y-1/2 bg-purple-600 text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-widest shadow-lg">
+          Credit Pack
         </div>
       )}
 
@@ -39,7 +44,7 @@ export default function PlanCard({
       <div className="mb-8 flex items-baseline gap-1">
         <span className="text-4xl font-black text-[#112743]">₹{plan.price}</span>
         <span className="text-gray-400 font-bold text-xs uppercase tracking-widest">
-          / {plan.type === 'subscription' ? `${plan.duration_days} Days` : 'Unlock'}
+          / {plan.type === 'subscription' ? `${plan.duration_days} Days` : plan.type === 'credit_pack' ? 'Pack' : 'Unlock'}
         </span>
       </div>
 

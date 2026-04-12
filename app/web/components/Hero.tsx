@@ -2,12 +2,22 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { TreePine, Building2, Store, Briefcase, Home, Map, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
-
 export default function Hero() {
   const [keyword, setKeyword] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [location, setLocation] = useState('');
+  const router = useRouter();
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (keyword) params.append('q', keyword);
+    if (propertyType) params.append('property_type', propertyType);
+    if (location) params.append('q', location); // append location to q for city search
+    
+    router.push(`/properties?${params.toString()}`);
+  };
 
   const propertyTypes = ['Agriculture Land', 'Apartments', 'Commercial', 'Office', 'Open House', 'Plots'];
   
@@ -115,7 +125,10 @@ export default function Hero() {
            </button>
 
            {/* Search Submit */}
-           <button className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-10 py-5 rounded-2xl md:rounded-full font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+           <button 
+             onClick={handleSearch}
+             className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-10 py-5 rounded-2xl md:rounded-full font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
+           >
               SEARCH <Search className="w-5 h-5 ml-1" />
            </button>
         </div>

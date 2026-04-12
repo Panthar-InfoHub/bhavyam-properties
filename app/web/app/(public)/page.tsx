@@ -6,7 +6,6 @@ import AgentCTASection from '@/components/AgentCTASection';
 import ServicesSection from '@/components/ServicesSection';
 import VideoTourSection from '@/components/VideoTourSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
-import BlogSection from '@/components/BlogSection';
 import LatestProperties from '@/components/LatestProperties';
 
 export default function Home() {
@@ -28,7 +27,6 @@ export default function Home() {
 
       <TestimonialsSection />
 
-      <BlogSection />
 
       <AgentCTASection />
     </main>

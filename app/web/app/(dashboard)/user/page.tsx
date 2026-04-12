@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
+import Wallet from '@/components/dashboard/Wallet';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function UserDashboardPage() {
   const [profile, setProfile] = useState<any>(null);
@@ -71,9 +73,15 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent" />
-      </div>
+      <PremiumLoader 
+        messages={[
+          "Fetching your account info",
+          "Synchronizing profile settings",
+          "Loading your preferences",
+          "Ready in a moment"
+        ]}
+        duration={1500}
+      />
     );
   }
 
@@ -143,6 +151,13 @@ export default function UserDashboardPage() {
         {/* ── Conditional Render Content ── */}
         {activeTab === 'overview' ? (
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* ── Wallet Row ── */}
+            <Wallet 
+              credits={profile?.credits || 0}
+              subscriptionPlan={profile?.subscription_plan || 'free'}
+              subscriptionExpiresAt={profile?.subscription_expires_at}
+            />
+
             {/* ── Stats Row ── */}
             <div className="grid grid-cols-3 gap-4">
               {[
@@ -170,7 +185,7 @@ export default function UserDashboardPage() {
                 {[
                   { label: 'Browse Properties', icon: '🏠', href: '/properties' },
                   { label: 'My Favorites',      icon: '❤️', href: '/user/favorites' },
-                  { label: 'Apply as Agent',    icon: '🏢', href: '/user/apply-agent' },
+                  { label: 'My Transactions',   icon: '💸', href: '/user/transactions' },
                   { label: 'Submit Property',   icon: '➕', href: '/submit-property' },
                 ].map(action => (
                   <Link

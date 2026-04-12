@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabaseClient";
 import PlanCard from "@/components/membership/PlanCard";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
+import PremiumLoader from "@/components/ui/PremiumLoader";
 
 
 export default function MembershipPage() {
@@ -39,36 +41,67 @@ export default function MembershipPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Please login to continue");
-        router.push("/login");
+        router.push("/login?redirect=/membership");
         return;
       }
 
-      // Simulation: Artificial delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Fetch precise user profile for prefilling
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      // 1. Log Transaction
-      const { error: txError } = await supabase.from('transactions').insert({
-        user_id: user.id,
-        amount: plan.price,
-        currency: 'INR',
-        status: 'completed',
-        payment_type: plan.type,
+      // 1. Create order on backend
+      const response = await fetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          planId: plan.id, 
+          amount: plan.price, 
+          payment_type: plan.type 
+        }),
       });
-      if (txError) throw txError;
 
-      // 2. Update Profile with Plan and PlanID
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + (plan.duration_days || 30));
+      const order = await response.json();
+      if (!response.ok) throw new Error(order.error || 'Failed to create order');
 
-      const { error: profError } = await supabase.from('profiles').update({
-        subscription_plan: plan.name,
-        subscription_expires_at: expiry.toISOString(),
-        plan_id: plan.id
-      }).eq('id', user.id);
-      if (profError) throw profError;
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Bhavyam Properties",
+        description: `Upgrade to ${plan.name}`,
+        order_id: order.id,
+        handler: async (response: any) => {
+          toast.success("Payment successful! Processing your purchase...");
+          setTimeout(() => router.push("/dashboard"), 2000);
+        },
+        prefill: {
+          name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : "",
+          email: user.email,
+          contact: profile?.phone_number || "",
+        },
+        theme: {
+          color: "#00b48f",
+        },
+        modal: {
+          ondismiss: () => {
+            toast('Payment cancelled.', { icon: 'ℹ️' });
+            setIsProcessing(null);
+          }
+        }
+      };
 
-      toast.success("Activation Successful! Enjoy Pro access.");
-      router.push("/dashboard");
+      const rzp = new (window as any).Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any) {
+        toast.error(`Payment Failed: ${response.error.description}`);
+        setIsProcessing(null);
+      });
+
+      rzp.open();
 
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
@@ -79,14 +112,21 @@ export default function MembershipPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fbfcfa]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00ecbd]"></div>
-      </div>
+      <PremiumLoader 
+        messages={[
+          "Fetching exclusive plans",
+          "Synchronizing market prices",
+          "Preparing secure checkout",
+          "Almost ready"
+        ]}
+        duration={1500}
+      />
     );
   }
 
   return (
     <main className="min-h-screen pt-32 pb-24 bg-[#fbfcfa] relative overflow-hidden">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
 
       {/* Background blobs for premium feel */}

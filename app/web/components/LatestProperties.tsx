@@ -40,31 +40,31 @@ export default function LatestProperties() {
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 relative">
-           <div className="relative z-10 text-left">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-16 relative gap-8">
+           <div className="relative z-10 text-center md:text-left">
               {/* Subtle Label Text */}
               <div 
-                className="absolute -top-14 -left-8 text-8xl md:text-9xl font-black text-[var(--color-deep-navy)] opacity-5 select-none z-[-1] pointer-events-none tracking-widest" 
+                className="absolute -top-14 left-1/2 md:-left-8 -translate-x-1/2 md:translate-x-0 text-7xl md:text-9xl font-black text-[var(--color-deep-navy)] opacity-5 select-none z-[-1] pointer-events-none tracking-widest whitespace-nowrap" 
               >
                 Properties
               </div>
               
-              <div className="relative z-10">
+              <div className="relative z-10 flex flex-col items-center md:items-start">
                 <p className="text-[var(--color-emerald-heritage)] font-bold text-[10px] md:text-sm tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[var(--color-emerald-heritage)]"></span>
                   Our Properties
                 </p>
-                <h2 className="text-4xl md:text-[42px] font-black tracking-[-0.04em] text-[var(--color-near-black)]">Latest Properties</h2>
+                <h2 className="text-3xl md:text-[42px] font-black tracking-[-0.04em] text-[var(--color-near-black)]">Latest Properties</h2>
               </div>
            </div>
 
            {/* Filters */}
-           <div className="flex gap-4 mt-8 md:mt-0 relative z-10">
+           <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
              {['Sell', 'Buy', 'Rent'].map((type) => (
                 <button 
                   key={type}
                   onClick={() => setFilter(type as any)}
-                  className={`px-8 py-2 md:py-2.5 rounded-full font-semibold transition-all duration-300 border text-sm md:text-base ${
+                  className={`px-6 md:px-8 py-2 md:py-2.5 rounded-full font-semibold transition-all duration-300 border text-xs md:text-base ${
                     filter === type 
                       ? 'bg-[var(--color-emerald-heritage)] text-white border-[var(--color-emerald-heritage)] shadow-lg shadow-[#006B54]/20' 
                       : 'bg-transparent text-[var(--color-slate)] border-[var(--color-ghost)] hover:bg-[var(--color-emerald-heritage)]/10 text-[var(--color-near-black)] border-opacity-30'

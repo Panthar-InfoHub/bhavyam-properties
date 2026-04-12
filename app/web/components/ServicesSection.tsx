@@ -6,7 +6,7 @@ export default function ServicesSection() {
         {/* Header */}
         <div className="mb-16 relative">
            <div 
-             className="absolute md:-top-16 left-1/2 -translate-x-1/2 text-[100px] md:text-[160px] leading-none font-black text-[var(--color-emerald-heritage)] opacity-5 select-none z-[-1] pointer-events-none tracking-tight whitespace-nowrap" 
+             className="absolute -top-10 md:-top-16 left-1/2 -translate-x-1/2 text-[60px] md:text-[160px] leading-none font-black text-[var(--color-emerald-heritage)] opacity-5 select-none z-[-1] pointer-events-none tracking-tight whitespace-nowrap" 
            >
              Our Service
            </div>

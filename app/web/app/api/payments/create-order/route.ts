@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
   try {
-    const { planId, amount, currency = 'INR', propertyId = null } = await req.json();
+    const { planId, amount, currency = 'INR', propertyId = null, payment_type = 'unlock' } = await req.json();
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -25,6 +25,19 @@ export async function POST(req: NextRequest) {
     };
 
     const order = await razorpay.orders.create(options);
+
+    // Initial log of pending transaction
+    await supabase.from('transactions').insert({
+      user_id: user.id,
+      plan_id: planId,
+      property_id: propertyId,
+      amount: amount,
+      currency: currency,
+      status: 'pending',
+      payment_type,
+      razorpay_order_id: order.id
+    });
+
     return NextResponse.json(order);
   } catch (err: any) {
     console.error('Error creating Razorpay order:', err);
