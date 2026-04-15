@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "stitch-design": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "14d1deae897bc05a31c4e0d9fcf8c86e90cfe77bfbde2f22fafa0735bd0e861c"
+    }
+  }
+}

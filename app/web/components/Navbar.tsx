@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCurrentUser, signOutUser } from '@/lib/auth';
@@ -16,6 +17,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   
   // Auto-set transparent for homepage if not explicitly passed
@@ -101,18 +103,15 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
       
       {/* Brand Logo */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className={`p-2 rounded-xl transition-all duration-300 ${isLight ? 'bg-white/10 backdrop-blur-md ring-1 ring-white/20' : 'bg-teal-50 ring-1 ring-teal-100'}`}>
-          <svg className={`w-8 h-8 ${isLight ? 'text-white' : 'text-[#00b48f]'} transform group-hover:rotate-12 transition-transform`} viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 3L2 12h3v8h14v-8h3L12 3zm4 15h-8v-6h8v6z" />
-          </svg>
-        </div>
-        <div className="flex flex-col">
-          <span className={`text-2xl font-black leading-tight uppercase tracking-tighter ${isLight ? 'text-white' : 'text-gray-900'}`}>
-            Bhavyam
-          </span>
-          <span className={`text-[0.6rem] font-black uppercase tracking-[0.4em] leading-none ${isLight ? 'text-[#00ecbd]' : 'text-[#00b48f]'}`}>
-            Properties
-          </span>
+        <div className={`transition-all duration-300 bg-gray-900 rounded-xl py-1 px-4`}>
+          <Image 
+            src="/image.png" 
+            alt="Bhavyam Properties" 
+            width={180} 
+            height={50} 
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </div>
       </Link>
 
@@ -130,6 +129,9 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
           <Link href="/properties" className={`transition-colors ${pathname === '/properties' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>All Properties</Link>
         </li>
         <li>
+          <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
+        </li>
+        <li>
           <Link href="/user/apply-agent" className={`transition-colors ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Join Us</Link>
         </li>
         <li>
@@ -138,7 +140,36 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
       </ul>
 
       {/* Dynamic Actions Container */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        
+        {/* Mobile Menu Toggle */}
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className={`xl:hidden flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
+            isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
+          }`}
+        >
+          <svg className={`w-5 h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {isMobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+        
+        {/* Credits Display (New) */}
+        {user && (
+          <div className={`hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all ${
+            isLight ? 'border-white/20 bg-white/10 text-white' : 'border-teal-100 bg-teal-50 text-teal-700'
+          }`}>
+             <span className="text-sm font-black tracking-tighter">{user.profile?.credits || 0}</span>
+             <span className="text-[9px] font-black uppercase tracking-widest opacity-70">Credits</span>
+             <Link href="/membership" className="ml-1 w-5 h-5 bg-[#00b48f] text-white rounded-full flex items-center justify-center text-xs font-bold hover:scale-110 active:scale-95 transition-all shadow-sm">
+                +
+             </Link>
+          </div>
+        )}
         
         {/* Heart (Wishlist) Icon */}
         <Link 
@@ -177,7 +208,11 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
               <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-300 z-[100]">
                 <div className="px-6 py-4 border-b border-gray-50 mb-2">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Signed in as</p>
-                  <p className="text-sm font-bold text-gray-900 truncate">{user.email}</p>
+                  <p className="text-sm font-bold text-gray-900 truncate mb-2">{user.email}</p>
+                  <div className="flex items-center justify-between bg-teal-50 px-3 py-2 rounded-xl border border-teal-100">
+                     <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Balance</span>
+                     <span className="text-sm font-black text-teal-700">{user.profile?.credits || 0} Credits</span>
+                  </div>
                 </div>
                 <Link 
                   href="/dashboard" 
@@ -185,6 +220,13 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                   className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
                 >
                   <span className="text-xl">👤</span> My Profile & Dashboard
+                </Link>
+                <Link 
+                  href="/user/transactions" 
+                  onClick={() => setIsProfileOpen(false)}
+                  className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
+                >
+                  <span className="text-xl">💸</span> My Transactions
                 </Link>
                 <div className="border-t border-gray-50 my-1"></div>
                 <button 
@@ -207,7 +249,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         )}
 
         {/* Add Property Button (Always Visible) */}
-        <Link href={user ? "/dashboard" : "/login"} className="flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20">
+        <Link href={user ? "/dashboard" : "/login"} className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20">
           <div className="w-5 h-5 bg-white text-[#00b48f] rounded-full flex items-center justify-center shadow-sm">
             <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -216,6 +258,31 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
           <span className="whitespace-nowrap">Add Property</span>
         </Link>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 top-[72px] bg-white z-[90] xl:hidden overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="flex flex-col p-6 gap-6">
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4">Navigation</p>
+              <nav className="flex flex-col">
+                <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Home</Link>
+                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/about' ? 'text-[#00b48f]' : 'text-gray-900'}`}>About</Link>
+                <Link href="/properties" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/properties' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Properties</Link>
+                <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/membership' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Membership</Link>
+                <Link href="/user/apply-agent" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Join Us</Link>
+              </nav>
+            </div>
+
+            <div className="border-t border-gray-100 pt-6 flex flex-col gap-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4">Quick Actions</p>
+              <Link href={user ? "/dashboard" : "/login"} onClick={() => setIsMobileMenuOpen(false)} className="mx-4 flex items-center justify-center gap-2 bg-[#00b48f] text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">
+                 Post New Property
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
     </nav>
   );

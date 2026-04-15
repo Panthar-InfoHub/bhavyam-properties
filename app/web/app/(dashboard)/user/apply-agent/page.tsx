@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function ApplyAgentPage() {
   const [hasApplied, setHasApplied] = useState(false);
@@ -66,7 +67,7 @@ export default function ApplyAgentPage() {
      setIsSubmitting(true);
      try {
        if (!currentUser) {
-         alert("Please login first to submit an application.");
+                   toast.error("Please login first to submit an application.");
          router.push('/login?redirect=/user/apply-agent');
          return;
        }

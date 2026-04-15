@@ -8,6 +8,7 @@ import PropertyUnlocker from '@/components/property/PropertyUnlocker';
 import InterestButton from '@/components/property/InterestButton';
 import ReviewSystem from '@/components/property/ReviewSystem';
 import MortgageCalculator from '@/components/property/MortgageCalculator';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -17,6 +18,19 @@ export default function PropertyDetailsPage() {
   const [latestListings, setLatestListings] = useState<any[]>([]);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
+
+  const images = property?.media?.filter((m: any) => m.media_type === 'image') || [];
+  const videos = property?.media?.filter((m: any) => m.media_type === 'video') || [];
+  const allMedia = [...images, ...videos];
+
+  const handlePrevMedia = () => {
+    setCarouselIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : allMedia.length - 1));
+  };
+  
+  const handleNextMedia = () => {
+    setCarouselIndex((prev) => (prev !== null && prev < allMedia.length - 1 ? prev + 1 : 0));
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -77,7 +91,17 @@ export default function PropertyDetailsPage() {
   }, [id]);
 
   if (isLoading) {
-    return <div className="p-24 flex justify-center pt-40"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div></div>;
+    return (
+      <PremiumLoader 
+        messages={[
+          "Fetching property assets",
+          "Preparing immersive views",
+          "Analyzing local parameters",
+          "Almost ready"
+        ]}
+        duration={1500}
+      />
+    );
   }
 
   if (!property) {
@@ -106,10 +130,76 @@ export default function PropertyDetailsPage() {
   }).format(parseInt(dummyPriceStr));
   const maskedPrice = formattedDummy.replace(/0/g, 'x');
 
-  const displayedPrice = isUnlocked ? actualPrice : maskedPrice;
+  const displayedPrice = actualPrice;
 
   return (
     <main className="bg-[#fbfcfa] min-h-screen pt-20">
+      {/* Full Screen Carousel Modal */}
+      {carouselIndex !== null && allMedia.length > 0 && (
+        <div 
+          className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300"
+          onClick={() => setCarouselIndex(null)}
+        >
+           <div 
+             className="relative w-full h-full flex flex-col items-center justify-center px-4 md:px-20"
+             onClick={(e) => e.stopPropagation()}
+           >
+             {/* Close Button UI */}
+             <div className="absolute top-8 right-8 z-[1100]">
+                <button 
+                  onClick={() => setCarouselIndex(null)}
+                  className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all border border-white/20 shadow-2xl backdrop-blur-md cursor-pointer"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+             </div>
+             
+             {/* Nav Arrows */}
+             <button onClick={handlePrevMedia} className="absolute left-4 md:left-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block">
+               <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+             </button>
+             
+             <div className="w-full flex justify-center items-center">
+                {allMedia[carouselIndex].media_type === 'image' ? (
+                  <img 
+                    src={allMedia[carouselIndex].url} 
+                    className="w-full max-w-6xl h-[60vh] md:h-[80vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200"
+                    alt="Gallery view"
+                  />
+                ) : (
+                  <video 
+                    src={allMedia[carouselIndex].url} 
+                    controls 
+                    autoPlay
+                    className="w-full max-w-6xl h-[60vh] md:h-[80vh] rounded-2xl shadow-2xl"
+                  />
+                )}
+             </div>
+             
+             <button onClick={handleNextMedia} className="absolute right-4 md:right-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block">
+               <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+             </button>
+
+             {/* Thumbnail bar */}
+             <div className="absolute bottom-10 flex gap-3 overflow-x-auto max-w-2xl px-4 py-2 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10">
+                {allMedia.map((m: any, idx: number) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setCarouselIndex(idx)}
+                    className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${idx === carouselIndex ? 'border-teal-400 scale-110 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                  >
+                    <img src={m.url} className="w-full h-full object-cover" alt="Thumb" />
+                    {m.media_type === 'video' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                         <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-white border-b-[4px] border-b-transparent ml-0.5"></div></div>
+                      </div>
+                    )}
+                  </button>
+                ))}
+             </div>
+           </div>
+        </div>
+      )}
       {/* Hero Section with Immersive Backdrop */}
       <div className="relative w-full h-[70vh] bg-zinc-900 group">
         <img 
@@ -214,6 +304,42 @@ export default function PropertyDetailsPage() {
                 </div>
               </div>
 
+              {/* Media Gallery Section (Always Public) */}
+              <div className="mb-12">
+                 <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-3xl font-extrabold text-[#00579e]">Property Gallery</h2>
+                    <span className="bg-teal-50 text-teal-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100">
+                       {allMedia.length} Media Files
+                    </span>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {allMedia.map((m: any, i: number) => (
+                       <div 
+                         key={i} 
+                         onClick={() => setCarouselIndex(i)}
+                         className={`relative rounded-2xl overflow-hidden cursor-pointer group h-40 ${i === 0 ? 'md:col-span-2 md:h-84' : ''}`}
+                       >
+                          <img 
+                            src={m.media_type === 'image' ? m.url : `https://placehold.co/600x400/27272a/ffffff?text=Video+Tour`} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            alt="Media" 
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all opacity-0 group-hover:opacity-100 italic font-bold text-white text-xs drop-shadow-md">
+                             {m.media_type === 'video' ? 'Play Video Tour' : 'View Full Image'}
+                          </div>
+                          {m.media_type === 'video' && (
+                             <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-12 h-12 bg-white/20 rounded-full backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+                                   <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                                </div>
+                             </div>
+                          )}
+                       </div>
+                    ))}
+                 </div>
+              </div>
+
               {/* Property Unlocker (Secure Details) */}
               <div className="mt-8 mb-8">
                 <PropertyUnlocker propertyId={property.id} />
@@ -221,6 +347,18 @@ export default function PropertyDetailsPage() {
 
               {/* Dynamic Approved Public Reviews Panel */}
               <ReviewSystem propertyId={property.id} />
+
+              {/* Bottom Interest CTA */}
+              <div className="mt-20 pt-16 border-t border-gray-100">
+                <div className="max-w-xl mx-auto text-center">
+                   <h3 className="text-3xl font-black text-[#112743] tracking-tighter mb-4 uppercase">Ready to Move Forward?</h3>
+                   <p className="text-gray-500 font-bold mb-10 leading-relaxed uppercase tracking-widest text-[10px]">
+                      Expression of interest is the first step towards your dream estate. <br/>
+                      Our experts are ready to guide you.
+                   </p>
+                   <InterestButton propertyId={property.id} />
+                </div>
+              </div>
             </div>
 
             {/* Right Locked Gate Action Card */}

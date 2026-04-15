@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bhavyam Properties | Digital Estate Curation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#b3c8eb",
+                        "tertiary-container": "#002d22",
+                        "on-background": "#191c1b",
+                        "surface-dim": "#d9dad8",
+                        "on-secondary-fixed-variant": "#00513f",
+                        "secondary-fixed": "#70fad1",
+                        "surface-container-highest": "#e1e3e1",
+                        "secondary": "#006b54",
+                        "secondary-fixed-dim": "#4fddb5",
+                        "surface-container-low": "#f3f4f2",
+                        "inverse-primary": "#b3c8eb",
+                        "primary-container": "#112743",
+                        "outline-variant": "#c4c6ce",
+                        "tertiary-fixed": "#38fece",
+                        "secondary-container": "#70fad1",
+                        "surface-bright": "#f9faf8",
+                        "on-tertiary-container": "#00a180",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f9faf8",
+                        "tertiary-fixed-dim": "#00e0b3",
+                        "on-surface-variant": "#44474d",
+                        "on-primary": "#ffffff",
+                        "outline": "#74777e",
+                        "primary": "#001229",
+                        "inverse-on-surface": "#f0f1ef",
+                        "surface-variant": "#e1e3e1",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00513f",
+                        "tertiary": "#00160f",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#002118",
+                        "surface-tint": "#4b5f7e",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#334865",
+                        "inverse-surface": "#2e3130",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#d4e3ff",
+                        "on-surface": "#191c1b",
+                        "surface-container": "#edeeec",
+                        "on-secondary-container": "#00725a",
+                        "surface-container-high": "#e7e8e6",
+                        "on-secondary-fixed": "#002118",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#7a8fb0",
+                        "surface": "#f9faf8",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#041c37"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .text-stroke-watermark {
+            -webkit-text-stroke: 1px rgba(255,255,255,0.1);
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-tertiary-fixed selection:text-tertiary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/70 dark:bg-[#001229]/70 backdrop-blur-xl shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center px-12 py-6 w-full max-w-[1920px] mx-auto">
+<div class="text-2xl font-black tracking-tighter text-[#001229] dark:text-white uppercase font-headline">
+                Bhavyam Properties
+            </div>
+<div class="hidden md:flex items-center space-x-10 font-['Inter'] font-medium tracking-tight">
+<a class="text-[#006b54] dark:text-[#38fece] font-bold border-b-2 border-[#006b54] pb-1" href="#">Properties</a>
+<a class="text-[#112743] dark:text-gray-300 hover:text-[#006b54] transition-colors" href="#">Expertise</a>
+<a class="text-[#112743] dark:text-gray-300 hover:text-[#006b54] transition-colors" href="#">About</a>
+<a class="text-[#112743] dark:text-gray-300 hover:text-[#006b54] transition-colors" href="#">Insights</a>
+<a class="text-[#112743] dark:text-gray-300 hover:text-[#006b54] transition-colors" href="#">Concierge</a>
+</div>
+<button class="bg-secondary text-on-secondary px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform duration-300 active:scale-95">
+                Enquire Now
+            </button>
+</div>
+</nav>
+<!-- 1. Hero Section -->
+<header class="relative h-screen w-full flex items-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover" data-alt="Ultra-modern luxury penthouse interior with floor-to-ceiling windows overlooking a sunset cityscape, high-end Italian furniture, and ambient warm lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByaDdJIZ8CziQdChbB26z2EE29la4mPlZLTZV348rDsh_8XxPZ1nxOo4wYlI8G-IO418mF_3bSKruoRe61Jdnprkscaag7WprZFMnNTssidN-u91FRcKwI--vqmoKz_INQ3sJ7_2nhW3feVus3s8r-v2cdIvdyvKYvO8h5GfoYazrPz4Xso7vf-Nt9Zg4U0VJSU5RBCg5dMhV0WpN6GjbwLjrc73SI3d0pNyOCcSlybxxX5Sgc-lpue08gYpxPWZ8PatYfOtqmGCk"/>
+<div class="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent"></div>
+</div>
+<div class="relative z-10 px-12 md:px-24 w-full max-w-7xl">
+<div class="max-w-2xl mb-12">
+<h1 class="text-white text-6xl md:text-8xl font-black font-headline tracking-tighter leading-none mb-4">
+                    Bhavyam <br/>Properties
+                </h1>
+<p class="text-tertiary-fixed text-xl md:text-2xl font-medium tracking-wide">
+                    Your Real Estate Partner For Life
+                </p>
+</div>
+<!-- Floating Search Bar -->
+<div class="flex flex-col gap-4">
+<div class="flex flex-wrap gap-2 mb-2">
+<span class="glass-card px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-secondary transition-colors">Agriculture Land</span>
+<span class="glass-card px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-secondary transition-colors">Apartments</span>
+<span class="glass-card px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-secondary transition-colors">Commercial</span>
+<span class="glass-card px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-secondary transition-colors">Office</span>
+<span class="glass-card px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-secondary transition-colors">Plots</span>
+</div>
+<div class="glass-card p-4 rounded-xl md:rounded-full flex flex-col md:flex-row gap-4 items-center max-w-4xl">
+<div class="flex items-center gap-3 flex-1 w-full px-4 border-r border-white/20">
+<span class="material-symbols-outlined text-white/70">search</span>
+<input class="bg-transparent border-none text-white placeholder-white/50 focus:ring-0 w-full font-medium" placeholder="Keyword..." type="text"/>
+</div>
+<div class="flex items-center gap-3 flex-1 w-full px-4 border-r border-white/20">
+<span class="material-symbols-outlined text-white/70">home_work</span>
+<select class="bg-transparent border-none text-white focus:ring-0 w-full font-medium appearance-none">
+<option class="text-primary">Property Type</option>
+<option class="text-primary">Villa</option>
+<option class="text-primary">Apartment</option>
+</select>
+</div>
+<div class="flex items-center gap-3 flex-1 w-full px-4">
+<span class="material-symbols-outlined text-white/70">location_on</span>
+<input class="bg-transparent border-none text-white placeholder-white/50 focus:ring-0 w-full font-medium" placeholder="Location" type="text"/>
+</div>
+<button class="bg-secondary text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-tertiary-fixed-dim hover:text-primary transition-all shadow-xl w-full md:w-auto">
+                        Search
+                    </button>
+</div>
+</div>
+</div>
+<!-- Decorative Bottom Divider -->
+<div class="absolute bottom-0 left-0 w-full leading-[0] overflow-hidden">
+<svg class="relative block w-full h-[100px]" data-name="Layer 1" preserveaspectratio="none" viewbox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg">
+<path d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z" fill="#f9faf8"></path>
+</svg>
+</div>
+</header>
+<!-- 2. Latest Properties -->
+<section class="py-24 px-12 bg-surface">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+<div>
+<span class="text-secondary font-bold tracking-widest uppercase text-sm mb-4 block">Exclusive Listings</span>
+<h2 class="text-primary text-5xl font-black font-headline tracking-tighter">Our Properties</h2>
+</div>
+<div class="flex bg-surface-container-low p-1.5 rounded-full">
+<button class="px-8 py-2.5 rounded-full bg-secondary text-white font-bold transition-all shadow-md">Sell</button>
+<button class="px-8 py-2.5 rounded-full text-on-surface-variant font-bold hover:bg-surface-variant transition-all">Buy</button>
+<button class="px-8 py-2.5 rounded-full text-on-surface-variant font-bold hover:bg-surface-variant transition-all">Rent</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+<!-- Property Card 1 -->
+<div class="group bg-surface-container-lowest rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-2">
+<div class="relative h-[300px] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Exquisite modern minimalist white villa with large swimming pool and tropical landscaping during twilight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU5UfTXbfRzMBvUEMyGOBPiwIg7ZUzaufwwqv85EhqNRJjkF-5xtzGE1U_lxXY77AO1GE5lckCgusxqt3Dmo0AAVA3Sn4paD1lMmfHPWmqNSWL9PJDh6lKQxhjPpqqL-X6zLBrbmhOFVu7-1rhNUpNAyNg_z5dVRX0L5xS08oja9NKeCoaPO19bZQWacDI8-GrjumCrmLJB05ka2O4TkHB5qQKDDp7pE8bONWpxIZJxYqOsK94bGBx7vGCvDE7875bKkuIIv3v8N0"/>
+<div class="absolute top-4 left-4 bg-tertiary-fixed text-tertiary-container px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">For Sell</div>
+<div class="absolute bottom-4 left-4 glass-card px-5 py-2 rounded-lg text-primary font-black text-xl">₹ 14.50 Cr</div>
+</div>
+<div class="p-8">
+<div class="flex items-center gap-2 text-secondary font-bold text-xs uppercase mb-3">
+<span class="material-symbols-outlined text-sm">apartment</span> Luxury Apartment
+                        </div>
+<h3 class="text-primary text-2xl font-black mb-4">The Horizon Heights</h3>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-8">
+<span class="material-symbols-outlined text-sm">location_on</span> Worli, Mumbai
+                        </div>
+<div class="flex justify-between items-center border-t border-surface-variant pt-6">
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs font-bold text-on-surface-variant"><span class="material-symbols-outlined text-sm">bed</span> 4</span>
+<span class="flex items-center gap-1 text-xs font-bold text-on-surface-variant"><span class="material-symbols-outlined text-sm">bathtub</span> 3</span>
+</div>
+<button class="bg-surface-container-highest text-primary px-6 py-2 rounded-full font-bold text-sm hover:bg-secondary hover:text-white transition-all">Details</button>
+</div>
+</div>
+</div>
+<!-- Property Card 2 -->
+<div class="group bg-surface-container-lowest rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-2">
+<div class="relative h-[300px] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Modern geometric luxury home with expansive glass walls and warm interior lighting in a suburban setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyJ0msJ2FejRoSVczpEjmNfUnwOV06A1VPNN8PDPI0cfrf64XOE7sQW07-gX2eu123t2IhCjOLPnvBU00hMN3ftdqzFmG-QqdumB4BTHJdQzJCyI4x-D6ynDWNlFPhkmRlEv1hnwlewTcLh9XioLLM3mWksDYC816Ze5kfByzk-6wPYGgMN-dcMS9os-UpTZ7rSKFr9Z0RQtE7tBZT0b4cxDmfoErF3dI2BdxYOltJ3oFVgrMCNLMa1f8cPMsP--L6N64sFK7HXUg"/>
+<div class="absolute top-4 left-4 bg-secondary text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">For Rent</div>
+<div class="absolute bottom-4 left-4 glass-card px-5 py-2 rounded-lg text-primary font-black text-xl">₹ 4.2 L / Mo</div>
+</div>
+<div class="p-8">
+<div class="flex items-center gap-2 text-secondary font-bold text-xs uppercase mb-3">
+<span class="material-symbols-outlined text-sm">villa</span> Modern Villa
+                        </div>
+<h3 class="text-primary text-2xl font-black mb-4">Ethereal Greens Estate</h3>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-8">
+<span class="material-symbols-outlined text-sm">location_on</span> Banjara Hills, Hyderabad
+                        </div>
+<div class="flex justify-between items-center border-t border-surface-variant pt-6">
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs font-bold text-on-surface-variant"><span class="material-symbols-outlined text-sm">bed</span> 5</span>
+<span class="flex items-center gap-1 text-xs font-bold text-on-surface-variant"><span class="material-symbols-outlined text-sm">bathtub</span> 6</span>
+</div>
+<button class="bg-surface-container-highest text-primary px-6 py-2 rounded-full font-bold text-sm hover:bg-secondary hover:text-white transition-all">Details</button>
+</div>
+</div>
+</div>
+<!-- Property Card 3 -->
+<div class="group bg-surface-container-lowest rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-2">
+<div class="relative h-[300px] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Luxury coastal estate with Mediterranean architectural style, sprawling balconies, and blue ocean views." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnEnqB6fkeVJduT44fRxFu5FT3zK41IQTpjhnu1zUB29B_ata2GWQCIhLSR5T3HviuJzwWd7ib8rSsl1Nq_2StqWz9PieEP9WfRg3-kuwtcPw3YWIuqYgtz_DVORYy2UgaYc7PRj7lihCAnS04ddwc26x61RZAlK4pU8PoC3FHrmJd7Q8JwGpXwShf77z2eopRNQ7t0VpvgVKJ4n75ysc7XF-q5xcm5-6Bi8snhRC4GcHspa7h_Hjo77-cUs4rtqO9ilro0yWRz_0"/>
+<div class="absolute top-4 left-4 bg-tertiary-fixed text-tertiary-container px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">For Sell</div>
+<div class="absolute bottom-4 left-4 glass-card px-5 py-2 rounded-lg text-primary font-black text-xl">₹ 28.90 Cr</div>
+</div>
+<div class="p-8">
+<div class="flex items-center gap-2 text-secondary font-bold text-xs uppercase mb-3">
+<span class="material-symbols-outlined text-sm">landscape</span> Agricultural Land
+                        </div>
+<h3 class="text-primary text-2xl font-black mb-4">The Royal Orchard</h3>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-8">
+<span class="material-symbols-outlined text-sm">location_on</span> Devanahalli, Bangalore
+                        </div>
+<div class="flex justify-between items-center border-t border-surface-variant pt-6">
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs font-bold text-on-surface-variant"><span class="material-symbols-outlined text-sm">square_foot</span> 4.5 Ac</span>
+</div>
+<button class="bg-surface-container-highest text-primary px-6 py-2 rounded-full font-bold text-sm hover:bg-secondary hover:text-white transition-all">Details</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. About Section -->
+<section class="py-24 bg-surface-container-low overflow-hidden relative">
+<div class="absolute top-20 left-10 opacity-5">
+<div class="grid grid-cols-6 gap-4">
+<div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div><div class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-12 grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+<div class="relative">
+<div class="relative z-10 rounded-lg overflow-hidden aspect-[4/5] shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="Candid lifestyle shot of high-end real estate professionals in a glass-walled boardroom discussing blueprints." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa92Kxgv_I7SYuqndzClmRuDCTc8RLssi-RitfbanogczsqMWec3u3vyREJ9if1Dkd0oPBlNWIaWb3sfcZtByNWPUASdh2Q_1uqlW9u2Rn6uI20KIW9rT5IU1u7gk6E3vaYe7V734LsIjvbg0ezdU_kZ6C5LQlMCGqfUooU2NilK37q0WMAlK1_snSrnzlqcPcWgSPxnH0PuoONFOoXtlCj4GqwRuL-fSgZKbHeOQAG-ezhbPwW9Q5jmWdw6Hfd56CYNuJLG6Gm6Y"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<button class="w-24 h-24 rounded-full bg-secondary flex items-center justify-center text-white transition-transform hover:scale-110">
+<span class="material-symbols-outlined text-5xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+</div>
+</div>
+<div class="absolute -bottom-10 -right-10 w-2/3 h-2/3 bg-secondary rounded-lg -z-10"></div>
+</div>
+<div>
+<span class="text-secondary font-bold tracking-widest uppercase text-sm mb-6 block">About Us</span>
+<h2 class="text-primary text-5xl md:text-6xl font-black font-headline tracking-tighter leading-tight mb-8">
+                    Innovative Solutions for Modern Living With Bhavyam
+                </h2>
+<p class="text-on-surface-variant text-lg font-medium leading-relaxed mb-10">
+                    We redefine luxury not just through aesthetics, but through an unwavering commitment to architectural integrity and client-centric curation. Bhavyam Properties serves as your trusted guide in the complex landscape of high-stakes real estate.
+                </p>
+<button class="bg-secondary text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all shadow-lg">
+                    Read More
+                </button>
+</div>
+</div>
+</section>
+<!-- 4. Services Section -->
+<section class="py-24 px-12 bg-surface">
+<div class="max-w-7xl mx-auto text-center mb-20">
+<h2 class="text-primary text-5xl font-black font-headline tracking-tighter">Our Exclusive Properties Solutions</h2>
+</div>
+<div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-surface-container-lowest p-12 rounded-lg shadow-sm border border-outline-variant/10 hover:shadow-xl transition-all">
+<span class="material-symbols-outlined text-secondary text-5xl mb-6">real_estate_agent</span>
+<h3 class="text-primary text-2xl font-black mb-4">Residential Sales</h3>
+<p class="text-on-surface-variant font-medium">Connecting visionary homeowners with architectural masterpieces that embody their lifestyle aspirations.</p>
+</div>
+<div class="bg-surface-container-lowest p-12 rounded-lg shadow-sm border border-outline-variant/10 hover:shadow-xl transition-all">
+<span class="material-symbols-outlined text-secondary text-5xl mb-6">corporate_fare</span>
+<h3 class="text-primary text-2xl font-black mb-4">Commercial Property</h3>
+<p class="text-on-surface-variant font-medium">Strategic commercial acquisitions and leasing solutions designed for high-growth enterprises.</p>
+</div>
+<div class="bg-surface-container-lowest p-12 rounded-lg shadow-sm border border-outline-variant/10 hover:shadow-xl transition-all">
+<span class="material-symbols-outlined text-secondary text-5xl mb-6">finance_chip</span>
+<h3 class="text-primary text-2xl font-black mb-4">Investment Advisory</h3>
+<p class="text-on-surface-variant font-medium">Data-driven insights and curated portfolios for serious investors seeking sustainable capital appreciation.</p>
+</div>
+<div class="bg-surface-container-lowest p-12 rounded-lg shadow-sm border border-outline-variant/10 hover:shadow-xl transition-all">
+<span class="material-symbols-outlined text-secondary text-5xl mb-6">construction</span>
+<h3 class="text-primary text-2xl font-black mb-4">Property Management</h3>
+<p class="text-on-surface-variant font-medium">Hassle-free stewardship of your assets, ensuring peak maintenance and optimal yields year-round.</p>
+</div>
+</div>
+</section>
+<!-- 5. Expert Solutions Blocks -->
+<section class="px-12 pb-24">
+<div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-0 overflow-hidden rounded-lg">
+<div class="bg-secondary/100 p-12 text-center group hover:-translate-y-2 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-white text-4xl mb-4">verified</span>
+<h4 class="text-white font-black text-xl">99acres</h4>
+</div>
+<div class="bg-secondary/90 p-12 text-center group hover:-translate-y-2 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-white text-4xl mb-4">vpn_key</span>
+<h4 class="text-white font-black text-xl">Rent</h4>
+</div>
+<div class="bg-secondary/80 p-12 text-center group hover:-translate-y-2 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-white text-4xl mb-4">support_agent</span>
+<h4 class="text-white font-black text-xl">Consultancy</h4>
+</div>
+<div class="bg-secondary/70 p-12 text-center group hover:-translate-y-2 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-white text-4xl mb-4">shopping_cart</span>
+<h4 class="text-white font-black text-xl">Purchase</h4>
+</div>
+</div>
+</section>
+<!-- 6. Video Tour Section -->
+<section class="relative min-h-[600px] flex items-center bg-fixed bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAp_aFk6cczjvqIRNlqjgA5xmXgsa1bWkJnnAtp3SV4nshDE3P-0JuM2YVsvgkPYBSc_lo0OTEm_dYVFOvoMztl5E6x5nf9HqaiFPgRPKMqHdVBRq7Y9xC66keW0kNMwqVdf4KV2C2f2nua_fLO_rkKIZO_mbLsepRYrcEc3sxqx0PW2cfAdgqGcxylD22RLKD74LqplLc3dSeWUO-JxPFqUlD6LDIBpBszfQjzk8OTz0coJ1z304OtQqtFHAt_FDJ1592ol6UNnH4')">
+<div class="absolute inset-0 bg-primary/40 backdrop-blur-sm"></div>
+<div class="container mx-auto px-12 relative z-10">
+<div class="max-w-xl bg-white p-16 rounded-lg shadow-2xl">
+<h4 class="text-secondary font-bold tracking-widest uppercase text-sm mb-4">Let's Take a Tour</h4>
+<h2 class="text-primary text-4xl font-black font-headline tracking-tighter leading-tight mb-8">Search Property Smarter, Quicker &amp; Anywhere</h2>
+<div class="flex items-center gap-6">
+<button class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<span class="font-bold text-primary">Watch Property Video</span>
+</div>
+</div>
+<div class="absolute -right-20 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none hidden xl:block">
+<span class="text-[180px] font-black text-stroke-watermark italic tracking-tighter leading-none whitespace-nowrap">Property For All</span>
+</div>
+</div>
+</section>
+<!-- 7. Statistics -->
+<section class="bg-[#112743] py-24 relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 flex items-end justify-center">
+<!-- Mock City Silhouette -->
+<svg class="w-full h-[400px]" preserveaspectratio="none" viewbox="0 0 1000 300">
+<path d="M0,300 L0,200 L50,200 L50,150 L100,150 L100,250 L150,250 L150,100 L200,100 L200,300 M250,300 L250,50 L350,50 L350,300 M400,300 L400,180 L450,180 L450,120 L500,120 L500,300 M550,300 L550,100 L650,100 L650,300 M700,300 L700,220 L800,220 L800,300 M850,300 L850,80 L950,80 L950,300 L1000,300" fill="white"></path>
+</svg>
+</div>
+<div class="max-w-7xl mx-auto px-12 relative z-10">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
+<div class="group p-8 rounded-lg border border-white/10 hover:border-tertiary-fixed transition-all">
+<div class="text-tertiary-fixed text-5xl font-black mb-4">80%</div>
+<p class="text-white/70 font-bold uppercase tracking-widest text-xs">Completed Property</p>
+</div>
+<div class="group p-8 rounded-lg border border-white/10 hover:border-tertiary-fixed transition-all">
+<div class="text-tertiary-fixed text-5xl font-black mb-4">27%</div>
+<p class="text-white/70 font-bold uppercase tracking-widest text-xs">Property Taxes</p>
+</div>
+<div class="group p-8 rounded-lg border border-white/10 hover:border-tertiary-fixed transition-all">
+<div class="text-tertiary-fixed text-5xl font-black mb-4">99%</div>
+<p class="text-white/70 font-bold uppercase tracking-widest text-xs">Satisfied Customers</p>
+</div>
+<div class="group p-8 rounded-lg border border-white/10 hover:border-tertiary-fixed transition-all">
+<div class="text-tertiary-fixed text-5xl font-black mb-4">50%</div>
+<p class="text-white/70 font-bold uppercase tracking-widest text-xs">Home Ownership</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. Testimonials -->
+<section class="py-24 px-12 bg-surface">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-16">
+<span class="text-secondary font-bold tracking-widest uppercase text-sm mb-4 block">Our Reviews</span>
+<h2 class="text-primary text-5xl font-black font-headline tracking-tighter">What Our Customers Say</h2>
+</div>
+<div class="max-w-4xl mx-auto glass-card p-12 rounded-lg flex flex-col md:flex-row gap-12 items-center">
+<img class="w-32 h-32 rounded-full object-cover shadow-xl border-4 border-white" data-alt="Close-up portrait of a satisfied middle-aged male executive smiling, soft bokeh background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8grXc5LRbehH-zUJ6t_bPNLcV6LvzG-8BsG9rVBgmSpIFj6GBskZQSQlWGr27t2KwE5T3Xgr1vHtdnxmfjPfzU-I4wP1gPDenyVEboVqJjMPgO7t105ES1mb5dAX75FjhOX7Dx_if5VGawPnNZPbfReikrl4-tUxPa63gxb_Bl8e_omiBUDcahTOfJjdhFG51nArMgm-USNsRJe0jDtI2wcTrqMuPref7LAcWOevyRzXleMvLRne3vrHDzZou35BFAouT83P_krc"/>
+<div>
+<div class="flex gap-1 mb-6">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-primary text-xl font-medium italic mb-8 leading-relaxed">
+                        "The expertise shown by Bhavyam Properties was second to none. They didn't just find us a house; they secured a legacy for our family. Their digital-first approach made the whole process seamless."
+                    </p>
+<div>
+<h4 class="text-primary font-black text-lg">Aditya Vardhan</h4>
+<p class="text-on-surface-variant font-bold text-xs uppercase tracking-widest">CEO, Vardhan Ventures</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. Blog Section -->
+<section class="py-24 px-12 bg-surface-container-low">
+<div class="max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-16">
+<div>
+<span class="text-secondary font-bold tracking-widest uppercase text-sm mb-4 block">Knowledge Hub</span>
+<h2 class="text-primary text-5xl font-black font-headline tracking-tighter">Latest Blog &amp; Posts</h2>
+</div>
+<button class="bg-primary text-white px-8 py-3 rounded-full font-bold hover:bg-secondary transition-all">See All Blogs</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+<article class="group cursor-pointer">
+<div class="relative overflow-hidden rounded-lg mb-6 aspect-video">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Modern architecture office interior with team of creative architects collaborating on a design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTcYOdGjl4cvSggOMXELewoNiDllPaIV8NlZPlQKeMjv0st7oRVl_6rbxh572H2WIuT0w95nVMy4kv9QRYWzfnsAIgJgnnZ3_XhBsSX0PGSuiMjKBHquNE_H3w6L0FLtwG4ooQL3o97CSmmVTb9YEzwznGnmO7sJMgX35CFrPWEEWH2W3zQxLzvfK3niW0JXM_FL-202cTtfHD1I_GfsPX4GX7RB8L9wuYpSqn7GIL6axUNueIcmXTSaSSjWUyfZWyQLO0gleKzh4"/>
+<div class="absolute top-4 left-4 bg-secondary text-white px-4 py-1.5 rounded-full text-xs font-black">12 Oct 2024</div>
+</div>
+<div class="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-secondary mb-4">
+<span>Luxury Living</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span>5 Min Read</span>
+</div>
+<h3 class="text-primary text-2xl font-black mb-4 group-hover:text-secondary transition-colors">7 Trends Redefining Luxury Real Estate in 2024</h3>
+<a class="inline-flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest group-hover:gap-4 transition-all" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</article>
+<article class="group cursor-pointer">
+<div class="relative overflow-hidden rounded-lg mb-6 aspect-video">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Aerial view of a sustainable modern housing development with green roofs and pedestrian paths." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBowsFRe-Qp242wgFHAvr-93Nanv6LLCCHiClhvXqpwfXWUJojGtaapRvPpqlwEbesFTgjD0DfOBHpNbWZYgVQ5WG870BYCca4PSaJrhnDXCWtm9L7Z0S3H9DWQN9WBScCvOe8idjL5rQ5hPbGec0XGnQYR1DVvovghMDMt8ousmUPxwNne4gXYdDMcYf41wHgdmnfNco0RkdFi5IVmrqV2LiT79bwoNOqDoq30jpCBb5pwK3rW5S8kGPwFfKEt4YDY5zHNGogwekU"/>
+<div class="absolute top-4 left-4 bg-secondary text-white px-4 py-1.5 rounded-full text-xs font-black">08 Oct 2024</div>
+</div>
+<div class="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-secondary mb-4">
+<span>Investment</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span>8 Min Read</span>
+</div>
+<h3 class="text-primary text-2xl font-black mb-4 group-hover:text-secondary transition-colors">Why Commercial Spaces are the New Gold Mine</h3>
+<a class="inline-flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest group-hover:gap-4 transition-all" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</article>
+<article class="group cursor-pointer">
+<div class="relative overflow-hidden rounded-lg mb-6 aspect-video">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Sunlit open-plan kitchen and living area with premium marble finishes and bespoke cabinetry." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfHYwZbW38_wtr8rF27romnLXTDAbw9G_O8zx40HJBXo7GXsPIxQLKvU1dWUztbJRiS83B1in-_n3fSAF-XwHx_Ab-AZEErnIskUeCEhekLtlEd4BZve9siObfxOkeDFnB0oGJDPRZsqWl_zl4Kw8g1DdFDzadwLUvha-E0l4Bbpcmlal5Yf6tjXw3f4OSFo43q8WEQfCLBPYWp1WF0_dvTRhX3aCgdcmj0ZrkVd6DFcHPiey8YR_fOhTwXn28WMHMMmxxzVEVK-k"/>
+<div class="absolute top-4 left-4 bg-secondary text-white px-4 py-1.5 rounded-full text-xs font-black">25 Sep 2024</div>
+</div>
+<div class="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-secondary mb-4">
+<span>Interiors</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span>4 Min Read</span>
+</div>
+<h3 class="text-primary text-2xl font-black mb-4 group-hover:text-secondary transition-colors">Sustainable Materials in Modern Interior Design</h3>
+<a class="inline-flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest group-hover:gap-4 transition-all" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</article>
+</div>
+</div>
+</section>
+<!-- 10. Agent CTA Banner -->
+<section class="px-12 py-12">
+<div class="max-w-7xl mx-auto bg-[#EAF7F4] rounded-lg overflow-hidden flex flex-col md:flex-row items-center relative">
+<div class="w-full md:w-1/3 flex items-end">
+<img class="w-full h-[350px] object-cover object-top" data-alt="Professional male real estate agent in a tailored suit posing confidently with crossed arms." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxXC60tx08s6o3HZtIwrBDSB-soLWe_qhkI67ui371DoXZIwxkhvG70FdXo0RGj1BmQLlh8_1dGvP1ohgaUGJFN633_khBdHo1gaWSMWsUWxRHa-pQjAwQ2gwtNypmYKtcOVuXaKnxPu0NL7Uyz0L01mL_MknP5VyeZEgng-ujIEK0neWzalwWZTTmXQhHi-uIHgvmWwldfBYE3WRgY0w6auMRNMAItxQLRQid_kPUhjIm8H5e_LppHnES47oBEPe8HffsxbM5L9o"/>
+</div>
+<div class="w-full md:w-2/3 p-16 relative z-10">
+<h2 class="text-primary text-5xl font-black font-headline tracking-tighter mb-8 leading-tight">
+                    Become a Real Estate Agent
+                </h2>
+<p class="text-on-surface-variant text-xl font-medium mb-10 max-w-xl">
+                    Join our elite team of digital estate curators and redefine the future of luxury property consulting.
+                </p>
+<button class="bg-secondary text-white px-12 py-5 rounded-full font-black text-lg hover:scale-105 transition-all shadow-xl">
+                    Register Now
+                </button>
+</div>
+<!-- Decorative SVG Pattern -->
+<div class="absolute right-0 bottom-0 opacity-10 pointer-events-none w-1/2">
+<svg class="text-secondary" fill="currentColor" viewbox="0 0 400 200">
+<rect height="100" width="40" x="10" y="100"></rect>
+<rect height="150" width="40" x="60" y="50"></rect>
+<rect height="120" width="40" x="110" y="80"></rect>
+<rect height="180" width="40" x="160" y="20"></rect>
+<rect height="140" width="40" x="210" y="60"></rect>
+</svg>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-[#001229] dark:bg-[#000814] w-full pt-20 pb-10">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 px-16 w-full max-w-[1920px] mx-auto">
+<div class="col-span-1 md:col-span-1">
+<span class="text-3xl font-black text-white mb-6 block">Bhavyam Properties</span>
+<p class="text-gray-400 font-medium leading-relaxed mb-8">
+                    Crafting digital narratives for global estates. Where heritage meets future-forward luxury.
+                </p>
+<div class="flex gap-4">
+<span class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-secondary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm">public</span>
+</span>
+<span class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-secondary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm">share</span>
+</span>
+</div>
+</div>
+<div>
+<h4 class="text-white font-black text-xl mb-8">Quick Links</h4>
+<ul class="space-y-4">
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Properties</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Expertise</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">About</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Insights</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-black text-xl mb-8">Compliance</h4>
+<ul class="space-y-4">
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Privacy Policy</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Terms of Service</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">RERA Compliance</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors font-['Inter'] font-medium text-sm tracking-wide" href="#">Sitemap</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-black text-xl mb-8">Newsletter</h4>
+<p class="text-gray-400 text-sm mb-6">Receive curated insights into the luxury market.</p>
+<div class="flex bg-white/5 rounded-full overflow-hidden p-1">
+<input class="bg-transparent border-none text-white focus:ring-0 px-4 py-2 w-full text-sm" placeholder="Your email" type="email"/>
+<button class="bg-tertiary-fixed text-primary px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest">Join</button>
+</div>
+</div>
+</div>
+<div class="mt-20 pt-10 border-t border-white/5 px-16 flex flex-col md:flex-row justify-between items-center gap-4">
+<span class="text-gray-500 text-xs font-bold uppercase tracking-widest">© 2024 Bhavyam Properties. Digital Estate Curation.</span>
+<div class="flex gap-8">
+<a class="text-gray-500 hover:text-tertiary-fixed transition-colors text-xs font-bold uppercase tracking-widest" href="#">Cookie Policy</a>
+<a class="text-gray-500 hover:text-tertiary-fixed transition-colors text-xs font-bold uppercase tracking-widest" href="#">Modern Slavery Act</a>
+</div>
+</div>
+</footer>
+</body></html>

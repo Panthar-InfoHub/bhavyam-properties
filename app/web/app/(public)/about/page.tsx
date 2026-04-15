@@ -22,10 +22,10 @@ export default function AboutPage() {
          <div className="absolute inset-0 bg-linear-to-b from-transparent to-[#112743] z-0"></div>
          
          <div className="max-w-7xl mx-auto relative z-10 text-center">
-            <h1 className="text-white text-5xl md:text-7xl font-black tracking-tighter mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <h1 className="text-white text-4xl md:text-7xl font-black tracking-tighter mb-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                Your Trusted <span className="text-[#00ecbd]">Real Estate</span> Partner
             </h1>
-            <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-10 duration-1000">
+            <p className="text-gray-300 text-base md:text-xl max-w-3xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-10 duration-1000 px-4">
                At Bhavyam Properties, we are committed to turning your real estate dreams into reality through integrity, innovation, and customer-centric service.
             </p>
          </div>

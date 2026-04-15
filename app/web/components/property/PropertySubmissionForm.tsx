@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -22,6 +23,7 @@ export default function PropertySubmissionForm() {
     // Step 1
     listingType: '',
     propertyType: '',
+    propertyTypeOther: '',
     pricingType: '',
     yourDemand: '',
     priceRange: '',
@@ -30,6 +32,7 @@ export default function PropertySubmissionForm() {
     // Step 2 & 3
     features: [] as string[],
     amenities: [] as string[],
+    amenitiesOther: '',
     
     // Step 4
     bedrooms: '',
@@ -45,6 +48,7 @@ export default function PropertySubmissionForm() {
     insidePhotos: [] as File[],
     mapPhoto: null as File | null,
     propertyDocuments: [] as File[],
+    floorPlan: null as File | null,
     propertyVideo: null as File | null,
     
     // Step 6
@@ -66,6 +70,7 @@ export default function PropertySubmissionForm() {
     
     // Step 9
     furnishedAmenities: [] as string[],
+    furnishedAmenitiesOther: '',
     
     // Step 10
     agreements: {
@@ -92,12 +97,19 @@ export default function PropertySubmissionForm() {
       setCurrentUser(user);
       
       const role = user.profile?.role;
-      if (role === 'seller') {
-         // Rule: Sellers can only submit 1 property
+      // Admin and Agent have no limits. Seller and Buyer (non-agents) have 1 property/month limit.
+      if (role === 'seller' || role === 'buyer') {
+         // Get the first and last day of the current month
+         const now = new Date();
+         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
          const { count, error } = await supabase
           .from('properties')
           .select('*', { count: 'exact', head: true })
-          .eq('owner_id', user.id);
+          .eq('owner_id', user.id)
+          .gte('created_at', firstDay)
+          .lte('created_at', lastDay);
           
          if (count && count >= 1) {
            setIsAllowed(false);
@@ -204,6 +216,32 @@ export default function PropertySubmissionForm() {
     setIsSubmitting(true);
     setErrorMsg('');
 
+    // Validation for required fields
+    if (formData.frontPhotos.length === 0) {
+      setErrorMsg('At least one Front Photo is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.propertyVideo) {
+      setErrorMsg('Property Video is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (formData.propertyDocuments.length === 0) {
+      setErrorMsg('Basic legal documents are required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.floorPlan) {
+      setErrorMsg('Floor Plan document is required.');
+      setCurrentStep(5);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // 1. Calculate base numeric price
       const numericPrice = parseFloat(formData.yourDemand.replace(/[^0-9.-]+/g,"")) || 0;
@@ -257,6 +295,14 @@ export default function PropertySubmissionForm() {
         );
       }
       
+      if (formData.floorPlan) {
+        uploadPromises.push(
+          uploadFileToSupabase(formData.floorPlan, 'floor-plans').then(url => {
+              mediaRecords.push({ property_id: propertyRecord.id, url, media_type: 'document' });
+          })
+        );
+      }
+      
       if (formData.propertyVideo) {
          uploadPromises.push(
           uploadFileToSupabase(formData.propertyVideo, 'videos').then(url => {
@@ -288,9 +334,18 @@ export default function PropertySubmissionForm() {
 
   if (!isAllowed) {
     return (
-      <div className="bg-red-50 text-red-500 p-8 rounded-xl border border-red-200">
-        <h3 className="text-xl font-bold mb-2">Limit Reached</h3>
-        <p>As a registered Seller, you are currently limited to publishing exactly 1 property via your dashboard. Upgrade to an Agent profile or contact Administration for an expansion limit increase.</p>
+      <div className="bg-red-50 text-red-500 p-8 rounded-[2.5rem] border border-red-100 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in duration-500 shadow-xl">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center text-4xl mb-2">🚫</div>
+        <h3 className="text-2xl font-black uppercase tracking-tighter text-red-900">Monthly Limit Reached</h3>
+        <p className="max-w-md font-medium text-red-700/80 leading-relaxed">
+          As a non-agent user, you are currently limited to publishing exactly <span className="font-bold underline">1 property per month</span> via your dashboard. 
+        </p>
+        <div className="w-full max-w-sm bg-white p-6 rounded-3xl border border-red-50 shadow-sm mt-4">
+           <p className="text-sm font-bold text-gray-800 mb-4">Want to list unlimited properties?</p>
+           <Link href="/user/apply-agent" className="block w-full bg-[#112743] hover:bg-black text-white py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all">
+              Apply as Professional Agent
+           </Link>
+        </div>
       </div>
     );
   }
@@ -324,12 +379,27 @@ export default function PropertySubmissionForm() {
                 <label className={labelClasses}>Property Type</label>
                 <select name="propertyType" onChange={handleChange} value={formData.propertyType} className={inputClasses}>
                   <option value="">Select Category</option>
+                  <option value="Agriculture">Agriculture Land</option>
                   <option value="Flat">Flat / Apartment</option>
                   <option value="Villa">Villa</option>
                   <option value="House">Independent House</option>
                   <option value="Commercial">Commercial Space</option>
                   <option value="Plot">Land / Plot</option>
+                  <option value="Other">Other</option>
                 </select>
+                {formData.propertyType === 'Other' && (
+                  <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className={labelClasses}>Please Specify Property Type</label>
+                    <input 
+                      type="text" 
+                      name="propertyTypeOther" 
+                      placeholder="e.g. Penthouse, Studio, etc." 
+                      onChange={handleChange} 
+                      value={formData.propertyTypeOther} 
+                      className={inputClasses} 
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -391,6 +461,19 @@ export default function PropertySubmissionForm() {
                  </label>
               ))}
             </div>
+            {formData.amenities.includes('Other') && (
+              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className={labelClasses}>Please Specify Other Amenities</label>
+                <input 
+                  type="text" 
+                  name="amenitiesOther" 
+                  placeholder="e.g. Park, Community Center, etc." 
+                  onChange={handleChange} 
+                  value={formData.amenitiesOther} 
+                  className={inputClasses} 
+                />
+              </div>
+            )}
           </div>
         );
       case 4:
@@ -472,29 +555,25 @@ export default function PropertySubmissionForm() {
                   <label className={labelClasses}>Bathroom Photos (max 5)</label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bathroomPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
                   {renderFileList('bathroomPhotos')}
-               </div>
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Front Photos (max 5)</label>
+                  <label className={labelClasses}>Front Photos (max 5) <span className="text-[#00b48f]">* Recommended</span></label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'frontPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
                   {renderFileList('frontPhotos')}
                </div>
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Inside View Photos (max 5)</label>
-                  <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'insidePhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
-                  {renderFileList('insidePhotos')}
-               </div>
-               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Location Map Photo (max 1)</label>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'mapPhoto', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
-                  {renderFileList('mapPhoto')}
-               </div>
-               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Property Video Tour (max 1)</label>
-                  <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-600 file:text-white shadow-sm transition-all" />
+                  <label className={labelClasses}>Property Video Tour (max 1) <span className="text-red-500">* Required</span></label>
+                  <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'propertyVideo', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white shadow-sm transition-all" />
                   {renderFileList('propertyVideo')}
                </div>
+
+               <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                  <label className={labelClasses}>Floor Plan (max 1) <span className="text-red-500">* Required</span></label>
+                  <input type="file" accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'floorPlan', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white shadow-sm transition-all" />
+                  {renderFileList('floorPlan')}
+               </div>
+
                <div className="col-span-1 md:col-span-2 p-5 border-2 border-double border-[#00579e]/10 rounded-2xl bg-blue-50/10">
-                  <label className={`${labelClasses} text-[#00579e]`}>Legal Photocopies / Documents (max 5)</label>
+                  <label className={`${labelClasses} text-[#00579e]`}>Legal Photocopies / Documents (max 5) <span className="text-red-500">* Required</span></label>
                   <input type="file" multiple accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'propertyDocuments', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white hover:bg-blue-600 shadow-sm transition-all" />
                   {renderFileList('propertyDocuments')}
                </div>
@@ -554,7 +633,7 @@ export default function PropertySubmissionForm() {
               <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails} className={inputClasses}></textarea>
             </div>
             <div className="pt-4 border-t border-gray-100">
-               <label className={labelClasses}>Google Maps Link (Embed or Share URL)</label>
+               <label className={labelClasses}>Google Maps Link (Share URL)</label>
                <input 
                  type="text" 
                  name="mapUrl" 
@@ -648,6 +727,19 @@ export default function PropertySubmissionForm() {
                  </label>
               ))}
             </div>
+            {formData.furnishedAmenities.includes('Other') && (
+              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className={labelClasses}>Please Specify Other Furnishings</label>
+                <input 
+                  type="text" 
+                  name="furnishedAmenitiesOther" 
+                  placeholder="e.g. Microwave, Curtains, etc." 
+                  onChange={handleChange} 
+                  value={formData.furnishedAmenitiesOther} 
+                  className={inputClasses} 
+                />
+              </div>
+            )}
           </div>
         );
       case 10:
@@ -704,13 +796,16 @@ export default function PropertySubmissionForm() {
                          {formData.agreements.termsAgreed ? '✅' : '❌'} Terms & Conditions agreed
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.bedroomPhotos.length > 0 ? '✅' : '⚪'} {formData.bedroomPhotos.length} Bedroom Photos
+                         {formData.frontPhotos.length > 0 ? '✅' : '❌'} Front Photo (Min 1 required)
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.frontPhotos.length > 0 ? '✅' : '⚪'} {formData.frontPhotos.length} Front Photos
+                         {formData.propertyVideo ? '✅' : '❌'} Property Video tour required
                       </li>
                       <li className="flex items-center gap-2 text-gray-600">
-                         {formData.propertyDocuments.length > 0 ? '✅' : '⚪'} Legal Documents attached
+                         {formData.floorPlan ? '✅' : '❌'} Floor Plan required
+                      </li>
+                      <li className="flex items-center gap-2 text-gray-600">
+                         {formData.propertyDocuments.length > 0 ? '✅' : '❌'} Legal Documents attached
                       </li>
                    </ul>
                 </div>
