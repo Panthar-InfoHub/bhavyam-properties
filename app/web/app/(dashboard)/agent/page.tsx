@@ -73,15 +73,24 @@ export default function AgentDashboardPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Fetching agent portfolio",
-          "Analyzing listing performance",
-          "Synchronizing client leads",
-          "Preparing professional dashboard"
-        ]}
-        duration={1500}
-      />
+      <div className="flex-1 w-full bg-[#fbfcfa] py-12 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8 animate-pulse">
+           <div className="flex justify-between items-end mb-10 border-b border-gray-100 pb-8">
+              <div className="space-y-4">
+                 <div className="w-80 h-10 bg-gray-200 rounded-xl" />
+                 <div className="w-64 h-4 bg-gray-100 rounded" />
+              </div>
+              <div className="w-48 h-12 bg-gray-100 rounded-2xl" />
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+           </div>
+           <div className="w-full h-80 bg-gray-200 rounded-3xl" />
+        </div>
+      </div>
     );
   }
 

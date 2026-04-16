@@ -110,15 +110,23 @@ export default function SellerDashboardPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Fetching seller profile",
-          "Loading your asset list",
-          "Synchronizing market activity",
-          "Preparing your dashboard"
-        ]}
-        duration={1500}
-      />
+      <div className="flex-1 w-full bg-[#fbfcfa] py-12 px-4 sm:px-8">
+        <div className="max-w-6xl mx-auto flex flex-col gap-8 animate-pulse">
+           <div className="flex justify-between items-center mb-8">
+              <div className="space-y-3">
+                 <div className="w-64 h-10 bg-gray-200 rounded-xl" />
+                 <div className="w-48 h-4 bg-gray-100 rounded" />
+              </div>
+              <div className="w-40 h-10 bg-gray-100 rounded-full" />
+           </div>
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 rounded-3xl" />
+           </div>
+           <div className="w-full h-80 bg-gray-200 rounded-3xl" />
+        </div>
+      </div>
     );
   }
 

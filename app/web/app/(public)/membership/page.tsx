@@ -75,8 +75,32 @@ export default function MembershipPage() {
         description: `Upgrade to ${plan.name}`,
         order_id: order.id,
         handler: async (response: any) => {
-          toast.success("Payment successful! Processing your purchase...");
-          setTimeout(() => router.push("/dashboard"), 2000);
+          try {
+            // Verify payment on our backend to trigger immediate fulfillment
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                planId: plan.id,
+              })
+            });
+
+            if (!verifyRes.ok) {
+              throw new Error('Verification failed. Re-trying in background via webhook.');
+            }
+
+            toast.success("Payment successful! Processing your purchase...");
+            setTimeout(() => router.push("/dashboard"), 2000);
+          } catch (err) {
+            console.error("Verification error:", err);
+            // Even if immediate verification fails, webhook might still fix it, so we proceed
+            toast.success("Payment received. Verifying order...");
+            setTimeout(() => router.push("/dashboard"), 3000);
+          }
         },
         prefill: {
           name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : "",
@@ -112,15 +136,18 @@ export default function MembershipPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Fetching exclusive plans",
-          "Synchronizing market prices",
-          "Preparing secure checkout",
-          "Almost ready"
-        ]}
-        duration={1500}
-      />
+      <main className="min-h-screen pt-32 pb-24 bg-[#fbfcfa] animate-pulse">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="flex flex-col items-center mb-20 gap-4">
+              <div className="w-40 h-4 bg-gray-200 rounded" />
+              <div className="w-1/2 h-20 bg-gray-200 rounded-3xl" />
+              <div className="w-1/3 h-6 bg-gray-100 rounded" />
+           </div>
+           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {[1,2,3].map(i => <div key={i} className="h-96 bg-gray-200 rounded-[3rem]" />)}
+           </div>
+        </div>
+      </main>
     );
   }
 

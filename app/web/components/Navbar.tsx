@@ -38,7 +38,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         
         if (!error) setWishlistCount(count || 0);
 
-        // Realtime Subscription
+        // Realtime Subscription for Wishlist
         const channel = supabase
           .channel('wishlist-changes')
           .on(
@@ -60,8 +60,36 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
           )
           .subscribe();
 
+        // Realtime Subscription for Profile (Credits/Subscription Wallet Updates)
+        const profileChannel = supabase
+          .channel('profile-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${currentUser.id}`,
+            },
+            async (payload) => {
+              // Refresh user profile so Navbar wallet reflects new credits instantly
+              const freshUser = await getCurrentUser();
+              if (freshUser) setUser(freshUser);
+            }
+          )
+          .subscribe();
+
+        // Custom Local Event Listener (Bulletproof Fallback)
+        const handleWalletUpdate = async () => {
+          const freshUser = await getCurrentUser();
+          if (freshUser) setUser((prev) => ({ ...prev, profile: freshUser.profile }));
+        };
+        window.addEventListener('wallet-updated', handleWalletUpdate);
+
         return () => {
           supabase.removeChannel(channel);
+          supabase.removeChannel(profileChannel);
+          window.removeEventListener('wallet-updated', handleWalletUpdate);
         };
       } else {
         setWishlistCount(0);
@@ -103,13 +131,13 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
       
       {/* Brand Logo */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className={`transition-all duration-300 bg-gray-900 rounded-xl py-1 px-4`}>
+        <div className={`transition-all duration-500 bg-[var(--color-deep-navy)] rounded-2xl py-2 px-5 shadow-lg group-hover:shadow-[var(--color-emerald-heritage)]/20 group-hover:-translate-y-0.5 border border-white/5`}>
           <Image 
             src="/image.png" 
             alt="Bhavyam Properties" 
             width={180} 
             height={50} 
-            className="h-10 w-auto object-contain"
+            className="h-9 w-auto object-contain brightness-110"
             priority
           />
         </div>
