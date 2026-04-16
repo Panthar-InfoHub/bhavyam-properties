@@ -82,7 +82,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         // Custom Local Event Listener (Bulletproof Fallback)
         const handleWalletUpdate = async () => {
           const freshUser = await getCurrentUser();
-          if (freshUser) setUser((prev) => ({ ...prev, profile: freshUser.profile }));
+          if (freshUser) setUser((prev: any) => ({ ...prev, profile: freshUser.profile }));
         };
         window.addEventListener('wallet-updated', handleWalletUpdate);
 
