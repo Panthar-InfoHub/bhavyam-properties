@@ -121,7 +121,7 @@ export default async function PropertiesPage({
   if (error) console.error('Fetch properties error:', error.message);
 
   return (
-    <main className="bg-[#fbfcfa] min-h-screen pt-28 pb-16 px-4 md:px-12">
+    <main className="bg-[#e7f2db] min-h-screen pt-28 pb-16 px-4 md:px-12">
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}

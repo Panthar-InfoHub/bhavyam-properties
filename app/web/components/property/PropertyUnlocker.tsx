@@ -154,9 +154,38 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
         description: plan.type === 'subscription' ? `Upgrade to ${plan.name}` : `Unlock ${securedData?.property_type || 'Property'}`,
         order_id: order.id,
         handler: async (response: any) => {
-          toast.success("Payment successful! Unlocking details...");
-          // Wait for webhook or refresh
-          setTimeout(() => fetchAccess(), 2000);
+          try {
+            toast.success("Payment received. Unlocking details...");
+            
+            // Verify payment on our backend to trigger immediate fulfillment
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                planId: plan.id,
+                propertyId: propertyId
+              })
+            });
+
+            if (!verifyRes.ok) {
+              console.error("Instant Verification failed");
+            } else {
+              toast.success("Property unlocked successfully!");
+              window.dispatchEvent(new Event('wallet-updated'));
+            }
+          } catch (err) {
+             console.error("Verification error:", err);
+          } finally {
+            // Wait a moment then refresh access
+            setTimeout(() => {
+                fetchAccess();
+                window.dispatchEvent(new Event('wallet-updated'));
+            }, 1000);
+          }
         },
         prefill: {
           email: authUser.email,
@@ -200,6 +229,8 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
       toast.success("Credit spent successfully! Property unlocked.");
       fetchAccess();
+      // Force Navbar to update wallet instantly
+      window.dispatchEvent(new Event('wallet-updated'));
     } catch (err: any) {
       toast.error(err.message || "Failed to spend credit");
     } finally {

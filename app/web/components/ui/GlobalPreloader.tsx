@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import PremiumLoader from './PremiumLoader';
 
 export default function GlobalPreloader() {
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
-    // We show the loader for at least 2 seconds or until the DOM is ready
+    // Only show loader for 2 seconds on initial hit to homepage
     const timer = setTimeout(() => {
       setLoading(false);
     }, 2000);
@@ -15,7 +17,8 @@ export default function GlobalPreloader() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (!loading) return null;
+  // Condition: Only trigger this heavy global loader on the exact homepage
+  if (!loading || pathname !== '/') return null;
 
   return (
     <PremiumLoader 

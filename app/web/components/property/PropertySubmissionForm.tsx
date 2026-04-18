@@ -555,6 +555,7 @@ export default function PropertySubmissionForm() {
                   <label className={labelClasses}>Bathroom Photos (max 5)</label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'bathroomPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />
                   {renderFileList('bathroomPhotos')}
+               </div>
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
                   <label className={labelClasses}>Front Photos (max 5) <span className="text-[#00b48f]">* Recommended</span></label>
                   <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'frontPhotos', 5)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00b48f] file:text-white hover:file:bg-teal-600 transition-all" />

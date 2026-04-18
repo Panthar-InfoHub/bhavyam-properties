@@ -184,15 +184,22 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Initializing secure admin gateway",
-          "Fetching global site statistics",
-          "Synchronizing market transactions",
-          "Preparing core infrastructure"
-        ]}
-        duration={1500}
-      />
+      <div className="flex min-h-screen bg-[#fbfcfa] animate-pulse">
+        <aside className="w-64 bg-white border-r border-gray-100 hidden md:block h-screen p-6 space-y-4">
+           <div className="w-32 h-4 bg-gray-200 rounded" />
+           {[1,2,3,4,5,6].map(i => <div key={i} className="w-full h-12 bg-gray-100 rounded-xl" />)}
+        </aside>
+        <main className="flex-1 p-8 space-y-8">
+           <div className="w-64 h-10 bg-gray-200 rounded-xl" />
+           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[1,2,3,4,5].map(i => <div key={i} className="h-32 bg-gray-200 rounded-2xl" />)}
+           </div>
+           <div className="grid grid-cols-3 gap-4">
+              {[1,2,3].map(i => <div key={i} className="h-40 bg-gray-100 rounded-xl" />)}
+           </div>
+           <div className="w-full h-96 bg-gray-200 rounded-3xl" />
+        </main>
+      </div>
     );
   }
 

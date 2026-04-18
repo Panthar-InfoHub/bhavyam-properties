@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { razorpay } from '@/lib/razorpay';
 import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseAdmin';
 
 export async function POST(req: NextRequest) {
   try {
     const { planId, amount, currency = 'INR', propertyId = null, payment_type = 'unlock' } = await req.json();
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
     const order = await razorpay.orders.create(options);
 
     // Initial log of pending transaction
-    await supabase.from('transactions').insert({
+    const { error: insertError } = await adminSupabase.from('transactions').insert({
       user_id: user.id,
       plan_id: planId,
       property_id: propertyId,
@@ -38,9 +40,19 @@ export async function POST(req: NextRequest) {
       razorpay_order_id: order.id
     });
 
+    if (insertError) {
+        console.error('❌ Failed to log pending transaction:', insertError);
+        throw new Error('Failed to log transaction');
+    }
+
     return NextResponse.json(order);
   } catch (err: any) {
     console.error('Error creating Razorpay order:', err);
+    // Write error to local file so Antigravity can read it for debugging
+    try {
+        const fs = require('fs');
+        fs.appendFileSync('create-error.log', new Date().toISOString() + '\\n' + (err.stack || err.message) + '\\n\\n');
+    } catch(e) {}
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

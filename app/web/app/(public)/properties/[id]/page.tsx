@@ -19,24 +19,13 @@ export default function PropertyDetailsPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
-
-  const images = property?.media?.filter((m: any) => m.media_type === 'image') || [];
-  const videos = property?.media?.filter((m: any) => m.media_type === 'video') || [];
-  const allMedia = [...images, ...videos];
-
-  const handlePrevMedia = () => {
-    setCarouselIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : allMedia.length - 1));
-  };
-  
-  const handleNextMedia = () => {
-    setCarouselIndex((prev) => (prev !== null && prev < allMedia.length - 1 ? prev + 1 : 0));
-  };
+  const [showAdminModal, setShowAdminModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
     const fetchData = async () => {
-      // 1. Fetch Property details (using client-side supabase which has auth session)
+      // 1. Fetch Property details
       const { data: prop, error } = await supabase
         .from('properties')
         .select(`
@@ -47,6 +36,8 @@ export default function PropertyDetailsPage() {
           price,
           city,
           area,
+          address,
+          description,
           status,
           media:property_media(url, media_type),
           map_url
@@ -60,15 +51,13 @@ export default function PropertyDetailsPage() {
       }
       setProperty(prop);
 
-      // 2. Performance Access Check
+      // 2. Access Check
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Check for Admin or Pro Plan
         const { data: profile } = await supabase.from('profiles').select('role, subscription_plan, subscription_expires_at').eq('id', user.id).single();
         if (profile?.role === 'admin' || (profile?.subscription_plan !== 'free' && (!profile?.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date()))) {
            setIsUnlocked(true);
         } else {
-           // Check for specific unlock
            const { data: rpcAccess } = await supabase.rpc('check_property_access', { p_property_id: id });
            if (rpcAccess) setIsUnlocked(true);
         }
@@ -92,336 +81,323 @@ export default function PropertyDetailsPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Fetching property assets",
-          "Preparing immersive views",
-          "Analyzing local parameters",
-          "Almost ready"
-        ]}
-        duration={1500}
-      />
+      <main className="bg-white min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Skeleton Left Column */}
+          <div className="flex-1 w-full lg:w-[60%] flex flex-col gap-6">
+             <div className="w-full aspect-[4/3] rounded-3xl bg-gray-200 animate-pulse"></div>
+             <div className="w-3/4 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+             <div className="w-1/2 h-6 bg-gray-200 rounded-lg animate-pulse"></div>
+             <div className="space-y-3 mt-4">
+                <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-5/6 h-4 bg-gray-200 rounded animate-pulse"></div>
+             </div>
+          </div>
+          {/* Skeleton Right Column */}
+          <div className="w-full lg:w-[40%] flex flex-col gap-6">
+             <div className="grid grid-cols-2 gap-3">
+               <div className="aspect-[4/5] rounded-2xl bg-gray-200 animate-pulse"></div>
+               <div className="aspect-[4/5] rounded-2xl bg-gray-200 animate-pulse"></div>
+             </div>
+             <div className="w-full h-64 bg-gray-200 rounded-3xl animate-pulse mt-4"></div>
+             <div className="w-full h-80 bg-gray-100 rounded-3xl animate-pulse mt-4"></div>
+          </div>
+        </div>
+      </main>
     );
   }
 
-  if (!property) {
-    notFound();
-  }
+  if (!property) return notFound();
 
-  const mainImage = property.media && property.media.length > 0
-    ? property.media[0].url
-    : 'https://placehold.co/1200x600/eeeeee/999999?text=Image+Unavailable';
+  const images = property.media?.filter((m: any) => m.media_type === 'image') || [];
+  const videos = property.media?.filter((m: any) => m.media_type === 'video') || [];
+  const allMedia = [...images, ...videos];
 
-  // Format Prices
-  const actualPrice = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
-  }).format(property.price);
+  const hasMainVideo = videos.length > 0;
+  const mainMediaUrl = hasMainVideo ? videos[0].url : (images.length > 0 ? images[0].url : 'https://placehold.co/1200x600/eeeeee/999999?text=Unavailable');
+  
+  const displayImages = images.slice(1, 6); // Up to 5 thumb images for the right sidebar
 
-  const priceStr = property.price?.toString() || '0';
-  const firstDigit = priceStr.charAt(0);
-  const remainingLen = priceStr.length - 1;
-  const dummyPriceStr = firstDigit + '0'.repeat(remainingLen);
-  const formattedDummy = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
-  }).format(parseInt(dummyPriceStr));
-  const maskedPrice = formattedDummy.replace(/0/g, 'x');
-
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
+  };
+  const actualPrice = formatPrice(property.price);
   const displayedPrice = actualPrice;
 
+  const factFeatures = [
+    { icon: '🏠', label: property.property_type },
+    { icon: '📏', label: property.area },
+    { icon: '🏷️', label: property.pricing_type },
+    { icon: '✨', label: property.status },
+    { icon: '📍', label: property.city }
+  ];
+
   return (
-    <main className="bg-[#fbfcfa] min-h-screen pt-20">
-      {/* Full Screen Carousel Modal */}
+    <main className="bg-white min-h-screen pt-24 pb-20 font-sans text-gray-900">
+      
+      {/* Lightbox / Fullscreen Carousel */}
       {carouselIndex !== null && allMedia.length > 0 && (
-        <div 
-          className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300"
-          onClick={() => setCarouselIndex(null)}
-        >
-           <div 
-             className="relative w-full h-full flex flex-col items-center justify-center px-4 md:px-20"
-             onClick={(e) => e.stopPropagation()}
-           >
-             {/* Close Button UI */}
-             <div className="absolute top-8 right-8 z-[1100]">
-                <button 
-                  onClick={() => setCarouselIndex(null)}
-                  className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all border border-white/20 shadow-2xl backdrop-blur-md cursor-pointer"
-                >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-             </div>
-             
-             {/* Nav Arrows */}
-             <button onClick={handlePrevMedia} className="absolute left-4 md:left-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block">
-               <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-             </button>
-             
-             <div className="w-full flex justify-center items-center">
-                {allMedia[carouselIndex].media_type === 'image' ? (
-                  <img 
-                    src={allMedia[carouselIndex].url} 
-                    className="w-full max-w-6xl h-[60vh] md:h-[80vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200"
-                    alt="Gallery view"
-                  />
-                ) : (
-                  <video 
-                    src={allMedia[carouselIndex].url} 
-                    controls 
-                    autoPlay
-                    className="w-full max-w-6xl h-[60vh] md:h-[80vh] rounded-2xl shadow-2xl"
-                  />
-                )}
-             </div>
-             
-             <button onClick={handleNextMedia} className="absolute right-4 md:right-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block">
-               <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-             </button>
+         <div className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300" onClick={() => setCarouselIndex(null)}>
+           <button onClick={() => setCarouselIndex(null)} className="absolute top-8 right-8 text-white w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition cursor-pointer z-50">
+             ✕
+           </button>
+           
+           <button onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => prev !== null && prev > 0 ? prev - 1 : allMedia.length - 1); }} className="absolute left-4 md:left-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block cursor-pointer">
+             <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+           </button>
 
-             {/* Thumbnail bar */}
-             <div className="absolute bottom-10 flex gap-3 overflow-x-auto max-w-2xl px-4 py-2 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10">
-                {allMedia.map((m: any, idx: number) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setCarouselIndex(idx)}
-                    className={`relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${idx === carouselIndex ? 'border-teal-400 scale-110 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100'}`}
-                  >
-                    <img src={m.url} className="w-full h-full object-cover" alt="Thumb" />
-                    {m.media_type === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                         <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-white border-b-[4px] border-b-transparent ml-0.5"></div></div>
-                      </div>
-                    )}
-                  </button>
-                ))}
-             </div>
-           </div>
-        </div>
-      )}
-      {/* Hero Section with Immersive Backdrop */}
-      <div className="relative w-full h-[70vh] bg-zinc-900 group">
-        <img 
-           src={mainImage}
-           alt={property.property_type} 
-           className="w-full h-full object-cover opacity-60 transition-transform duration-10000 group-hover:scale-110"
-        />
-        
-        {/* Complex Gradient Overlays for Readability */}
-        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-transparent to-[#fbfcfa]"></div>
-        <div className="absolute inset-0 bg-linear-to-r from-black/60 via-transparent to-transparent"></div>
+           {allMedia[carouselIndex].media_type === 'image' ? (
+             <img src={allMedia[carouselIndex].url} className="max-w-[90vw] max-h-[85vh] object-contain" alt="Gallery View"/>
+           ) : (
+             <video src={allMedia[carouselIndex].url} autoPlay controls className="max-w-[90vw] max-h-[85vh]" />
+           )}
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-           <div className="max-w-[1400px] xl:max-w-7xl w-full px-6 md:px-16 flex flex-col md:flex-row justify-between items-end gap-12 pointer-events-auto">
-              
-              {/* Left Title Area */}
-              <div className="text-white text-left animate-in slide-in-from-left-8 duration-700">
-                 <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <span className="bg-[#00b48f] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                       {property.listing_type}
-                    </span>
-                    <span className="bg-white/10 backdrop-blur-md text-white border border-white/20 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em]">
-                       {property.property_type}
-                    </span>
-                    <span className="bg-blue-500/20 backdrop-blur-md text-blue-200 border border-blue-400/30 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] flex items-center gap-1.5">
-                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                       Verified
-                    </span>
-                 </div>
-                 
-                 <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-4 leading-tight drop-shadow-2xl">
-                    <span className="block text-[#00ecbd] opacity-40 text-2xl font-black tracking-[0.3em] uppercase mb-2">Available in {property.city}</span>
-                    {property.property_type.split(' ')[0]} <br/>
-                    <span className="text-white/40">{property.property_type.split(' ').slice(1).join(' ') || 'Estate'}</span>
-                 </h1>
-                 
-                 <div className="flex items-center gap-6 mt-8">
-                    <div className="flex flex-col">
-                       <span className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Region</span>
-                       <span className="text-white font-bold text-lg">{property.city}</span>
-                    </div>
-                    <div className="w-px h-10 bg-white/20"></div>
-                    <div className="flex flex-col">
-                       <span className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Total Scale</span>
-                       <span className="text-white font-bold text-lg">{property.area}</span>
-                    </div>
-                 </div>
-              </div>
-
-              {/* Right Price Highlight Card */}
-              <div className="relative group/price animate-in slide-in-from-right-8 duration-700 delay-200">
-                 <div className="absolute -inset-1 bg-[#00b48f] rounded-4xl blur opacity-25 group-hover/price:opacity-50 transition duration-1000"></div>
-                 <div className="relative bg-zinc-950/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-4xl shadow-2xl flex flex-col items-end min-w-[300px]">
-                    <p className="text-[#00ecbd] text-[10px] uppercase tracking-[0.4em] font-black mb-4 w-full text-right opacity-80 underline decoration-[#00b48f] decoration-2 underline-offset-8">Asking Price</p>
-                    <div className="flex items-baseline gap-2">
-                       <span className="text-6xl md:text-7xl font-black text-white tracking-tighter">{displayedPrice}</span>
-                    </div>
-                    <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-6 bg-zinc-900 px-4 py-2 rounded-lg border border-zinc-800">
-                       Negotiable Payment Plan Available
-                    </p>
-                 </div>
-              </div>
-           </div>
-        </div>
-      </div>
-
-      {/* Modern Floating Header Bar for Mobile Actions */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-xl border-t border-gray-100 p-4 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pricing</span>
-            <span className="text-lg font-black text-[#00579e]">{displayedPrice}</span>
+           <button onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => prev !== null && prev < allMedia.length - 1 ? prev + 1 : 0); }} className="absolute right-4 md:right-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block cursor-pointer">
+             <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+           </button>
          </div>
-         <Link href="#interest-form" className="bg-[#00b48f] text-white px-8 py-3 rounded-full font-black text-sm uppercase tracking-widest shadow-lg active:scale-95">
-            Express Interest
-         </Link>
-      </div>
+      )}
 
-      {/* Main Body Details Container */}
-      <div className="relative -mt-6 max-w-[1400px] xl:max-w-7xl mx-auto px-4 md:px-8 xl:px-0 pb-24 z-10 block">
-         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-10 mb-12 flex flex-col lg:flex-row gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Column (Main Content) */}
+          <div className="flex-1 w-full lg:w-[60%] flex flex-col">
             
-            {/* Left Content column */}
-            <div className="flex-2 w-full lg:w-[65%] text-left">
-              <h2 className="text-3xl font-extrabold text-[#00579e] mb-6 border-b border-gray-100 pb-4">
-                Public Overview
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-12 text-gray-700">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-1">Pricing Format</p>
-                  <p className="text-lg font-bold capitalize">{property.pricing_type}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-1">Total Area</p>
-                  <p className="text-lg font-bold capitalize">{property.area}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-1">Status</p>
-                  <p className="text-lg font-bold uppercase text-teal-600 tracking-wider">
-                    {property.status === 'approved' ? 'Available' : property.status}
-                  </p>
-                </div>
-              </div>
-
-              {/* Media Gallery Section (Always Public) */}
-              <div className="mb-12">
-                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-extrabold text-[#00579e]">Property Gallery</h2>
-                    <span className="bg-teal-50 text-teal-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100">
-                       {allMedia.length} Media Files
-                    </span>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {allMedia.map((m: any, i: number) => (
-                       <div 
-                         key={i} 
-                         onClick={() => setCarouselIndex(i)}
-                         className={`relative rounded-2xl overflow-hidden cursor-pointer group h-40 ${i === 0 ? 'md:col-span-2 md:h-84' : ''}`}
-                       >
-                          <img 
-                            src={m.media_type === 'image' ? m.url : `https://placehold.co/600x400/27272a/ffffff?text=Video+Tour`} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            alt="Media" 
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all opacity-0 group-hover:opacity-100 italic font-bold text-white text-xs drop-shadow-md">
-                             {m.media_type === 'video' ? 'Play Video Tour' : 'View Full Image'}
-                          </div>
-                          {m.media_type === 'video' && (
-                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-white/20 rounded-full backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
-                                   <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-                                </div>
-                             </div>
-                          )}
-                       </div>
-                    ))}
-                 </div>
-              </div>
-
-              {/* Property Unlocker (Secure Details) */}
-              <div className="mt-8 mb-8">
-                <PropertyUnlocker propertyId={property.id} />
-              </div>
-
-              {/* Dynamic Approved Public Reviews Panel */}
-              <ReviewSystem propertyId={property.id} />
-
-              {/* Bottom Interest CTA */}
-              <div className="mt-20 pt-16 border-t border-gray-100">
-                <div className="max-w-xl mx-auto text-center">
-                   <h3 className="text-3xl font-black text-[#112743] tracking-tighter mb-4 uppercase">Ready to Move Forward?</h3>
-                   <p className="text-gray-500 font-bold mb-10 leading-relaxed uppercase tracking-widest text-[10px]">
-                      Expression of interest is the first step towards your dream estate. <br/>
-                      Our experts are ready to guide you.
-                   </p>
-                   <InterestButton propertyId={property.id} />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Locked Gate Action Card */}
-            <div className="flex-1 w-full lg:w-[35%] flex flex-col gap-6 text-left">
-
-               {/* Spam-Free Ideology Notice */}
-               <div className="bg-teal-50 p-6 rounded-2xl border border-teal-100 text-sm text-teal-900 leading-relaxed shadow-sm">
-                 <p className="font-black text-teal-800 mb-2 uppercase tracking-widest text-xs flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                    Bhavyam Anti-Spam Promise
-                 </p>
-                 <p className="font-semibold mb-3">
-                    We believe in a completely spam-free buying experience.
-                 </p>
-                 <p className="text-teal-800/80 mb-4">
-                    Instead of having your number distributed openly, you can directly show your interest below. Our dedicated team will process your request and securely connect you with the seller, keeping your data completely private.
-                 </p>
-              </div>
-
-              {/* Lead Generation Button block */}
-              <InterestButton propertyId={property.id} />
+            {/* Main Image Banner */}
+            <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden mb-6 group cursor-pointer" onClick={() => setCarouselIndex(hasMainVideo ? allMedia.indexOf(videos[0]) : 0)}>
+              {hasMainVideo ? (
+                <video src={mainMediaUrl} muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
+              ) : (
+                <img src={mainMediaUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Main Property" />
+              )}
               
-              {/* Mortgage Calculator */}
-              <MortgageCalculator />
+              {/* Overlay Top Right actions */}
+              <div className="absolute top-4 right-4 flex gap-2">
+                <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition">
+                  <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                </button>
+                <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition">
+                  <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                </button>
+              </div>
 
-              {/* Latest Listings */}
-              {latestListings.length > 0 && (
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-xl font-bold text-gray-800">Latest Listings</h3>
-                  <div className="flex flex-col gap-4">
-                    {latestListings.map((l: any) => (
-                      <Link href={`/properties/${l.id}`} key={l.id} className="group flex gap-3 items-center p-2 -mx-2 rounded-xl transition-all hover:bg-gray-50 cursor-pointer">
-                        <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                           <img 
-                             src={l.media && l.media.length > 0 && l.media[0].media_type === 'image' ? l.media[0].url : 'https://placehold.co/200x200/eeeeee/999999?text=Cover'} 
-                             alt={l.property_type}
-                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                           />
-                        </div>
-                        <div className="flex-1">
-                           <h4 className="font-bold text-gray-800 text-sm group-hover:text-[#00579e] transition-colors line-clamp-1">{l.property_type}</h4>
-                           <p className="text-xs text-gray-500 font-semibold mb-1 line-clamp-1">{l.city}</p>
-                            <p className="text-sm font-black text-[#00b48f]">
-                              {(() => {
-                                if (isUnlocked) {
-                                  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(l.price);
-                                }
-                                const pStr = l.price.toString();
-                                const fDigit = pStr.charAt(0);
-                                const dPriceStr = fDigit + '0'.repeat(pStr.length - 1);
-                                const fDummy = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(parseInt(dPriceStr));
-                                return fDummy.replace(/0/g, 'x');
-                              })()}
-                            </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+              {/* Play Button Overlay (Only for Video) */}
+              {hasMainVideo && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                   <div className="w-16 h-16 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40 pointer-events-auto shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-110 hover:bg-white/40 transition cursor-pointer">
+                      <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                   </div>
+                </div>
+              )}
+
+              {/* Discover Story Float */}
+              {videos.length > 0 && (
+                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-2 rounded-xl flex items-center gap-3 shadow-xl pr-6 cursor-pointer" onClick={() => setCarouselIndex(allMedia.indexOf(videos[0]))}>
+                   <div className="w-16 h-12 rounded-lg overflow-hidden relative">
+                      <video src={videos[0].url} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-white border-b-[4px] border-b-transparent"></div></div>
+                   </div>
+                   <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 font-medium">Discover Our</span>
+                      <span className="text-sm font-bold text-gray-900 leading-tight">Villas <span className="italic font-normal">Story</span></span>
+                   </div>
                 </div>
               )}
             </div>
 
-         </div>
+            {/* Title & Price Row */}
+            <div className="flex flex-wrap items-start justify-between gap-4 py-4 border-b border-gray-100">
+               <div>
+                 <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100 shadow-sm">
+                      For {property.listing_type}
+                    </span>
+                 </div>
+                 <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2 capitalize">
+                   {property.property_type} in {property.city}
+                 </h1>
+                 <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+                   <span className="flex items-center gap-1.5"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg> {property.area}, {property.city}</span>
+                   <span className="flex items-center gap-1 text-orange-400"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg> 5.0</span>
+                 </div>
+               </div>
+               <div className="text-right">
+                 <div className="flex items-baseline gap-1">
+                   <h2 className="text-3xl font-bold tracking-tight text-gray-900">{displayedPrice}</h2>
+                   <span className="text-sm font-semibold text-gray-500 uppercase">INR</span>
+                 </div>
+               </div>
+            </div>
+
+            {/* Description */}
+            <div className="py-8 border-b border-gray-100">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">Property Description</h3>
+              <p className="text-gray-500 leading-relaxed text-[15px] whitespace-pre-wrap">
+                {property.description || "Crafted to inspire, this beautiful property blends modern curves, warm lighting, and natural textures to create a living experience like no other. Every detail from the flowing architecture to the curated materials has been designed to elevate comfort, beauty, and functionality.\n\nThe expansive living area catches natural sunlight throughout the day, while the panoramic views transform each moment into a living work of art."}
+              </p>
+            </div>
+
+            {/* Fact & Features */}
+            <div className="py-8">
+              <h3 className="text-xl font-medium text-gray-900 mb-6">Fact & Features</h3>
+              <div className="flex flex-wrap gap-3">
+                {factFeatures.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-gray-50 border border-gray-100 px-4 py-2.5 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition cursor-default">
+                    <span>{feature.icon}</span>
+                    <span className="capitalize">{feature.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Property Unlocker (Custom Integration Below Grid) */}
+            <div className="py-8 border-t border-gray-100 mt-4">
+               <h3 className="text-xl font-medium text-gray-900 mb-4">Secure Assets & Map</h3>
+               <div className="bg-gray-50 rounded-3xl overflow-hidden border border-gray-200">
+                 <PropertyUnlocker propertyId={property.id} />
+               </div>
+            </div>
+
+          </div>
+
+          {/* Right Column (Sidebar: Images, Agent, Form) */}
+          <div className="w-full lg:w-[40%] flex flex-col gap-6 lg:pl-4">
+            
+            {/* 1. Masonry Image Grid Sidebar */}
+            <div className="grid grid-cols-2 gap-3 mb-2">
+               {/* Top 2 large columns */}
+               {displayImages.slice(0, 2).map((img: any, i: number) => (
+                  <div key={`l-${i}`} className="aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer group" onClick={() => setCarouselIndex(i + 1)}>
+                     <img src={img.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="Detail" />
+                  </div>
+               ))}
+            </div>
+            {/* Bottom tiny thumbnails row */}
+            {displayImages.length > 2 && (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {displayImages.slice(2, 6).map((img: any, i: number) => (
+                  <div key={`s-${i}`} className="aspect-square rounded-xl overflow-hidden cursor-pointer group relative" onClick={() => setCarouselIndex(i + 3)}>
+                    <img src={img.url} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="Thumb" />
+                    {i === 3 && allMedia.length > 6 && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">+{allMedia.length - 6}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 2. Meet Your Agent Card */}
+            <div className="bg-[#f0f0f0] p-6 rounded-3xl mt-4">
+               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Gateway</h3>
+               <div className="flex items-center gap-4 mb-6">
+                 <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-300">
+                    <svg className="w-8 h-8 text-white mt-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
+                 </div>
+                 <div>
+                   <h4 className="font-semibold text-gray-900 text-sm">Bhavyam Properties</h4>
+                   <p className="text-gray-500 text-xs text-[#00b48f] font-bold">Official Representation</p>
+                 </div>
+               </div>
+               <div className="flex flex-col gap-3">
+                 <div className="w-full">
+                   {/* Wrapping InterestButton so it fits nicely */}
+                   <style dangerouslySetInnerHTML={{__html: `
+                     .custom-interest-btn > div > button {
+                       background-color: #e4e4e4 !important;
+                       color: #1f2937 !important;
+                       box-shadow: none !important;
+                       border-radius: 0.75rem !important;
+                       padding: 0.75rem !important;
+                     }
+                     .custom-interest-btn > div > button:hover {
+                       background-color: #d8d8d8 !important;
+                     }
+                   `}} />
+                   <div className="custom-interest-btn -mt-8">
+                     <InterestButton propertyId={property.id} />
+                   </div>
+                 </div>
+                 <button onClick={() => setShowAdminModal(true)} className="w-full py-3 bg-black hover:bg-gray-800 text-white font-semibold rounded-xl text-sm transition shadow-md">Contact Admin</button>
+               </div>
+            </div>
+
+            {/* Admin Popup Modal */}
+            {showAdminModal && (
+              <div className="fixed inset-0 z-[2000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAdminModal(false)}>
+                 <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center relative" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setShowAdminModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+                    <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-teal-100 text-2xl">
+                      👑
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 mb-2">Bhavyam Admin</h3>
+                    <p className="text-sm text-gray-500 mb-6 font-medium">Please quote the Property ID when contacting directly.</p>
+                    
+                    <div className="flex flex-col gap-3 text-left">
+                       <a href="mailto:admin@bhavyamproperties.com" className="bg-gray-50 p-4 rounded-xl flex items-center gap-3 hover:bg-gray-100 transition border border-gray-100 group">
+                         <span className="text-xl group-hover:scale-110 transition-transform">✉️</span>
+                         <span className="font-bold text-sm text-gray-800">admin@bhavyamproperties.com</span>
+                       </a>
+                       <a href="tel:+919876543210" className="bg-gray-50 p-4 rounded-xl flex items-center gap-3 hover:bg-gray-100 transition border border-gray-100 group">
+                         <span className="text-xl group-hover:scale-110 transition-transform">📞</span>
+                         <span className="font-bold text-sm text-gray-800">+91 98765 43210</span>
+                       </a>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {/* Mortgage Calculator */}
+            <div className="mt-4">
+              <MortgageCalculator />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Explore Similar Properties (Bottom Grid) */}
+        {latestListings.length > 0 && (
+          <div className="mt-24 border-t border-gray-100 pt-16">
+            <h2 className="text-3xl font-semibold mb-1 text-gray-900 tracking-tight">Explore Similar</h2>
+            <h2 className="text-3xl italic font-serif text-gray-900 mb-10">Properties</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {latestListings.map((l: any) => {
+                 const lImg = l.media?.find((x:any) => x.media_type==='image')?.url || 'https://placehold.co/600x800/eeeeee/999999?text=Cover';
+                 return (
+                   <Link href={`/properties/${l.id}`} key={l.id} className="relative aspect-[3/4] md:aspect-[3/4.5] lg:aspect-[3/4] rounded-3xl overflow-hidden group">
+                     {/* Background Image */}
+                     <img src={lImg} className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-105" alt="similar" />
+                     {/* Bottom Gradient overlay */}
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-8">
+                       <div className="flex justify-between items-end mb-2">
+                         <h3 className="text-white font-semibold text-lg md:text-xl line-clamp-1">{l.property_type}</h3>
+                         <span className="text-white font-bold text-sm bg-black/40 backdrop-blur-md px-2 py-1 rounded-md ml-2 shrink-0">
+                           {formatPrice(l.price)}
+                         </span>
+                       </div>
+                       <p className="text-gray-300 text-xs font-medium flex items-center gap-1.5 line-clamp-1">
+                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                         {l.city}
+                       </p>
+                     </div>
+                   </Link>
+                 )
+               })}
+            </div>
+          </div>
+        )}
+
+        {/* Reviews Section */}
+        <div className="mt-24 border-t border-gray-100 pt-16">
+            <h2 className="text-3xl font-semibold mb-1 text-gray-900 tracking-tight">Our Clients</h2>
+            <h2 className="text-3xl italic font-serif text-gray-900 mb-10">Speak Boldly.</h2>
+            <ReviewSystem propertyId={property.id} />
+        </div>
+
       </div>
     </main>
   );

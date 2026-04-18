@@ -73,15 +73,37 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-      <PremiumLoader 
-        messages={[
-          "Fetching your account info",
-          "Synchronizing profile settings",
-          "Loading your preferences",
-          "Ready in a moment"
-        ]}
-        duration={1500}
-      />
+      <div className="flex-1 w-full bg-[#fbfcfa] py-12 px-4 sm:px-8">
+        <div className="max-w-5xl mx-auto flex flex-col gap-8 animate-pulse">
+          {/* Header Skeleton */}
+          <div className="bg-white rounded-3xl p-6 flex items-center gap-5 border border-gray-100 shadow-sm">
+            <div className="w-20 h-20 rounded-full bg-gray-200" />
+            <div className="flex-1 space-y-3">
+              <div className="w-48 h-8 bg-gray-200 rounded-lg" />
+              <div className="w-32 h-4 bg-gray-100 rounded" />
+            </div>
+            <div className="w-40 h-10 bg-gray-100 rounded-2xl" />
+          </div>
+          {/* Main Card Skeleton */}
+          <div className="w-full h-40 bg-gray-200 rounded-3xl" />
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="h-32 bg-gray-200 rounded-3xl" />
+            <div className="h-32 bg-gray-200 rounded-3xl" />
+            <div className="h-32 bg-gray-200 rounded-3xl" />
+          </div>
+           {/* Section Skeleton */}
+           <div className="space-y-4">
+              <div className="w-32 h-6 bg-gray-200 rounded" />
+              <div className="grid grid-cols-4 gap-4">
+                 <div className="h-20 bg-gray-100 rounded-2xl" />
+                 <div className="h-20 bg-gray-100 rounded-2xl" />
+                 <div className="h-20 bg-gray-100 rounded-2xl" />
+                 <div className="h-20 bg-gray-100 rounded-2xl" />
+              </div>
+           </div>
+        </div>
+      </div>
     );
   }
 
