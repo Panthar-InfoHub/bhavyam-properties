@@ -120,44 +120,44 @@ export default function ReviewSystem({ propertyId }: { propertyId: string }) {
           </div>
         ) : (
           reviews.map((rev) => (
-            <div key={rev.id} className="bg-white border border-gray-100 shadow-sm p-6 rounded-2xl flex flex-col items-start">
+            <div key={rev.id} className="bg-[#fbfbf8] border border-[#eeeae0] shadow-sm p-6 rounded-2xl flex flex-col items-start transition-all hover:shadow-md">
                <div className="flex justify-between w-full items-center mb-3">
-                  <span className="font-bold text-gray-800">{rev.user?.first_name} {rev.user?.last_name}</span>
-                  <span className="text-sm text-gray-400 font-medium">{new Date(rev.created_at).toLocaleDateString()}</span>
+                  <span className="font-bold text-[#2d2a26]">{rev.user?.first_name} {rev.user?.last_name}</span>
+                  <span className="text-sm text-[#8a8479] font-medium">{new Date(rev.created_at).toLocaleDateString()}</span>
                </div>
-               <div className="flex text-yellow-400 mb-3">
+               <div className="flex text-yellow-500 mb-3">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <svg key={i} className={`w-5 h-5 ${i < rev.rating ? 'fill-current' : 'text-gray-300 fill-current'}`} viewBox="0 0 20 20">
+                    <svg key={i} className={`w-5 h-5 ${i < rev.rating ? 'fill-current' : 'text-[#eeeae0] fill-current'}`} viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
                </div>
-               <p className="text-gray-600 leading-relaxed text-sm w-full">{rev.comment}</p>
+               <p className="text-[#4a453e] leading-relaxed text-sm w-full">{rev.comment}</p>
             </div>
           ))
         )}
       </div>
 
       {/* Review Submission Form Container */}
-      <div className="bg-zinc-900 rounded-3xl p-8 relative overflow-hidden shadow-xl">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500 rounded-full blur-3xl opacity-10 -mr-20 -mt-20"></div>
+      <div className="bg-[#fbfbf8] border border-[#eeeae0] rounded-3xl p-8 relative overflow-hidden shadow-sm">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500 rounded-full blur-3xl opacity-5 -mr-20 -mt-20"></div>
 
-         <h4 className="text-2xl font-bold text-white mb-2">Leave a Verified Review</h4>
-         <p className="text-zinc-400 text-sm mb-6">As per community guidelines, strict policy prohibits sharing raw emails or direct phone numbers within this space. All reviews are manually moderated before publishing.</p>
+         <h4 className="text-2xl font-bold text-[#2d2a26] mb-2">Leave a Verified Review</h4>
+         <p className="text-[#8a8479] text-sm mb-6">As per community guidelines, strict policy prohibits sharing raw emails or direct phone numbers within this space. All reviews are manually moderated before publishing.</p>
          
          {formMsg && (
-            <div className={`p-4 rounded-xl mb-6 text-sm font-bold border ${msgType === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-green-500/10 border-green-500/20 text-green-400'}`}>
+            <div className={`p-4 rounded-xl mb-6 text-sm font-bold border ${msgType === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-600' : 'bg-green-500/10 border-green-500/20 text-green-600'}`}>
                {formMsg}
             </div>
          )}
          
          <form onSubmit={handleReviewSubmit} className="flex flex-col gap-4 relative z-10 w-full md:w-2/3">
             <div>
-               <label className="block text-zinc-300 text-sm font-semibold uppercase tracking-widest mb-2">Rating</label>
+               <label className="block text-[#4a453e] text-sm font-semibold uppercase tracking-widest mb-2">Rating</label>
                <select 
                  value={rating} 
                  onChange={(e) => setRating(Number(e.target.value))}
-                 className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-lg outline-none focus:border-teal-500"
+                 className="w-full bg-[#f3f0e6] border border-[#eeeae0] text-[#2d2a26] p-3 rounded-lg outline-none focus:border-teal-500"
                >
                  <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
                  <option value="4">⭐⭐⭐⭐ Great (4)</option>
@@ -168,14 +168,14 @@ export default function ReviewSystem({ propertyId }: { propertyId: string }) {
             </div>
             
             <div>
-               <label className="block text-zinc-300 text-sm font-semibold uppercase tracking-widest mb-2">Secure Comment (No Contact Info)</label>
+               <label className="block text-[#4a453e] text-sm font-semibold uppercase tracking-widest mb-2">Secure Comment (No Contact Info)</label>
                <textarea 
                   required
                   rows={4} 
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Share your structured insights or verified experiences..."
-                  className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-lg outline-none focus:border-teal-500 placeholder-zinc-500"
+                  className="w-full bg-[#f3f0e6] border border-[#eeeae0] text-[#2d2a26] p-3 rounded-lg outline-none focus:border-teal-500 placeholder-[#8a8479]"
                ></textarea>
             </div>
             
