@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
 import Wallet from '@/components/dashboard/Wallet';
+import UnlockedPropertiesSection from '@/components/dashboard/UnlockedPropertiesSection';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function UserDashboardPage() {
@@ -111,13 +112,13 @@ export default function UserDashboardPage() {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'User';
   const joinedDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
-    : '—';
+    : 'â€”';
 
   return (
     <div className="flex-1 w-full bg-[#fbfcfa] py-8 px-4 sm:px-8 min-h-[80vh]">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
 
-        {/* ── Profile Header ── */}
+        {/* â”€â”€ Profile Header â”€â”€ */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
           {/* Avatar */}
           <div className="shrink-0">
@@ -144,11 +145,11 @@ export default function UserDashboardPage() {
               </span>
               {profile?.phone_number && (
                 <span className="text-xs text-gray-500 flex items-center gap-1">
-                  📞 {profile.phone_number}
+                  ðŸ“ž {profile.phone_number}
                 </span>
               )}
               <span className="text-xs text-gray-400 flex items-center gap-1">
-                🗓 Member since {joinedDate}
+                ðŸ—“ Member since {joinedDate}
               </span>
             </div>
           </div>
@@ -170,22 +171,22 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        {/* ── Conditional Render Content ── */}
+        {/* â”€â”€ Conditional Render Content â”€â”€ */}
         {activeTab === 'overview' ? (
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {/* ── Wallet Row ── */}
+            {/* â”€â”€ Wallet Row â”€â”€ */}
             <Wallet 
               credits={profile?.credits || 0}
               subscriptionPlan={profile?.subscription_plan || 'free'}
               subscriptionExpiresAt={profile?.subscription_expires_at}
             />
 
-            {/* ── Stats Row ── */}
+            {/* â”€â”€ Stats Row â”€â”€ */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'Saved Properties', value: stats.favorites, icon: '❤️', href: '/user/favorites', color: 'text-rose-500' },
-                { label: 'Interest Requests', value: stats.interests, icon: '📋', href: null, color: 'text-blue-500' },
-                { label: 'Total Transactions', value: stats.transactions, icon: '💸', href: '/user/transactions', color: 'text-emerald-500' },
+                { label: 'Saved Properties', value: stats.favorites, icon: 'â¤ï¸', href: '/user/favorites', color: 'text-rose-500' },
+                { label: 'Interest Requests', value: stats.interests, icon: 'ðŸ“‹', href: null, color: 'text-blue-500' },
+                { label: 'Total Transactions', value: stats.transactions, icon: 'ðŸ’¸', href: '/user/transactions', color: 'text-emerald-500' },
               ].map(stat => (
                 <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-start transition-all hover:shadow-md">
                   <span className="text-2xl mb-2">{stat.icon}</span>
@@ -193,22 +194,22 @@ export default function UserDashboardPage() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{stat.label}</p>
                   {stat.href && (
                     <Link href={stat.href} className="text-xs text-teal-600 font-bold mt-4 hover:text-[#112743] flex items-center gap-1 transition-colors group">
-                      View all <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      View all <span className="group-hover:translate-x-1 transition-transform">â†’</span>
                     </Link>
                   )}
                 </div>
               ))}
             </div>
 
-            {/* ── Quick Actions ── */}
+            {/* â”€â”€ Quick Actions â”€â”€ */}
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Quick Actions</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Browse Properties', icon: '🏠', href: '/properties' },
-                  { label: 'My Favorites',      icon: '❤️', href: '/user/favorites' },
-                  { label: 'My Transactions',   icon: '💸', href: '/user/transactions' },
-                  { label: 'Submit Property',   icon: '➕', href: '/submit-property' },
+                  { label: 'Browse Properties', icon: 'ðŸ ', href: '/properties' },
+                  { label: 'My Favorites',      icon: 'â¤ï¸', href: '/user/favorites' },
+                  { label: 'My Transactions',   icon: 'ðŸ’¸', href: '/user/transactions' },
+                  { label: 'Submit Property',   icon: 'âž•', href: '/submit-property' },
                 ].map(action => (
                   <Link
                     key={action.label}
@@ -222,12 +223,12 @@ export default function UserDashboardPage() {
               </div>
             </div>
 
-            {/* ── Recent Interest Requests ── */}
+            {/* â”€â”€ Recent Interest Requests â”€â”€ */}
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Recent Interest Requests</h2>
               {recentInterests.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center text-gray-400">
-                  <p className="text-4xl mb-3">📋</p>
+                  <p className="text-4xl mb-3">ðŸ“‹</p>
                   <p className="font-semibold">No interest requests yet.</p>
                   <p className="text-sm mt-1">Browse properties and click "Express Interest" to get started.</p>
                 </div>
@@ -255,6 +256,16 @@ export default function UserDashboardPage() {
                   ))}
                 </div>
               )}
+            </div>
+            {/* -- Unlocked Properties -- */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">ðŸ”“ My Unlocked Properties</h2>
+                <Link href="/properties" className="text-xs text-teal-600 font-bold hover:text-[#112743] transition-colors">
+                  Find more {">"}
+                </Link>
+              </div>
+              <UnlockedPropertiesSection userId={profile.id} />
             </div>
           </div>
         ) : (

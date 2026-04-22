@@ -44,13 +44,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
+                <Link href="/terms-and-conditions" className="hover:text-white transition-colors flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                   Terms and Conditions
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
+                <Link href="/privacy-policy" className="hover:text-white transition-colors flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                   Privacy Policy
                 </Link>
@@ -108,9 +108,9 @@ export default function Footer() {
             <span className="text-gray-600">.</span>
             <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Blog & Articles</Link>
             <span className="text-gray-600">.</span>
-            <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Terms and Conditions</Link>
+            <Link href="/terms-and-conditions" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Terms and Conditions</Link>
             <span className="text-gray-600">.</span>
-            <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Privacy Policy</Link>
+            <Link href="/privacy-policy" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Privacy Policy</Link>
             <span className="text-gray-600">.</span>
             <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Contact Us</Link>
           </div>

@@ -235,9 +235,9 @@ export default function PropertySubmissionForm() {
       setIsSubmitting(false);
       return;
     }
-    if (!formData.floorPlan) {
-      setErrorMsg('Floor Plan document is required.');
-      setCurrentStep(5);
+    if (!formData.mapUrl.trim()) {
+      setErrorMsg('Google Maps link is required. Please paste your property location URL.');
+      setCurrentStep(7);
       setIsSubmitting(false);
       return;
     }
@@ -568,7 +568,7 @@ export default function PropertySubmissionForm() {
                </div>
 
                <div className="p-5 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                  <label className={labelClasses}>Floor Plan (max 1) <span className="text-red-500">* Required</span></label>
+                  <label className={labelClasses}>Floor Plan (max 1) <span className="text-gray-400">Optional</span></label>
                   <input type="file" accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'floorPlan', 1)} className="w-full text-sm block cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#00579e] file:text-white shadow-sm transition-all" />
                   {renderFileList('floorPlan')}
                </div>
@@ -634,7 +634,7 @@ export default function PropertySubmissionForm() {
               <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails} className={inputClasses}></textarea>
             </div>
             <div className="pt-4 border-t border-gray-100">
-               <label className={labelClasses}>Google Maps Link (Share URL)</label>
+                <label className={labelClasses}>Google Maps Link <span className="text-red-500">* Required</span></label>
                <input 
                  type="text" 
                  name="mapUrl" 
@@ -754,7 +754,7 @@ export default function PropertySubmissionForm() {
               {[
                 { id: 'termsAgreed', label: 'I agree to the Bhavyam Properties Terms and Conditions' },
                 { id: 'allPhotosUploaded', label: 'I certify that all uploaded media is real and original' },
-                { id: 'agreementSigned', label: 'Marketing Agreement Form is signed and scanned' },
+                { id: 'agreementSigned', label: 'I agree to the Bhavyam Properties Marketing Agreement and confirm it is signed' },
                 { id: 'documentsReceived', label: 'Property Title Deeds and KYC are ready for audit' },
                 { id: 'commissionDiscussed', label: 'Standard Commission percentage is agreed upon' },
               ].map(item => (

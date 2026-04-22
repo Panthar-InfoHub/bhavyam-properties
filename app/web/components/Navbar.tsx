@@ -165,6 +165,9 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         <li>
           <Link href="/terms-and-conditions" className={`transition-colors ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Terms and Conditions</Link>
         </li>
+        <li>
+          <Link href="/privacy-policy" className={`transition-colors ${pathname === '/privacy-policy' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Privacy Policy</Link>
+        </li>
       </ul>
 
       {/* Dynamic Actions Container */}
@@ -299,6 +302,8 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                 <Link href="/properties" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/properties' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Properties</Link>
                 <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/membership' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Membership</Link>
                 <Link href="/user/apply-agent" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Join Us</Link>
+                <Link href="/terms-and-conditions" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Terms & Conditions</Link>
+                <Link href="/privacy-policy" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/privacy-policy' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Privacy Policy</Link>
               </nav>
             </div>
 

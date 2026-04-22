@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import { getCurrentUser } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function LatestProperties() {
+  const router = useRouter();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'Sell' | 'Buy' | 'Rent'>('Sell');
 
   useEffect(() => {
     const fetchProps = async () => {
@@ -33,7 +36,7 @@ export default function LatestProperties() {
     };
 
     fetchProps();
-  }, [filter]);
+  }, []);
 
   return (
     <section className="py-24 px-4 md:px-8 bg-[var(--color-warm-ivory)] relative overflow-hidden">
@@ -63,9 +66,22 @@ export default function LatestProperties() {
              {['Sell', 'Buy', 'Rent'].map((type) => (
                 <button 
                   key={type}
-                  onClick={() => setFilter(type as any)}
+                  onClick={async () => {
+                    if (type === 'Buy') {
+                      router.push('/properties');
+                      return;
+                    }
+                    
+                    const user = await getCurrentUser();
+                    if (!user) {
+                      toast.error("Please sign up first");
+                      return;
+                    }
+                    
+                    router.push('/dashboard');
+                  }}
                   className={`px-6 md:px-8 py-2 md:py-2.5 rounded-full font-semibold transition-all duration-300 border text-xs md:text-base ${
-                    filter === type 
+                    type === 'Buy' 
                       ? 'bg-[var(--color-emerald-heritage)] text-white border-[var(--color-emerald-heritage)] shadow-lg shadow-[#006B54]/20' 
                       : 'bg-transparent text-[var(--color-slate)] border-[var(--color-ghost)] hover:bg-[var(--color-emerald-heritage)]/10 text-[var(--color-near-black)] border-opacity-30'
                   }`}

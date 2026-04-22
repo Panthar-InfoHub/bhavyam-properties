@@ -34,7 +34,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full h-[95vh] flex flex-col items-center justify-center overflow-hidden">
+    <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center overflow-hidden py-24">
       {/* Background Image with Dark Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -44,21 +44,21 @@ export default function Hero() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-deep-navy)]/90 via-[var(--color-deep-navy-light)]/60 to-black/30 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-deep-navy)]/90 via-[var(--color-deep-navy-light)]/70 to-black/40 backdrop-blur-[2px]" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-6xl px-6 flex flex-col items-center text-center text-white mt-12">
-        <p className="text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-4 opacity-90 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative z-10 w-full max-w-6xl px-6 flex flex-col items-center text-center text-white mt-8 md:mt-12">
+        <p className="text-sm md:text-base font-medium tracking-wider mb-4 opacity-90 animate-in fade-in slide-in-from-bottom-4 duration-700">
           Your Real Estate Partner For Life
         </p>
         
-        <h1 className="text-5xl md:text-[80px] font-black mb-6 leading-tight tracking-[-0.04em] animate-in fade-in slide-in-from-bottom-6 duration-1000">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight animate-in fade-in slide-in-from-bottom-6 duration-1000">
           Bhavyam Properties
         </h1>
 
-        <p className="text-lg md:text-2xl font-medium max-w-3xl mb-12 opacity-80 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          We have more than <span className="text-[var(--color-electric-mint)] font-black">54,000</span> apartments, place & plot for rent, sale and purchase
+        <p className="text-base md:text-xl font-normal max-w-2xl mb-10 opacity-90 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          We have more than <span className="text-[var(--color-electric-mint)] font-semibold">54,000</span> apartments, place & plot for rent, sale and purchase
         </p>
 
         {/* Property Type Icons */}
@@ -74,62 +74,57 @@ export default function Hero() {
         </div>
 
         {/* Search Bar Container */}
-        <div className="w-full max-w-5xl bg-white/70 backdrop-blur-xl border border-white/30 p-2 md:p-2 rounded-3xl md:rounded-full shadow-[var(--shadow-ambient)] flex flex-col md:flex-row items-stretch animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
+        <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl border border-white/30 p-2 md:p-2 rounded-3xl lg:rounded-full shadow-[var(--shadow-ambient)] flex flex-col lg:flex-row items-stretch animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500 text-gray-800">
            {/* Keyword Input */}
-           <div className="flex-1 flex items-center px-6 py-4 border-b md:border-b-0 md:border-r border-white/20 group">
-              <Search className="w-5 h-5 text-gray-500 group-focus-within:text-[var(--color-emerald-heritage)] transition-colors" />
+           <div className="flex-1 flex items-center px-4 py-3 border-b lg:border-b-0 lg:border-r border-gray-200 group">
+              <Search className="w-5 h-5 text-gray-400 group-focus-within:text-[var(--color-emerald-heritage)] transition-colors shrink-0" />
               <input 
                 type="text" 
-                placeholder="Enter Keyword here ..." 
+                placeholder="Enter Keyword here..." 
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                className="w-full px-4 text-[var(--color-near-black)] bg-transparent font-medium placeholder-gray-500 outline-none"
+                className="w-full px-3 text-[var(--color-near-black)] bg-transparent font-medium placeholder-gray-500 outline-none text-sm md:text-base"
               />
            </div>
 
            {/* Type Select */}
-           <div className="flex-1 flex items-center px-6 py-4 border-b md:border-b-0 md:border-r border-white/20">
+           <div className="flex-1 flex items-center px-4 py-3 border-b lg:border-b-0 lg:border-r border-gray-200">
               <select 
                 title="Property Type"
                 value={propertyType}
                 onChange={(e) => setPropertyType(e.target.value)}
-                className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none"
+                className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none text-sm md:text-base"
               >
                 <option value="">Select Type</option>
-                <option value="flat" className="text-black">Apartment / Flat</option>
-                <option value="villa" className="text-black">Independent Villa</option>
-                <option value="plot" className="text-black">Plot / Land</option>
+                <option value="flat">Apartment / Flat</option>
+                <option value="villa">Independent Villa</option>
+                <option value="plot">Plot / Land</option>
               </select>
-              <ChevronDown className="w-5 h-5 text-[var(--color-emerald-heritage)] ml-2" />
+              <ChevronDown className="w-5 h-5 text-[var(--color-emerald-heritage)] ml-2 shrink-0" />
            </div>
 
            {/* Location Select */}
-           <div className="flex-1 flex items-center px-6 py-4">
+           <div className="flex-1 flex items-center px-4 py-3">
               <select 
                 title="Select Location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none"
+                className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none text-sm md:text-base"
               >
                 <option value="">Select Location</option>
-                <option value="mumbai" className="text-black">Mumbai</option>
-                <option value="pune" className="text-black">Pune</option>
-                <option value="bangalore" className="text-black">Bangalore</option>
+                <option value="mumbai">Mumbai</option>
+                <option value="pune">Pune</option>
+                <option value="bangalore">Bangalore</option>
               </select>
-              <ChevronDown className="w-5 h-5 text-[var(--color-emerald-heritage)] ml-2" />
+              <ChevronDown className="w-5 h-5 text-[var(--color-emerald-heritage)] ml-2 shrink-0" />
            </div>
-
-           {/* Filter Button */}
-           <button className="p-4 md:px-6 hidden md:flex items-center justify-center text-[var(--color-emerald-heritage)] hover:bg-[var(--color-cloud)]/50 rounded-full transition-colors">
-              <SlidersHorizontal className="w-6 h-6" />
-           </button>
 
            {/* Search Submit */}
            <button 
              onClick={handleSearch}
-             className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-10 py-5 rounded-2xl md:rounded-full font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
+             className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-8 py-3 mt-2 lg:mt-0 rounded-2xl lg:rounded-full font-bold tracking-wide transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base shrink-0"
            >
-              SEARCH <Search className="w-5 h-5 ml-1" />
+              Search <Search className="w-4 h-4 ml-1" />
            </button>
         </div>
       </div>
