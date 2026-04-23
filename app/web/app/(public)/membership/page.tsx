@@ -35,6 +35,22 @@ export default function MembershipPage() {
   }, []);
 
   const handlePurchase = async (plan: any) => {
+    if (plan.type === 'single_unlock' || plan.type === 'unlock') {
+      toast("Please choose the property first from property section", {
+        icon: '🏘️',
+        style: {
+          borderRadius: '1rem',
+          background: '#112743',
+          color: '#fff',
+          fontWeight: 'bold',
+          fontSize: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }
+      });
+      return;
+    }
+
     try {
       setIsProcessing(plan.id);
       

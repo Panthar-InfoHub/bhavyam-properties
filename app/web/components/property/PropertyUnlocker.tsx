@@ -9,7 +9,7 @@ import PhoneVerificationModal from '@/components/auth/PhoneVerificationModal';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
 
-type AccessType = 'plan' | 'unlock' | 'admin' | 'membership' | null;
+type AccessType = 'plan' | 'unlock' | 'credit' | 'admin' | 'membership' | null;
 
 export default function PropertyUnlocker({ propertyId }: { propertyId: string }) {
   const [loading, setLoading]           = useState(true);
@@ -183,8 +183,16 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
     setIsUnlocking(true);
     try {
-      const singlePlan = await supabase.from('plans').select('duration_days').eq('type', 'single_unlock').eq('is_active', true).single();
-      const duration = singlePlan.data?.duration_days || 7;
+      // Fetch duration from the standard credit pack plan (defaulting to 30 if not found)
+      const { data: creditPlan } = await supabase
+        .from('plans')
+        .select('duration_days')
+        .eq('type', 'credit_pack')
+        .order('duration_days', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const duration = creditPlan?.duration_days || 30;
 
       const { data, error } = await supabase.rpc('spend_credit', { p_property_id: propertyId, p_duration_days: duration });
       if (error) throw error;
@@ -192,7 +200,11 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
       toast.success("Credit spent! Property unlocked.");
       window.dispatchEvent(new Event('wallet-updated'));
-      setTimeout(() => fetchAccess(), 800);
+      setTimeout(() => {
+        fetchAccess();
+        // Force state to 'credit' for immediate UI feedback
+        setAccessType('credit');
+      }, 800);
     } catch (err: any) {
       toast.error(err.message || "Failed to spend credit");
     } finally {
@@ -253,7 +265,12 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
             <div>
               <h3 className="text-xl font-bold text-[#00b48f]">Access Granted</h3>
               <p className="text-[10px] text-[#8a8479] mt-0.5 uppercase tracking-widest font-bold">
-                Via {accessType === 'admin' ? 'Admin' : accessType === 'membership' ? 'Elite Membership' : 'Property Unlock'}
+                Via {
+                  accessType === 'admin' ? 'Admin' : 
+                  accessType === 'membership' ? 'Elite Membership' : 
+                  accessType === 'credit' ? 'Credit Unlock' : 
+                  'Property Unlock'
+                }
               </p>
             </div>
             {accessType !== 'admin' && accessType !== 'membership' && expiresAt && (
