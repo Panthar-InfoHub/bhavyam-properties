@@ -12,7 +12,7 @@ export default function LoanFacilitySection() {
   // Calculator State
   const [loanAmount, setLoanAmount] = useState<number>(5000000);
   const [interestRate, setInterestRate] = useState<number>(8.5);
-  const [tenureYears, setTenureYears] = useState<number>(20);
+  const [tenureYears, setTenureYears] =  useState<number>(20);
 
   // Form State
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
