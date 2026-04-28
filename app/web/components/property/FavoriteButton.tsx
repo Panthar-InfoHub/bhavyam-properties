@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-export default function FavoriteButton({ propertyId }: { propertyId: string }) {
+export default function FavoriteButton({ propertyId, className }: { propertyId: string; className?: string }) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function FavoriteButton({ propertyId }: { propertyId: string }) {
     <button
       onClick={toggleFavorite}
       disabled={isLoading}
-      className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md transition-all shadow-sm z-20 disabled:opacity-50 ${
+      className={className || `absolute top-4 right-4 p-2 rounded-full backdrop-blur-md transition-all shadow-sm z-20 disabled:opacity-50 ${
         isFavorited 
           ? 'bg-red-50/90 text-red-500 hover:bg-red-100' 
           : 'bg-white/70 text-gray-500 hover:bg-white hover:text-red-500'

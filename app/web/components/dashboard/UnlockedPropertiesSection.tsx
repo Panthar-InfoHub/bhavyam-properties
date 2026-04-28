@@ -38,7 +38,7 @@ export default function UnlockedPropertiesSection({ userId }: { userId: string }
       const { data, error } = await supabase
         .from('property_unlocks')
         .select(`
-          id, expires_at, created_at,
+          id, expires_at, unlocked_at,
           property:properties (
             id, property_type, city, listing_type, price, status,
             media:property_media (url, media_type)

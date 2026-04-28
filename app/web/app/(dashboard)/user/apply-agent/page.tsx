@@ -23,6 +23,9 @@ export default function ApplyAgentPage() {
   const [reason, setReason] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [resume, setResume] = useState<File | null>(null);
+  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
+  const [panFile, setPanFile] = useState<File | null>(null);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   
   const router = useRouter();
 
@@ -62,15 +65,44 @@ export default function ApplyAgentPage() {
     setSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]);
   };
 
+  const uploadFile = async (file: File, folder: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${currentUser.id}/${folder}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const { data, error } = await supabase.storage.from('agent-docs').upload(fileName, file);
+    if (error) throw error;
+    const { data: { publicUrl } } = supabase.storage.from('agent-docs').getPublicUrl(data.path);
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
+     if (!aadhaarFile) {
+       toast.error("Aadhaar Card is compulsory for registration.");
+       return;
+     }
+
      setIsSubmitting(true);
      try {
        if (!currentUser) {
-                   toast.error("Please login first to submit an application.");
+         toast.error("Please login first to submit an application.");
          router.push('/login?redirect=/user/apply-agent');
          return;
        }
+
+       // Upload documents
+       let aadhaarUrl = '';
+       let panUrl = '';
+       let certUrl = '';
+       let resumeUrl = '';
+
+       toast.loading("Uploading documents...", { id: 'uploading' });
+       
+       aadhaarUrl = await uploadFile(aadhaarFile, 'aadhaar');
+       if (panFile) panUrl = await uploadFile(panFile, 'pan');
+       if (certificateFile) certUrl = await uploadFile(certificateFile, 'certificate');
+       if (resume) resumeUrl = await uploadFile(resume, 'resume');
+
+       toast.dismiss('uploading');
 
        const generatedNotes = `Full Name: ${fullName}
 Email: ${email}
@@ -80,16 +112,25 @@ Reason for Joining Us: ${reason}
 Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
 
        const { error } = await supabase.from('agent_applications').insert([
-          { user_id: currentUser.id, notes: generatedNotes }
+          { 
+            user_id: currentUser.id, 
+            notes: generatedNotes,
+            aadhaar_url: aadhaarUrl,
+            pan_url: panUrl,
+            certificate_url: certUrl
+          }
        ]);
 
        if (error) throw error;
        
+       toast.success("Application submitted successfully!");
        setHasApplied(true);
        setAppStatus('pending');
        setShowPopup(false);
        
      } catch (err: any) {
+        toast.dismiss('uploading');
+        console.error("Error applying:", err);
         alert("Error applying: " + err.message);
      } finally {
         setIsSubmitting(false);
@@ -224,12 +265,31 @@ Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
                          </div>
                      </div>
 
-                     <div>
-                         <label className="block text-gray-500 text-[13px] font-bold mb-2">Submit your cover letter or resume <span className="text-red-500">*</span></label>
-                         <div className="flex items-center">
-                             <input type="file" required onChange={e => setResume(e.target.files?.[0] || null)} className="w-full bg-[#f4f4f4] text-gray-800 p-2.5 outline-none focus:ring-1 focus:ring-teal-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer text-sm" />
-                         </div>
-                     </div>
+                      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-2">
+                          <p className="text-blue-700 text-sm font-medium flex items-center gap-2">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg>
+                              Submitting PAN card or Agent Certificate can increase your chances to get approved.
+                          </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                              <label className="block text-gray-500 text-[13px] font-bold mb-2">Aadhaar Card <span className="text-red-500">*</span></label>
+                              <input type="file" required onChange={e => setAadhaarFile(e.target.files?.[0] || null)} className="w-full bg-[#f4f4f4] text-gray-800 p-2.5 outline-none focus:ring-1 focus:ring-teal-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer text-sm" />
+                          </div>
+                          <div>
+                              <label className="block text-gray-500 text-[13px] font-bold mb-2">PAN Card (Optional)</label>
+                              <input type="file" onChange={e => setPanFile(e.target.files?.[0] || null)} className="w-full bg-[#f4f4f4] text-gray-800 p-2.5 outline-none focus:ring-1 focus:ring-teal-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer text-sm" />
+                          </div>
+                          <div>
+                              <label className="block text-gray-500 text-[13px] font-bold mb-2">Agent Certificate (Optional)</label>
+                              <input type="file" onChange={e => setCertificateFile(e.target.files?.[0] || null)} className="w-full bg-[#f4f4f4] text-gray-800 p-2.5 outline-none focus:ring-1 focus:ring-teal-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer text-sm" />
+                          </div>
+                          <div>
+                              <label className="block text-gray-500 text-[13px] font-bold mb-2">Cover Letter / Resume <span className="text-red-500">*</span></label>
+                              <input type="file" required onChange={e => setResume(e.target.files?.[0] || null)} className="w-full bg-[#f4f4f4] text-gray-800 p-2.5 outline-none focus:ring-1 focus:ring-teal-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer text-sm" />
+                          </div>
+                      </div>
 
                      <div className="flex justify-center mt-2">
                          <button 

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import FavoriteButton from './FavoriteButton';
 
@@ -10,7 +12,7 @@ interface PropertyCardProps {
     city: string;
     area: string;
     owner?: { role: string } | null;
-    media: { url: string }[];
+    media: { url: string; media_type?: string }[];
     map_url?: string | null;
     address?: string | null;
     unlocked?: boolean;
@@ -18,95 +20,103 @@ interface PropertyCardProps {
 }
 
 export default function PropertyCard({ property }: PropertyCardProps) {
-  // Try to grab the first image, or use a placeholder
   const mainImage = property.media && property.media.length > 0 
     ? property.media[0].url 
-    : 'https://placehold.co/600x400/eeeeee/999999?text=No+Image';
+    : 'https://placehold.co/600x400/eeeeee/999999?text=Cover+Image';
 
-  // Format currency
-  const actualPrice = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
-  }).format(property.price);
+  const formattedPrice = new Intl.NumberFormat('en-IN').format(property.price);
+  
+  const listingTag = property.listing_type?.toLowerCase() === 'rent' ? 'For Rent' : 'For Sell';
 
-  const displayedPrice = actualPrice;
   const displayedAddress = property.unlocked && property.address ? property.address : property.city;
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full group relative p-1">
-      <Link href={`/properties/${property.id}`} className="flex flex-col h-full">
-        {/* Image Header wrapper */}
-        <div className="relative h-80 w-full overflow-hidden bg-gray-100 transition-all duration-500 group-hover:h-72 rounded-b-[3rem] z-10">
-          <img 
-            src={mainImage} 
-            alt={`${property.property_type} in ${property.city}`} 
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-          />
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
-            <div className="bg-[#00b48f] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg backdrop-blur-md">
-              {property.listing_type}
+    <Link href={`/properties/${property.id}`} className="block h-full group relative focus:outline-none">
+      <div className="bg-[var(--color-pure-white)] rounded-3xl shadow-[var(--shadow-ambient)] hover:shadow-[var(--shadow-ambient-hover)] transition-all duration-500 flex flex-col relative h-full overflow-hidden border border-gray-100">
+        
+        {/* Top Image Box Wrapper */}
+        <div className="relative">
+            {/* Main Image Container */}
+            <div className="relative h-[260px] w-full bg-gray-100 overflow-hidden">
+              <img 
+                src={mainImage} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                alt={property.property_type} 
+              />
+              
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+
+              <div className="absolute bottom-5 left-5 text-white font-bold text-2xl drop-shadow-md flex items-end gap-1">
+                ₹ {formattedPrice} 
+                <span className="text-[13px] font-medium text-white/90 mb-1 ml-1 tracking-wide">(Negotiable)</span>
+              </div>
             </div>
-            {property.unlocked && (
-              <div className="bg-blue-600/90 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-lg backdrop-blur-md flex items-center gap-1 w-fit">
-                 <span className="animate-pulse">🔓</span> Full Access
+
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+              <div className="bg-[var(--color-emerald-heritage)] text-white px-4 py-1 font-bold text-xs tracking-[0.05em] uppercase rounded-full shadow-md w-fit">
+                {listingTag}
+              </div>
+              {property.unlocked && (
+                <div className="bg-blue-600/90 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg backdrop-blur-md flex items-center gap-1 w-fit">
+                   <span className="animate-pulse">🔓</span> Full Access
+                </div>
+              )}
+            </div>
+
+            <div className="absolute -bottom-3 left-6 bg-[var(--color-pure-white)] text-[var(--color-emerald-heritage)] text-[12px] font-black uppercase tracking-[0.05em] px-4 py-1.5 rounded-full shadow-md z-20">
+              {property.property_type || 'Plots'}
+            </div>
+            
+            {property.owner?.role === 'seller' && !property.unlocked && (
+              <div className="absolute bottom-16 left-5 bg-orange-500/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-lg">
+                Unverified Seller
               </div>
             )}
-          </div>
 
-          {/* Price Overlay on Thumbnail */}
-          <div className="absolute bottom-12 right-6 bg-white/95 backdrop-blur-xl px-4 py-2 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/20 flex flex-col items-end transform transition-all duration-500 group-hover:-translate-y-6">
-             <span className="text-xl font-black text-[#022039] leading-tight tracking-tighter">{displayedPrice}</span>
-          </div>
-
-          {/* Unverified Seller badge */}
-          {property.owner?.role === 'seller' && !property.unlocked && (
-            <div className="absolute bottom-12 left-6 bg-orange-500/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-lg">
-              Unverified Seller
+            {/* Favorite Action Button - inside the image container so it looks right, click is stopped */}
+            <div 
+              className="absolute bottom-5 right-5 z-30"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            >
+              <FavoriteButton 
+                propertyId={property.id} 
+                className="text-white hover:text-red-500 transition-colors bg-white/10 backdrop-blur-sm border border-white/20 p-2 rounded-md hover:bg-white/30"
+              />
             </div>
-          )}
         </div>
 
-        {/* Card Content container - Reduced upward shift for a more subtle feel */}
-        <div className="px-6 pt-2 bg-white relative z-20 flex flex-col flex-1 transition-all duration-500 group-hover:-translate-y-8">
-          <div className="mb-2">
-            <h3 className="text-2xl font-black text-gray-800 line-clamp-1 group-hover:text-[#00579e] transition-colors uppercase tracking-tighter">
-              {property.property_type}
+        {/* Middle Content */}
+        <div className="px-6 pt-8 pb-5 flex-1 bg-[var(--color-pure-white)] text-left">
+            <h3 className="text-[22px] font-bold text-[var(--color-near-black)] group-hover:text-[var(--color-emerald-heritage)] transition-colors mb-2.5 line-clamp-1">
+              {property.area ? `${property.area} ` : ''}{property.property_type || 'property'}
             </h3>
-          </div>
-          
-          <p className="text-gray-400 text-sm mb-6 flex items-center gap-1.5 font-medium">
-            <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="line-clamp-1">{displayedAddress}</span>
-          </p>
-
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
-            <div className="flex flex-col">
-               <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black mb-1">Area</span>
-               <span className="font-bold text-gray-800">{property.area}</span>
-            </div>
-            <div className="flex flex-col">
-               <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black mb-1">Pricing</span>
-               <span className="font-bold text-gray-800 capitalize">{property.listing_type}</span>
-            </div>
-          </div>
-
-          {/* View Details Slide Up Animation */}
-          <div className="mt-auto opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 h-0 group-hover:h-14 overflow-hidden">
-             <div className="w-full h-14 bg-[#00b48f] text-white flex items-center justify-center font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-[0_10px_30px_rgba(0,180,143,0.3)]">
-                View Details
-             </div>
-          </div>
+            <p className="text-[var(--color-slate)] text-[14px] flex items-center gap-1.5 font-medium">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="line-clamp-1">{displayedAddress}</span>
+            </p>
         </div>
-      </Link>
-      
-      {/* Favorite Action Button - Moving it out of the main link to avoid nested interactive elements issues */}
-      <div className="absolute top-0 right-0 p-4 z-10">
-        <FavoriteButton propertyId={property.id} />
+
+        {/* Footer */}
+        <div className="px-6 pb-6 pt-2 bg-[var(--color-pure-white)] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--color-cloud)] overflow-hidden flex items-center justify-center shrink-0 text-gray-400">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+              </div>
+              <div className="text-[12px] font-bold text-[var(--color-near-black)] leading-tight uppercase tracking-[0.05em]">
+                  By Bhavyam<br/><span className="text-[var(--color-slate)] font-medium">Properties</span>
+              </div>
+            </div>
+            <div className="bg-[var(--color-emerald-heritage)] text-white text-[12px] font-bold px-6 py-2.5 rounded-full group-hover:bg-[var(--color-electric-mint-glow)] group-hover:text-[var(--color-deep-navy)] transition-colors uppercase tracking-[0.1em]">
+              Details
+            </div>
+        </div>
+
       </div>
-    </div>
+    </Link>
   );
 }

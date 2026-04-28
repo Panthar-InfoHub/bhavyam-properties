@@ -25,6 +25,9 @@ export default function AdminAgentsPage() {
          id,
          status,
          notes,
+         aadhaar_url,
+         pan_url,
+         certificate_url,
          created_at,
          user:profiles(id, first_name, last_name, email, phone_number, role)
       `)
@@ -109,7 +112,31 @@ export default function AdminAgentsPage() {
                   
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mt-4">
                      <p className="text-xs uppercase font-bold text-gray-400 mb-2">Application Notes / Qualifications</p>
-                     <p className="text-gray-700 leading-relaxed text-sm">"{app.notes}"</p>
+                     <p className="text-gray-700 leading-relaxed text-sm mb-4">"{app.notes}"</p>
+                     
+                     <div className="pt-3 border-t border-gray-200">
+                        <p className="text-xs uppercase font-bold text-gray-400 mb-3">Verification Documents</p>
+                        <div className="flex flex-wrap gap-3">
+                           {app.aadhaar_url && (
+                             <a href={app.aadhaar_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold text-teal-600 hover:bg-teal-50 transition-colors">
+                                🆔 Aadhaar Card
+                             </a>
+                           )}
+                           {app.pan_url && (
+                             <a href={app.pan_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                                💳 PAN Card
+                             </a>
+                           )}
+                           {app.certificate_url && (
+                             <a href={app.certificate_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-600 hover:bg-purple-50 transition-colors">
+                                📜 Certificate
+                             </a>
+                           )}
+                           {!app.aadhaar_url && !app.pan_url && !app.certificate_url && (
+                             <span className="text-xs text-gray-400 italic">No documents uploaded.</span>
+                           )}
+                        </div>
+                     </div>
                   </div>
                 </div>
 

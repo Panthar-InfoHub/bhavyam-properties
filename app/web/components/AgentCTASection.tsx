@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function AgentCTASection() {
   return (
     <section className="bg-[var(--color-pure-white)] py-12 px-4 md:px-8 overflow-hidden">
@@ -47,9 +49,9 @@ export default function AgentCTASection() {
              </p>
            </div>
            
-           <button className="whitespace-nowrap bg-[var(--color-deep-navy)] text-white font-bold text-[14px] uppercase tracking-[0.1em] px-8 py-4 hover:bg-[var(--color-electric-mint-glow)] hover:text-black shadow-[0_4px_15px_rgba(17,39,67,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-full">
+           <Link href="/user/apply-agent" className="whitespace-nowrap bg-[var(--color-deep-navy)] text-white font-bold text-[14px] uppercase tracking-[0.1em] px-8 py-4 hover:bg-[var(--color-electric-mint-glow)] hover:text-black shadow-[0_4px_15px_rgba(17,39,67,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-full">
              Register Now
-           </button>
+           </Link>
            
         </div>
 

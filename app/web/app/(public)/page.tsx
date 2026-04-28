@@ -7,6 +7,7 @@ import ServicesSection from '@/components/ServicesSection';
 import VideoTourSection from '@/components/VideoTourSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import LatestProperties from '@/components/LatestProperties';
+import LoanFacilitySection from '@/components/LoanFacilitySection';
 
 export default function Home() {
   return (
@@ -14,6 +15,8 @@ export default function Home() {
       <Hero />
       
       <LatestProperties />
+
+      <LoanFacilitySection />
 
       <WhyChooseUs />
 

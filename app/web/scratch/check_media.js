@@ -5,17 +5,17 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function checkColumns() {
-    const { data, error } = await supabase.from('property_unlocks').select('*').limit(1);
+async function checkMedia() {
+    const { data, error } = await supabase.from('property_media').select('*').limit(1);
     if (error) {
         console.error("Error:", error);
         return;
     }
     if (data && data.length > 0) {
-        console.log("Columns in property_unlocks:", Object.keys(data[0]));
+        console.log("Columns in property_media:", Object.keys(data[0]));
     } else {
-        console.log("No data in property_unlocks to check columns.");
+        console.log("No data in property_media to check columns.");
     }
 }
 
-checkColumns();
+checkMedia();
