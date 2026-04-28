@@ -3,13 +3,20 @@ import VideoPopup from './VideoPopup';
 export default function VideoTourSection() {
   return (
     <section className="relative w-full h-[600px] flex items-center justify-start overflow-hidden">
-      
-      {/* Parallax Background Image */}
-      <div 
-         className="absolute inset-0 z-0 bg-fixed bg-cover bg-center filter brightness-[0.85]"
-         style={{ backgroundImage: 'url("/images/hero.png")' }}
+
+      {/* Background Video */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 z-0 w-full h-full object-cover brightness-[0.75]"
       >
-      </div>
+        <source
+          src="https://assets.mixkit.co/videos/preview/mixkit-tour-of-a-luxury-apartment-12385-large.mp4"
+          type="video/mp4"
+        />
+      </video>
 
       {/* Background Image Overlay Gradient */}
       <div className="absolute inset-0 z-[5] bg-gradient-to-r from-[var(--color-deep-navy)]/80 to-transparent pointer-events-none" />

@@ -38,12 +38,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                  Blog & Articles
-                </Link>
-              </li>
-              <li>
                 <Link href="/terms-and-conditions" className="hover:text-white transition-colors flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                   Terms and Conditions
@@ -81,7 +75,7 @@ export default function Footer() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>Near Paramedical, Kochhabhawar, Jhansi</span>
+                <span>63 kisan bazar, Jhansi Uttar Pradesh</span>
               </li>
               <li className="flex gap-3 items-center">
                 <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

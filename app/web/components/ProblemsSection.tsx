@@ -49,9 +49,10 @@ export default function ProblemsSection() {
       <div className="max-w-7xl w-full">
         
         {/* Header Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter">Problems</h2>
-          <p className="text-gray-500 font-medium max-w-2xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-x-8 gap-y-4 mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter">Problems</h2>
+          <div className="hidden md:block w-px h-12 bg-gray-200"></div>
+          <p className="text-gray-500 font-medium max-w-none text-center md:text-left">
             For normal people in tier 2 and tier 3 cities in India, the real estate sector presents several challenges
           </p>
         </div>

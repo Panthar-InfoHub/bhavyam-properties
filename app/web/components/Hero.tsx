@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { TreePine, Building2, Store, Briefcase, Home, Map, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { TreePine, Building2, Store, Briefcase, Home, Map, Search, ChevronDown } from 'lucide-react';
 export default function Hero() {
   const [keyword, setKeyword] = useState('');
   const [propertyType, setPropertyType] = useState('');
@@ -35,15 +34,17 @@ export default function Hero() {
 
   return (
     <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center overflow-hidden py-24">
-      {/* Background Image with Dark Overlay */}
+      {/* Background Video with Dark Overlay */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src="/images/hero.png"
-          alt="Luxury Living Room"
-          fill
-          className="object-cover"
-          priority
-        />
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="https://videos.pexels.com/video-files/7578545/7578545-hd_1920_1080_25fps.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-deep-navy)]/90 via-[var(--color-deep-navy-light)]/70 to-black/40 backdrop-blur-[2px]" />
       </div>
 

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 
-type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'reviews' | 'agents' | 'plans';
+type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'reviews' | 'agents' | 'agents_list' | 'plans';
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
@@ -24,6 +24,7 @@ export default function AdminDashboardPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
 
   // Filter & Sort State
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,6 +118,18 @@ export default function AdminDashboardPage() {
     if (!error) setUsers(prev => prev.map(u => u.id === id ? { ...u, role: 'buyer' } : u));
   };
 
+  const suspendAgent = async (userId: string) => {
+    if (!confirm('Suspend this agent? Their role will be reset to Seller and they will need to reapply.')) return;
+    // Reset role to seller
+    const { error: roleError } = await supabase.from('profiles').update({ role: 'seller', agent_code: null } as any).eq('id', userId);
+    if (roleError) { toast.error('Failed to suspend agent: ' + roleError.message); return; }
+    // Mark their approved application as rejected so they can reapply
+    await supabase.from('agent_applications').update({ status: 'rejected' } as any).eq('user_id', userId).eq('status', 'approved');
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: 'seller', agent_code: null } : u));
+    setSelectedAgent(null);
+    toast.success('Agent suspended. They must reapply.');
+  };
+
   const updateUserRole = async (id: string, newRole: string) => {
     if (newRole === 'admin' && !confirm('Promote this user to ADMIN? This will give them full control.')) return;
     const { error } = await supabase.from('profiles').update({ role: newRole } as any).eq('id', id);
@@ -175,7 +188,8 @@ export default function AdminDashboardPage() {
     { key: 'overview', label: 'Analytics', icon: '📊' },
     { key: 'properties', label: 'All Properties', icon: '🏠' },
     { key: 'users', label: 'Users', icon: '👥' },
-    { key: 'agents', label: 'Agent Applications', icon: '🎖️' },
+    { key: 'agents', label: 'Agent Applications', icon: '📝' },
+    { key: 'agents_list', label: 'Agents', icon: '🎖️' },
     { key: 'interests', label: 'Interests', icon: '📋' },
     { key: 'transactions', label: 'Transactions', icon: '💸' },
     { key: 'plans', label: 'Plan Settings', icon: '⚙️' },
@@ -601,43 +615,88 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ─── AGENTS APPS ─── */}
+        {/* ─── PENDING AGENT APPLICATIONS ─── */}
         {section === 'agents' && (
           <div>
-            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Agent Applications</h1>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-extrabold text-[#00579e]">Agent Applications</h1>
+              <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-100">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                <span className="text-xs font-bold text-yellow-700 uppercase tracking-widest">{agentApps.filter(a => a.status === 'pending').length} Pending</span>
+              </div>
+            </div>
             <div className="flex flex-col gap-4">
-              {agentApps.map(app => (
-                <div key={app.id} className={`bg-white rounded-xl border shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 border-l-4 ${app.status === 'pending' ? 'border-l-yellow-400' : app.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
+              {agentApps.filter(a => a.status === 'pending').map(app => (
+                <div key={app.id} className="bg-white rounded-xl border border-yellow-200 border-l-4 border-l-yellow-400 shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:shadow-md transition-all">
                   <div className="flex-1">
                     <p className="font-bold text-gray-800 text-lg">{app.user?.first_name} {app.user?.last_name}</p>
-                    <p className="text-xs text-gray-500 mb-2">📞 {app.user?.phone_number} | ✉️ {app.user?.email}</p>
-                    <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 mb-3">
-                       <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 leading-none">Qualification Note</p>
-                       <p className="text-sm text-gray-700 italic leading-snug">"{app.notes}"</p>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                       <span className="text-[10px] font-bold text-gray-400 uppercase">Status:</span>
-                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${app.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : app.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>
-                          {app.status}
-                       </span>
+                    <p className="text-xs text-gray-500 mb-3 font-medium">📞 {app.user?.phone_number} | ✉️ {app.user?.email}</p>
+                    <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-100">
+                       <p className="text-[10px] uppercase font-black text-gray-400 mb-2">Application Notes</p>
+                       <p className="text-sm text-gray-700 leading-relaxed">{app.notes}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0 md:pt-2">
-                    {app.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleApproveAgent(app.id, app.user?.first_name || 'UNK')} className="bg-[#00b48f] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors shadow-sm">Gen ID & Approve</button>
-                        <button onClick={() => handleRejectAgent(app.id)} className="bg-white text-red-500 border border-red-200 text-xs font-bold px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">Reject Application</button>
-                      </>
-                    )}
-                    {app.status === 'approved' && (
-                        <div className="text-teal-600 flex items-center gap-1 font-bold text-xs bg-teal-50 px-3 py-2 rounded-lg border border-teal-100">
-                           <span>✅</span> Verified Agent
-                        </div>
-                    )}
+                  <div className="flex flex-col gap-2 shrink-0 md:pt-2 min-w-[160px]">
+                    <button onClick={() => handleApproveAgent(app.id, app.user?.first_name || 'UNK')} className="bg-[#00b48f] text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-teal-600 transition-colors shadow-sm">✓ Approve Agent</button>
+                    <button onClick={() => handleRejectAgent(app.id)} className="bg-white text-red-500 border border-red-200 text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-red-50 transition-colors">✗ Reject</button>
+                    <p className="text-[10px] text-gray-400 text-center">{new Date(app.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
               ))}
-              {agentApps.length === 0 && <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400 shadow-sm">No applications in system queue.</div>}
+              {agentApps.filter(a => a.status === 'pending').length === 0 && (
+                <div className="bg-white p-16 rounded-2xl border border-gray-100 text-center shadow-sm">
+                  <p className="text-4xl mb-3">🎉</p>
+                  <p className="text-gray-700 font-bold text-lg">All Clear!</p>
+                  <p className="text-gray-400 text-sm mt-1">No pending agent applications.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── ACTIVE AGENTS LIST ─── */}
+        {section === 'agents_list' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-extrabold text-[#00579e]">Active Agents</h1>
+              <div className="flex items-center gap-2 bg-teal-50 px-4 py-2 rounded-full border border-teal-100">
+                <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                <span className="text-xs font-bold text-teal-700 uppercase tracking-widest">{users.filter(u => u.role === 'agent').length} Active</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {users.filter(u => u.role === 'agent').map(agent => (
+                <div
+                  key={agent.id}
+                  onClick={() => setSelectedAgent(agent)}
+                  className="bg-white rounded-2xl border border-teal-100 border-l-4 border-l-[#00b48f] shadow-sm p-5 cursor-pointer hover:shadow-lg hover:border-teal-200 transition-all group"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-11 h-11 bg-[#00b48f] rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md">
+                      {agent.first_name?.[0]}{agent.last_name?.[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 group-hover:text-[#00579e] transition-colors">{agent.first_name} {agent.last_name}</p>
+                      <span className="text-[10px] font-black bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full">✓ Verified Agent</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 text-xs text-gray-500">
+                    <p>✉️ {agent.email}</p>
+                    <p>📞 {agent.phone_number || 'N/A'}</p>
+                    <p>📅 Joined {new Date(agent.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-right">
+                    Click to view details →
+                  </div>
+                </div>
+              ))}
+              {users.filter(u => u.role === 'agent').length === 0 && (
+                <div className="col-span-3 bg-white p-16 rounded-2xl border border-gray-100 text-center shadow-sm">
+                  <p className="text-4xl mb-3">🎖️</p>
+                  <p className="text-gray-700 font-bold text-lg">No Active Agents</p>
+                  <p className="text-gray-400 text-sm mt-1">Approve applications to onboard agents.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -777,6 +836,66 @@ export default function AdminDashboardPage() {
                    Mark as Contacted
                  </button>
                )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AGENT DETAIL MODAL */}
+      {selectedAgent && (
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedAgent(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedAgent(null)} className="absolute top-4 right-4 h-8 w-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors cursor-pointer z-[100]">✕</button>
+
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#00b48f] to-[#00579e] p-6 text-white pb-10 relative overflow-hidden">
+              <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/10 rounded-full"></div>
+              <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/5 rounded-full"></div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-green-200 mb-2 relative z-10">Verified Agent Profile</p>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-white font-black text-2xl border border-white/30">
+                  {selectedAgent.first_name?.[0]}{selectedAgent.last_name?.[0]}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black mb-0.5">{selectedAgent.first_name} {selectedAgent.last_name}</h2>
+                  <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-widest">🎖️ Active Agent</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 -mt-4 relative z-10">
+              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 mb-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                    <p className="text-sm font-bold text-gray-800 break-all">{selectedAgent.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone</p>
+                    <p className="text-sm font-bold text-gray-800">{selectedAgent.phone_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</p>
+                    <span className="text-xs font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">{selectedAgent.role}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Joined</p>
+                    <p className="text-sm font-bold text-gray-800">{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
+                <p className="text-xs font-black text-red-700 uppercase tracking-widest mb-1">⚠️ Danger Zone</p>
+                <p className="text-xs text-red-500 mb-4 font-medium">Suspending this agent will reset their role to Seller and invalidate their Agent ID. They will need to submit a new application with updated documents.</p>
+                <button
+                  onClick={() => suspendAgent(selectedAgent.id)}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-red-100"
+                >
+                  Suspend Agent
+                </button>
+              </div>
             </div>
           </div>
         </div>
