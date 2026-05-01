@@ -290,21 +290,31 @@ export default function PropertyDetailsPage() {
               </div>
             )}
 
-            {/* 2. Meet Your Agent Card */}
+             {/* 2. Meet Your Agent Card */}
             <div className="bg-[#f0f0f0] p-6 rounded-3xl mt-4">
                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Gateway</h3>
-               <div className="flex items-center gap-4 mb-6">
+               <div className="flex items-center gap-4 mb-5">
                  <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-300">
                     <svg className="w-8 h-8 text-white mt-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
                  </div>
                  <div>
                    <h4 className="font-semibold text-gray-900 text-sm">Bhavyam Properties</h4>
-                   <p className="text-gray-500 text-xs text-[#00b48f] font-bold">Official Representation</p>
+                   <p className="text-[#00b48f] text-xs font-semibold">Official Representation</p>
                  </div>
+               </div>
+               {/* Phone + Email side by side */}
+               <div className="flex gap-2 mb-4">
+                 <a href="tel:+919876543210" className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition">
+                   <span className="text-base">📞</span>
+                   <span>+91 98765 43210</span>
+                 </a>
+                 <a href="mailto:admin@bhavyamproperties.com" className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition">
+                   <span className="text-base">✉️</span>
+                   <span className="truncate">admin@...</span>
+                 </a>
                </div>
                <div className="flex flex-col gap-3">
                  <div className="w-full">
-                   {/* Wrapping InterestButton so it fits nicely */}
                    <style dangerouslySetInnerHTML={{__html: `
                      .custom-interest-btn > div > button {
                        background-color: #e4e4e4 !important;
@@ -333,17 +343,17 @@ export default function PropertyDetailsPage() {
                     <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-teal-100 text-2xl">
                       👑
                     </div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2">Bhavyam Admin</h3>
-                    <p className="text-sm text-gray-500 mb-6 font-medium">Please quote the Property ID when contacting directly.</p>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">Bhavyam Admin</h3>
+                    <p className="text-sm text-gray-400 mb-6 font-normal">Please quote the Property ID when contacting directly.</p>
                     
-                    <div className="flex flex-col gap-3 text-left">
-                       <a href="mailto:admin@bhavyamproperties.com" className="bg-gray-50 p-4 rounded-xl flex items-center gap-3 hover:bg-gray-100 transition border border-gray-100 group">
-                         <span className="text-xl group-hover:scale-110 transition-transform">✉️</span>
-                         <span className="font-bold text-sm text-gray-800">admin@bhavyamproperties.com</span>
+                    <div className="flex gap-3">
+                       <a href="mailto:admin@bhavyamproperties.com" className="flex-1 bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-100 transition border border-gray-100 group">
+                         <span className="text-2xl group-hover:scale-110 transition-transform">✉️</span>
+                         <span className="text-xs font-medium text-gray-700 text-center leading-tight">admin@bhavyam<br/>properties.com</span>
                        </a>
-                       <a href="tel:+919876543210" className="bg-gray-50 p-4 rounded-xl flex items-center gap-3 hover:bg-gray-100 transition border border-gray-100 group">
-                         <span className="text-xl group-hover:scale-110 transition-transform">📞</span>
-                         <span className="font-bold text-sm text-gray-800">+91 98765 43210</span>
+                       <a href="tel:+919876543210" className="flex-1 bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-100 transition border border-gray-100 group">
+                         <span className="text-2xl group-hover:scale-110 transition-transform">📞</span>
+                         <span className="text-xs font-medium text-gray-700 text-center">+91 98765<br/>43210</span>
                        </a>
                     </div>
                  </div>
@@ -353,6 +363,24 @@ export default function PropertyDetailsPage() {
             {/* Mortgage Calculator */}
             <div className="mt-4">
               <MortgageCalculator />
+            </div>
+
+            {/* Property Loan Card */}
+            <div className="mt-4 bg-[#1a1a1a] rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+              <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/5 group-hover:bg-white/10 transition-all duration-500 group-hover:scale-125" />
+              <div className="text-white mb-5 relative z-10">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/>
+                  <line x1="2" y1="10" x2="22" y2="10"/>
+                  <path d="M7 15h2m4 0h4"/>
+                </svg>
+              </div>
+              <h3 className="text-white text-lg font-semibold mb-1.5 relative z-10">Property Loan</h3>
+              <p className="text-white/60 text-sm leading-relaxed relative z-10 mb-5">Get expert guidance and quick approvals for home and property loans.</p>
+              <a href="/contact" className="relative z-10 inline-flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold tracking-wide transition-all">
+                Inquire Now
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
             </div>
 
           </div>

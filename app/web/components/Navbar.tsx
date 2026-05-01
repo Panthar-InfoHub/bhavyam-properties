@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCurrentUser, signOutUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
+import toast from 'react-hot-toast';
 
 interface NavbarProps {
   transparent?: boolean;
@@ -105,6 +106,60 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
     router.push('/');
   };
 
+  const handleAddProperty = async () => {
+    // Not logged in → go to login
+    if (!user) { router.push('/login'); return; }
+
+    const role = user.profile?.role;
+
+    // Admin or Agent → go directly to property submission form
+    if (role === 'admin' || role === 'agent') {
+      router.push('/submit-property');
+      return;
+    }
+
+    // Normal users (seller / buyer) → check 30-day cooldown
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recent, error } = await supabase
+      .from('properties')
+      .select('created_at')
+      .eq('owner_id', user.id)
+      .gte('created_at', thirtyDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      toast.error('Could not verify your listing history. Please try again.');
+      return;
+    }
+
+    if (recent) {
+      const nextAllowed = new Date(new Date(recent.created_at).getTime() + 30 * 24 * 60 * 60 * 1000);
+      const daysLeft = Math.ceil((nextAllowed.getTime() - Date.now()) / 86400000);
+      toast(
+        `⏳ You can only add 1 property per month.\nYour next listing is available in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}.`,
+        {
+          duration: 5000,
+          style: {
+            background: '#1a1a2e',
+            color: '#fff',
+            borderRadius: '1rem',
+            fontWeight: '600',
+            fontSize: '14px',
+            padding: '16px 20px',
+            maxWidth: '360px',
+          },
+          icon: '🔒',
+        }
+      );
+      return;
+    }
+
+    // Eligible → go to profile/dashboard (which leads to submit form)
+    router.push('/submit-property');
+  };
+
   // Handle scroll for changing transparent navbar to solid
   useEffect(() => {
     if (!transparent) return;
@@ -158,9 +213,6 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         </li>
         <li>
           <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
-        </li>
-        <li>
-          <Link href="/user/apply-agent" className={`transition-colors ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Join Us</Link>
         </li>
         <li>
           <Link href="/terms-and-conditions" className={`transition-colors ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Terms and Conditions</Link>
@@ -280,14 +332,14 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
         )}
 
         {/* Add Property Button (Always Visible) */}
-        <Link href={user ? "/dashboard" : "/login"} className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20">
+        <button onClick={handleAddProperty} className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20">
           <div className="w-5 h-5 bg-white text-[#00b48f] rounded-full flex items-center justify-center shadow-sm">
             <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
           </div>
           <span className="whitespace-nowrap">Add Property</span>
-        </Link>
+        </button>
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -301,7 +353,6 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                 <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/about' ? 'text-[#00b48f]' : 'text-gray-900'}`}>About</Link>
                 <Link href="/properties" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/properties' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Properties</Link>
                 <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/membership' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Membership</Link>
-                <Link href="/user/apply-agent" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/user/apply-agent' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Join Us</Link>
                 <Link href="/terms-and-conditions" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Terms & Conditions</Link>
                 <Link href="/privacy-policy" onClick={() => setIsMobileMenuOpen(false)} className={`px-4 py-3 text-lg font-black uppercase tracking-tight ${pathname === '/privacy-policy' ? 'text-[#00b48f]' : 'text-gray-900'}`}>Privacy Policy</Link>
               </nav>
@@ -309,9 +360,9 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
 
             <div className="border-t border-gray-100 pt-6 flex flex-col gap-4">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4">Quick Actions</p>
-              <Link href={user ? "/dashboard" : "/login"} onClick={() => setIsMobileMenuOpen(false)} className="mx-4 flex items-center justify-center gap-2 bg-[#00b48f] text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">
+              <button onClick={() => { setIsMobileMenuOpen(false); handleAddProperty(); }} className="mx-4 flex items-center justify-center gap-2 bg-[#00b48f] text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">
                  Post New Property
-              </Link>
+              </button>
             </div>
           </div>
         </div>

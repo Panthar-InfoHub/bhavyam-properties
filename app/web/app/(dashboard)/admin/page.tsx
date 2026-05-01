@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
+import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSection';
 
-type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'reviews' | 'agents' | 'agents_list' | 'plans';
+type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans';
 
 export default function AdminDashboardPage() {
   const [section, setSection] = useState<Section>('overview');
@@ -17,6 +18,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [interests, setInterests] = useState<any[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [agentApps, setAgentApps] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
@@ -62,6 +64,7 @@ export default function AdminDashboardPage() {
         { data: allUsers },
         { data: pays },
         { data: ints },
+        { data: srvReqs },
         { data: revs },
         { data: apps },
         { data: allPlans }
@@ -70,6 +73,7 @@ export default function AdminDashboardPage() {
         supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
         supabase.from('transactions').select('*, user:profiles(first_name, last_name, email), property:properties(id, property_type, city)').order('created_at', { ascending: false }),
         supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(id, property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number, email))').order('created_at', { ascending: false }),
+        supabase.from('service_requests').select('*').order('created_at', { ascending: false }),
         supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
         supabase.from('agent_applications').select('id, status, notes, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
         supabase.from('plans').select('*').order('type', { ascending: true })
@@ -82,6 +86,7 @@ export default function AdminDashboardPage() {
       setUsers(allUsers || []);
       setTransactions(pays || []);
       setInterests(ints || []);
+      setServiceRequests(srvReqs || []);
       setReviews(revs || []);
       setAgentApps(apps || []);
       setPlans(allPlans || []);
@@ -145,6 +150,18 @@ export default function AdminDashboardPage() {
     await supabase.from('interest_requests').update({ status }).eq('id', id);
   };
 
+  const updateServiceRequestStatus = async (id: string, status: string) => {
+    setServiceRequests(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    await supabase.from('service_requests').update({ status }).eq('id', id);
+  };
+
+  const deleteServiceRequest = async (id: string) => {
+    setServiceRequests(prev => prev.filter(req => req.id !== id));
+    const { error } = await supabase.from('service_requests').delete().eq('id', id);
+    if (error) toast.error("Failed to delete request");
+    else toast.success("Request deleted successfully");
+  };
+
   const handleApproveAgent = async (appId: string, userName: string) => {
     const uniqueHash = Math.random().toString(36).substring(2, 6).toUpperCase();
     const cleanName = userName.substring(0, 3).toUpperCase();
@@ -191,6 +208,7 @@ export default function AdminDashboardPage() {
     { key: 'agents', label: 'Agent Applications', icon: '📝' },
     { key: 'agents_list', label: 'Agents', icon: '🎖️' },
     { key: 'interests', label: 'Interests', icon: '📋' },
+    { key: 'service_requests', label: 'Service Queries', icon: '📩' },
     { key: 'transactions', label: 'Transactions', icon: '💸' },
     { key: 'plans', label: 'Plan Settings', icon: '⚙️' },
     { key: 'reviews', label: 'Reviews', icon: '⭐' },
@@ -582,6 +600,15 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {/* ─── SERVICE REQUESTS ─── */}
+        {section === 'service_requests' && (
+          <ServiceRequestsSection 
+            requests={serviceRequests} 
+            onStatusUpdate={updateServiceRequestStatus} 
+            onDelete={deleteServiceRequest}
+          />
+        )}
+
         {/* ─── REVIEWS ─── */}
         {section === 'reviews' && (
           <div>
@@ -707,7 +734,7 @@ export default function AdminDashboardPage() {
              <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Plan Control Center</h1>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {plans.map(p => (
-                  <div key={p.id} className={`bg-white rounded-3xl p-8 border shadow-sm transition-all ${p.is_active ? 'border-teal-100 hover:shadow-xl' : 'opacity-60 bg-gray-50'}`}>
+                  <div key={p.id} className={`bg-white rounded-3xl p-8 border shadow-sm transition-all flex flex-col ${p.is_active ? 'border-teal-100 hover:shadow-xl' : 'opacity-60 bg-gray-50'}`}>
                     <div className="flex justify-between items-start mb-6">
                        <span className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-tighter ${p.type === 'subscription' ? 'bg-blue-100 text-blue-700' : p.type === 'credit_pack' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
                           {p.type.replace('_', ' ')}
@@ -720,28 +747,56 @@ export default function AdminDashboardPage() {
                        </button>
                     </div>
 
-                    <h3 className="font-black text-gray-800 text-xl mb-1">{p.name}</h3>
-                    <p className="text-xs text-gray-400 font-bold mb-6 italic">"{p.description}"</p>
+                    <div className="space-y-3 mb-6">
+                      <input 
+                        type="text" 
+                        className="w-full bg-gray-50 border-none font-black text-gray-800 text-xl outline-none focus:ring-2 focus:ring-teal-500/20 rounded-lg px-2 py-1"
+                        value={p.name}
+                        onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, name: e.target.value } : plan))}
+                        placeholder="Plan Name"
+                      />
+                      <textarea 
+                        className="w-full bg-gray-50 border-none text-xs text-gray-500 font-bold italic outline-none focus:ring-2 focus:ring-teal-500/20 rounded-lg px-2 py-1 resize-none"
+                        value={p.description || ''}
+                        rows={2}
+                        onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, description: e.target.value } : plan))}
+                        placeholder="Description"
+                      />
+                    </div>
 
-                    <div className="space-y-4 pt-6 border-t border-gray-100">
+                    <div className="space-y-4 pt-6 border-t border-gray-100 flex-1">
                        <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Price (INR)</span>
                           <input 
                             type="number" 
-                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-1 outline-none"
+                            min="0"
+                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20"
                             value={p.price}
-                            onBlur={(e) => updatePlan(p.id, { price: parseFloat(e.target.value) })}
-                            onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, price: e.target.value } : plan))}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val >= 0) {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, price: val } : plan));
+                              } else if (e.target.value === '') {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, price: '' } : plan));
+                              }
+                            }}
                           />
                        </div>
                        <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Duration (Days)</span>
                           <input 
                             type="number" 
-                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-1 outline-none"
+                            min="0"
+                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20"
                             value={p.duration_days}
-                            onBlur={(e) => updatePlan(p.id, { duration_days: parseInt(e.target.value) })}
-                            onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, duration_days: e.target.value } : plan))}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val) && val >= 0) {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, duration_days: val } : plan));
+                              } else if (e.target.value === '') {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, duration_days: '' } : plan));
+                              }
+                            }}
                           />
                        </div>
                        {p.type === 'credit_pack' && (
@@ -749,14 +804,56 @@ export default function AdminDashboardPage() {
                             <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Credits Awarded</span>
                             <input 
                               type="number" 
-                              className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-1 outline-none"
+                              min="0"
+                              className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20"
                               value={p.credits_awarded || 0}
-                              onBlur={(e) => updatePlan(p.id, { credits_awarded: parseInt(e.target.value) })}
-                              onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, credits_awarded: e.target.value } : plan))}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val) && val >= 0) {
+                                  setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, credits_awarded: val } : plan));
+                                } else if (e.target.value === '') {
+                                  setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, credits_awarded: '' } : plan));
+                                }
+                              }}
                             />
                          </div>
                        )}
+                       
+                       {/* Features Editor */}
+                        <div className="pt-4 border-t border-gray-100 mt-4">
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Display Features (One per line)</p>
+                           <textarea 
+                             className="w-full bg-gray-50 border-none text-xs text-gray-600 font-bold outline-none focus:ring-2 focus:ring-teal-500/20 rounded-xl px-3 py-2 resize-none"
+                             value={Array.isArray(p.features) ? p.features.join('\n') : (typeof p.features === 'string' ? JSON.parse(p.features).join('\n') : '')}
+                             rows={5}
+                             onChange={(e) => {
+                               const newFeatures = e.target.value.split('\n').filter(f => f.trim() !== '');
+                               setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, features: newFeatures } : plan));
+                             }}
+                             placeholder="e.g. Unlimited Property Unlocks"
+                           />
+                        </div>
                     </div>
+
+                    <button 
+                      onClick={() => {
+                        if (p.price === '' || p.duration_days === '') {
+                          toast.error("Price and Duration are required");
+                          return;
+                        }
+                        updatePlan(p.id, {
+                          name: p.name,
+                          description: p.description,
+                          price: parseFloat(p.price as any),
+                          duration_days: parseInt(p.duration_days as any),
+                          features: p.features,
+                          credits_awarded: p.type === 'credit_pack' ? parseInt(p.credits_awarded as any) : null
+                        });
+                      }}
+                      className="mt-8 w-full bg-[#00579e] hover:bg-[#1a3a61] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95"
+                    >
+                      Save Plan Changes
+                    </button>
                   </div>
                 ))}
              </div>

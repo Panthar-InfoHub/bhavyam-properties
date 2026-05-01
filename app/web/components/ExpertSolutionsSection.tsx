@@ -1,4 +1,19 @@
+'use client';
+
+import { useState } from 'react';
+import ServiceRequestModal from './ServiceRequestModal';
+
 export default function ExpertSolutionsSection() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedColor, setSelectedColor] = useState<string>('');
+
+  const handleCardClick = (card: any) => {
+    setSelectedService(card.title);
+    setSelectedColor(card.color);
+    setIsModalOpen(true);
+  };
+
   const cards = [
     {
       title: 'Commercial Spaces',
@@ -91,6 +106,7 @@ export default function ExpertSolutionsSection() {
           {cards.map((card) => (
             <div
               key={card.title}
+              onClick={() => handleCardClick(card)}
               className={`
                 group relative ${card.color} p-8 rounded-2xl overflow-hidden cursor-pointer
                 transition-all duration-300 ease-out
@@ -114,7 +130,7 @@ export default function ExpertSolutionsSection() {
 
               {/* Bottom arrow that appears on hover */}
               <div className={`mt-5 relative z-10 flex items-center gap-1.5 ${card.textColor} opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300`}>
-                <span className="text-xs font-semibold tracking-wide">Learn more</span>
+                <span className="text-xs font-semibold tracking-wide">Inquire Now</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
@@ -123,6 +139,16 @@ export default function ExpertSolutionsSection() {
           ))}
         </div>
       </div>
+
+      {isModalOpen && (
+        <ServiceRequestModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          serviceType={selectedService} 
+          color={selectedColor}
+        />
+      )}
     </section>
   );
 }
+

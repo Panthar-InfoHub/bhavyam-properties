@@ -100,8 +100,6 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-2">
             <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">About Us</Link>
             <span className="text-gray-600">.</span>
-            <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Blog & Articles</Link>
-            <span className="text-gray-600">.</span>
             <Link href="/terms-and-conditions" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Terms and Conditions</Link>
             <span className="text-gray-600">.</span>
             <Link href="/privacy-policy" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Privacy Policy</Link>

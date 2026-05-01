@@ -51,14 +51,16 @@ export default function AboutPage() {
          </div>
       </section>
 
+      {/* Problem vs Solution Table */}
+      <ProblemsSection />
+
       {/* Meet the Team/Values Section (from our reference) */}
       <AboutMeetSection />
 
-      {/* Problem Solver Section (The Core of Bhavyam) */}
-      <ProblemsSection />
 
       {/* Statistics Section Integration */}
       <CounterSection />
+
 
       {/* Services Integration */}
       <div className="bg-white pt-12">

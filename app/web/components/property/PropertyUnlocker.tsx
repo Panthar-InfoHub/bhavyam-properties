@@ -318,15 +318,12 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           {accessType === 'admin' && (
             <div className="bg-blue-500/5 p-5 rounded-2xl border border-blue-500/10">
               <p className="text-blue-600 text-[10px] uppercase font-black mb-3">Owner Contact (Admin)</p>
-              <div className="bg-white p-4 rounded-xl border border-[#eeeae0] flex flex-col gap-2 shadow-sm">
-                <Link href={`/admin/users/${securedData.owner?.id}`} className="text-[#2d2a26] font-black text-lg hover:text-teal-600 transition-colors flex items-center gap-2">
+              <div className="bg-white p-4 rounded-xl border border-[#eeeae0] shadow-sm">
+                <Link href={`/admin/users/${securedData.owner?.id}`} className="text-[#2d2a26] font-semibold text-lg hover:text-teal-600 transition-colors flex items-center gap-2">
                   {securedData.owner?.first_name} {securedData.owner?.last_name}
                   <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </Link>
-                <div className="flex items-center gap-2 text-sm text-[#4a453e]">
-                  <span className="text-teal-600">📞</span>
-                  <span className="font-mono">{securedData.owner?.phone_number || 'No contact provided'}</span>
-                </div>
+                <p className="text-xs text-[#8a8479] mt-1 font-medium">Contact details are kept confidential. Use admin panel to reach out.</p>
               </div>
             </div>
           )}

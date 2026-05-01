@@ -96,20 +96,29 @@ export default function PropertySubmissionForm() {
       }
       setCurrentUser(user);
       
+      // Auto-fill Agent Details if they exist
+      if (user.profile?.agent_code) {
+        setFormData(prev => ({
+          ...prev,
+          agentName: `${user.profile.first_name || ''} ${user.profile.last_name || ''}`.trim(),
+          agentCode: user.profile.agent_code
+        }));
+      } else if (user.profile?.role === 'admin' || user.profile?.role === 'agent') {
+         setFormData(prev => ({
+          ...prev,
+          agentName: `${user.profile.first_name || ''} ${user.profile.last_name || ''}`.trim(),
+        }));
+      }
+      
       const role = user.profile?.role;
       // Admin and Agent have no limits. Seller and Buyer (non-agents) have 1 property/month limit.
       if (role === 'seller' || role === 'buyer') {
-         // Get the first and last day of the current month
-         const now = new Date();
-         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
+         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
          const { count, error } = await supabase
           .from('properties')
           .select('*', { count: 'exact', head: true })
           .eq('owner_id', user.id)
-          .gte('created_at', firstDay)
-          .lte('created_at', lastDay);
+          .gte('created_at', thirtyDaysAgo);
           
          if (count && count >= 1) {
            setIsAllowed(false);
@@ -181,11 +190,11 @@ export default function PropertySubmissionForm() {
   };
 
   const nextStep = () => {
-    if (currentStep === 10 && !formData.agreements.termsAgreed) {
-      alert("Please agree to the terms and conditions in Step 10 before proceeding.");
+    if (currentStep === 8 && !formData.agreements.termsAgreed) {
+      alert("Please agree to the terms and conditions in Step 8 before proceeding.");
       return;
     }
-    setCurrentStep(prev => Math.min(prev + 1, 11));
+    setCurrentStep(prev => Math.min(prev + 1, 9));
   };
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
@@ -208,8 +217,24 @@ export default function PropertySubmissionForm() {
     e.preventDefault();
     if (!currentUser) return;
     if (!formData.agreements.termsAgreed) {
-      setErrorMsg('You must agree to the terms and conditions in Step 10.');
-      setCurrentStep(10);
+      setErrorMsg('You must agree to the terms and conditions in Step 8.');
+      setCurrentStep(8);
+      return;
+    }
+
+    // Agent Validation
+    const role = currentUser.profile?.role;
+    if ((role === 'agent' || role === 'admin') && !formData.agentCode) {
+      setErrorMsg('Agent Code is required for Agent/Admin accounts.');
+      setCurrentStep(7);
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (formData.agentCode && (role === 'agent' || role === 'admin') && formData.agentCode !== currentUser.profile?.agent_code) {
+      setErrorMsg('The Agent Code provided does not match your profile.');
+      setCurrentStep(7);
+      setIsSubmitting(false);
       return;
     }
 
@@ -219,25 +244,25 @@ export default function PropertySubmissionForm() {
     // Validation for required fields
     if (formData.frontPhotos.length === 0) {
       setErrorMsg('At least one Front Photo is required.');
-      setCurrentStep(5);
+      setCurrentStep(4);
       setIsSubmitting(false);
       return;
     }
     if (!formData.propertyVideo) {
       setErrorMsg('Property Video is required.');
-      setCurrentStep(5);
+      setCurrentStep(4);
       setIsSubmitting(false);
       return;
     }
     if (formData.propertyDocuments.length === 0) {
       setErrorMsg('Basic legal documents are required.');
-      setCurrentStep(5);
+      setCurrentStep(4);
       setIsSubmitting(false);
       return;
     }
     if (!formData.mapUrl.trim()) {
       setErrorMsg('Google Maps link is required. Please paste your property location URL.');
-      setCurrentStep(7);
+      setCurrentStep(6);
       setIsSubmitting(false);
       return;
     }
@@ -431,52 +456,69 @@ export default function PropertySubmissionForm() {
         );
       case 2:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-2xl font-black text-gray-800">Property Features</h3>
-              <p className="text-gray-500 text-sm">Select the physical characteristics of the property.</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Features Section */}
+            <div className="space-y-6">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-2xl font-black text-gray-800">Property Features</h3>
+                <p className="text-gray-500 text-sm">Select the physical characteristics of the property.</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {['Parking', 'Garden', '2 floor', '3 floor', '4 floor', 'Basement', 'Balcony', 'Black road property', 'Apex Road Property', 'Light poll', 'Solar Panel'].map(feature => (
+                   <label key={feature} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                     <input type="checkbox" checked={formData.features.includes(feature)} onChange={() => handleCheckboxArray('features', feature)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                     <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{feature}</span>
+                   </label>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {['Parking', 'Garden', '2 floor', '3 floor', '4 floor', 'Basement', 'Balcony', 'Black road property', 'Apex Road Property', 'Light poll', 'Solar Panel'].map(feature => (
-                 <label key={feature} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
-                   <input type="checkbox" checked={formData.features.includes(feature)} onChange={() => handleCheckboxArray('features', feature)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
-                   <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{feature}</span>
-                 </label>
-              ))}
+
+            {/* Nearby Amenities Section */}
+            <div className="space-y-6">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-2xl font-black text-gray-800">Nearby Amenities</h3>
+                <p className="text-gray-500 text-sm">Highlight what’s available in the immediate surroundings.</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {['Railway Station', 'Bus stand', 'Highway', 'Temple', 'School', 'Hospital', 'Police Station', 'Market', 'Other'].map(item => (
+                   <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                     <input type="checkbox" checked={formData.amenities.includes(item)} onChange={() => handleCheckboxArray('amenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                     <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{item}</span>
+                   </label>
+                ))}
+              </div>
+              {formData.amenities.includes('Other') && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className={labelClasses}>Please Specify Other Amenities</label>
+                  <input type="text" name="amenitiesOther" placeholder="e.g. Park, Community Center, etc." onChange={handleChange} value={formData.amenitiesOther} className={inputClasses} />
+                </div>
+              )}
+            </div>
+
+            {/* Furnished Amenities Section */}
+            <div className="space-y-6">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="text-2xl font-black text-gray-800">Furnishings & Assets</h3>
+                <p className="text-gray-500 text-sm">What movable assets are included in the price?</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {['TV Case', 'AC Unit', 'Gym Kit', 'Bed', 'Sofa', 'Fridge', 'Wifi', 'Fan', 'Washing Machine', 'Other'].map(item => (
+                   <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
+                     <input type="checkbox" checked={formData.furnishedAmenities.includes(item)} onChange={() => handleCheckboxArray('furnishedAmenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
+                     <span className="text-xs font-bold text-gray-700 group-hover:text-teal-700 transition-colors uppercase tracking-tight">{item}</span>
+                   </label>
+                ))}
+              </div>
+              {formData.furnishedAmenities.includes('Other') && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className={labelClasses}>Please Specify Other Furnishings</label>
+                  <input type="text" name="furnishedAmenitiesOther" placeholder="e.g. Microwave, Curtains, etc." onChange={handleChange} value={formData.furnishedAmenitiesOther} className={inputClasses} />
+                </div>
+              )}
             </div>
           </div>
         );
       case 3:
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-2xl font-black text-gray-800">Nearby Amenities</h3>
-              <p className="text-gray-500 text-sm">Highlight what’s available in the immediate surroundings.</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {['Railway Station', 'Bus stand', 'Highway', 'Temple', 'School', 'Hospital', 'Police Station', 'Market', 'Other'].map(item => (
-                 <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
-                   <input type="checkbox" checked={formData.amenities.includes(item)} onChange={() => handleCheckboxArray('amenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
-                   <span className="text-sm font-semibold text-gray-700 group-hover:text-teal-700 transition-colors">{item}</span>
-                 </label>
-              ))}
-            </div>
-            {formData.amenities.includes('Other') && (
-              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className={labelClasses}>Please Specify Other Amenities</label>
-                <input 
-                  type="text" 
-                  name="amenitiesOther" 
-                  placeholder="e.g. Park, Community Center, etc." 
-                  onChange={handleChange} 
-                  value={formData.amenitiesOther} 
-                  className={inputClasses} 
-                />
-              </div>
-            )}
-          </div>
-        );
-      case 4:
          return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="border-b border-gray-100 pb-4">
@@ -507,7 +549,7 @@ export default function PropertySubmissionForm() {
             </div>
           </div>
         );
-      case 5:
+      case 4:
         const renderFileList = (fieldName: keyof typeof formData) => {
           const files = formData[fieldName];
           if (!files) return null;
@@ -581,7 +623,7 @@ export default function PropertySubmissionForm() {
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="border-b border-gray-100 pb-4">
@@ -608,7 +650,7 @@ export default function PropertySubmissionForm() {
             </div>
           </div>
         );
-      case 7:
+      case 6:
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="border-b border-gray-100 pb-4">
@@ -694,7 +736,7 @@ export default function PropertySubmissionForm() {
             </div>
           </div>
         );
-      case 8:
+      case 7:
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="border-b border-gray-100 pb-4">
@@ -707,43 +749,22 @@ export default function PropertySubmissionForm() {
                 <input type="text" name="agentName" placeholder="Representative Name" onChange={handleChange} value={formData.agentName} className={inputClasses} />
               </div>
               <div>
-                <label className={labelClasses}>Verification Code / ID</label>
-                <input type="text" name="agentCode" placeholder="AGNT-XXXX" onChange={handleChange} value={formData.agentCode} className={inputClasses} />
-              </div>
-            </div>
-          </div>
-        );
-      case 9:
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-2xl font-black text-gray-800">Furnished Amenities</h3>
-              <p className="text-gray-500 text-sm">What movable assets are included in the price?</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {['TV Case', 'AC Unit', 'Gym Kit', 'Bed', 'Sofa', 'Fridge', 'Wifi', 'Fan', 'Washing Machine', 'Other'].map(item => (
-                 <label key={item} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl hover:bg-teal-50/50 transition-colors cursor-pointer group">
-                   <input type="checkbox" checked={formData.furnishedAmenities.includes(item)} onChange={() => handleCheckboxArray('furnishedAmenities', item)} className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500" /> 
-                   <span className="text-xs font-bold text-gray-700 group-hover:text-teal-700 transition-colors uppercase tracking-tight">{item}</span>
-                 </label>
-              ))}
-            </div>
-            {formData.furnishedAmenities.includes('Other') && (
-              <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className={labelClasses}>Please Specify Other Furnishings</label>
+                <label className={labelClasses}>Verification Code / ID {(currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin') && <span className="text-red-500">* Required</span>}</label>
                 <input 
                   type="text" 
-                  name="furnishedAmenitiesOther" 
-                  placeholder="e.g. Microwave, Curtains, etc." 
+                  name="agentCode" 
+                  placeholder="AGNT-XXXX" 
                   onChange={handleChange} 
-                  value={formData.furnishedAmenitiesOther} 
+                  value={formData.agentCode} 
                   className={inputClasses} 
+                  readOnly={currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin'}
                 />
+                {(currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin') && <p className="text-[10px] text-teal-600 mt-2 font-bold uppercase">Locked to your verified profile ID</p>}
               </div>
-            )}
+            </div>
           </div>
         );
-      case 10:
+      case 8:
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="border-b border-gray-100 pb-4">
@@ -771,7 +792,7 @@ export default function PropertySubmissionForm() {
             </div>
           </div>
         );
-      case 11:
+      case 9:
          return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="border-b border-gray-100 pb-4">
@@ -837,14 +858,14 @@ export default function PropertySubmissionForm() {
             <div className="flex justify-between items-end mb-3">
                <div>
                   <span className="text-[10px] font-bold text-teal-600 uppercase tracking-[0.2em]">Listing Progress</span>
-                  <h4 className="text-xl font-black text-gray-800 leading-tight">Step {currentStep} <span className="text-gray-300 mx-1">/</span> 11</h4>
+                  <h4 className="text-xl font-black text-gray-800 leading-tight">Step {currentStep} <span className="text-gray-300 mx-1">/</span> 9</h4>
                </div>
                <div className="text-right">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{Math.round((currentStep / 11) * 100)}% Complete</span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{Math.round((currentStep / 9) * 100)}% Complete</span>
                </div>
             </div>
             <div className="flex flex-row gap-1.5 h-1.5 w-full">
-               {Array.from({ length: 11 }).map((_, i) => (
+               {Array.from({ length: 9 }).map((_, i) => (
                <div 
                   key={i} 
                   className={`flex-1 rounded-full transition-all duration-500 ${
@@ -877,9 +898,9 @@ export default function PropertySubmissionForm() {
             Previous
           </button>
 
-          <span className="text-sm font-semibold text-gray-400">Step {currentStep} of 11</span>
+          <span className="text-sm font-semibold text-gray-400">Step {currentStep} of 9</span>
 
-          {currentStep < 11 ? (
+          {currentStep < 9 ? (
              <button 
                type="button" 
                onClick={nextStep} 

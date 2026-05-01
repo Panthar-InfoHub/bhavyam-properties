@@ -115,25 +115,10 @@ export default function AdminUserDetailPage() {
                   </span>
                 )}
               </div>
-              <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-4">
+              <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2">
                 {userProfile?.first_name} {userProfile?.last_name}
               </h1>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <span className="text-2xl text-[#00579e]">📧</span>
-                  <div className="text-left">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Email Address</p>
-                    <p className="font-bold text-gray-700">{userProfile?.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <span className="text-2xl text-teal-500">📞</span>
-                  <div className="text-left">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Direct Contact</p>
-                    <p className="font-bold text-gray-700">{userProfile?.phone_number || 'Not Linked'}</p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-gray-400 font-medium">Contact details are kept confidential and not displayed here.</p>
             </div>
           </div>
         </div>
