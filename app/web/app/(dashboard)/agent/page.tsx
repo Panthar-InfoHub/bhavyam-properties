@@ -1,20 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 
-export default function AgentDashboardPage() {
+function AgentDashboardContent() {
   const [properties, setProperties] = useState<any[]>([]);
   const [agentProfile, setAgentProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
   const [transactions, setTransactions] = useState<any[]>([]);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'transactions' || tab === 'overview') {
+       setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchAgentData = async () => {
@@ -441,5 +449,13 @@ export default function AgentDashboardPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function AgentDashboardPage() {
+  return (
+    <Suspense fallback={<PremiumLoader />}>
+      <AgentDashboardContent />
+    </Suspense>
   );
 }

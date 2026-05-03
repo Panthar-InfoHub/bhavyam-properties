@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { TreePine, Building2, Store, Briefcase, Home, Map, Search, ChevronDown } from 'lucide-react';
 export default function Hero() {
   const [keyword, setKeyword] = useState('');
@@ -34,18 +35,16 @@ export default function Hero() {
 
   return (
     <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center overflow-hidden py-24">
-      {/* Background Video with Dark Overlay */}
+      {/* Background Image with Dark Overlay */}
       <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover"
-        >
-          <source src="https://videos.pexels.com/video-files/7578545/7578545-hd_1920_1080_25fps.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-deep-navy)]/90 via-[var(--color-deep-navy-light)]/70 to-black/40 backdrop-blur-[2px]" />
+        <Image
+          src="/hero_bg.png"
+          alt="Hero Background"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-deep-navy)]/90 via-[var(--color-deep-navy-light)]/70 to-black/40 backdrop-blur-[1px]" />
       </div>
 
       {/* Content */}
@@ -65,7 +64,11 @@ export default function Hero() {
         {/* Property Type Icons */}
         <div className="hidden md:flex flex-wrap justify-center gap-6 mb-12 animate-in fade-in zoom-in duration-1000 delay-300">
           {propertyTypes.map((type, idx) => (
-            <button key={type} className="flex items-center gap-3 px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-[var(--color-emerald-heritage)] hover:border-[var(--color-emerald-heritage)] transition-all group active:scale-95">
+            <button 
+              key={type} 
+              suppressHydrationWarning
+              className="flex items-center gap-3 px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-[var(--color-emerald-heritage)] hover:border-[var(--color-emerald-heritage)] transition-all group active:scale-95"
+            >
               <div className="w-8 h-8 rounded-full bg-[var(--color-emerald-heritage)] flex items-center justify-center text-white group-hover:bg-white group-hover:text-[var(--color-emerald-heritage)] transition-colors">
                 {getIcon(idx)}
               </div>
@@ -84,6 +87,7 @@ export default function Hero() {
                 placeholder="Enter Keyword here..." 
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
+                suppressHydrationWarning
                 className="w-full px-3 text-[var(--color-near-black)] bg-transparent font-medium placeholder-gray-500 outline-none text-sm md:text-base"
               />
            </div>
@@ -94,6 +98,7 @@ export default function Hero() {
                 title="Property Type"
                 value={propertyType}
                 onChange={(e) => setPropertyType(e.target.value)}
+                suppressHydrationWarning
                 className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none text-sm md:text-base"
               >
                 <option value="">Select Type</option>
@@ -110,6 +115,7 @@ export default function Hero() {
                 title="Select Location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                suppressHydrationWarning
                 className="w-full bg-transparent text-[var(--color-near-black)] font-medium outline-none cursor-pointer appearance-none text-sm md:text-base"
               >
                 <option value="">Select Location</option>
@@ -123,6 +129,7 @@ export default function Hero() {
            {/* Search Submit */}
            <button 
              onClick={handleSearch}
+             suppressHydrationWarning
              className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-8 py-3 mt-2 lg:mt-0 rounded-2xl lg:rounded-full font-bold tracking-wide transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base shrink-0"
            >
               Search <Search className="w-4 h-4 ml-1" />

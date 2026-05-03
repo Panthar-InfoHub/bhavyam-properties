@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
@@ -11,7 +11,7 @@ import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSectio
 
 type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans';
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   const [section, setSection] = useState<Section>('overview');
   const [stats, setStats] = useState({ listings: 0, users: 0, revenue: 0, pending: 0, pendingAgents: 0 });
   const [properties, setProperties] = useState<any[]>([]);
@@ -21,6 +21,7 @@ export default function AdminDashboardPage() {
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [agentApps, setAgentApps] = useState<any[]>([]);
+  const [selectedAgentApp, setSelectedAgentApp] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -34,7 +35,25 @@ export default function AdminDashboardPage() {
   const [sortBy, setSortBy] = useState('Time'); 
   const [showPendingOnly, setShowPendingOnly] = useState(false);
 
+  // Users Section State
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSortBy, setUserSortBy] = useState('Newest');
+
+  // Agent Apps Section State
+  const [agentAppSearchQuery, setAgentAppSearchQuery] = useState('');
+  const [agentAppSortBy, setAgentAppSortBy] = useState('Newest');
+
+  // Active Agents Section State
+  const [activeAgentSearchQuery, setActiveAgentSearchQuery] = useState('');
+  const [activeAgentSortBy, setActiveAgentSortBy] = useState('Newest');
+
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const s = searchParams.get('section');
+    if (s) setSection(s as Section);
+  }, [searchParams]);
 
   const filteredAndSortedProperties = properties
      .filter(p => filterType === 'All' || p.listing_type?.toLowerCase() === filterType.toLowerCase())
@@ -75,7 +94,7 @@ export default function AdminDashboardPage() {
         supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(id, property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number, email))').order('created_at', { ascending: false }),
         supabase.from('service_requests').select('*').order('created_at', { ascending: false }),
         supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
-        supabase.from('agent_applications').select('id, status, notes, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
+        supabase.from('agent_applications').select('id, status, notes, full_name, email, phone, experience, reason, skills, aadhaar_url, pan_url, certificate_url, resume_url, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
         supabase.from('plans').select('*').order('type', { ascending: true })
       ]);
 
@@ -264,15 +283,23 @@ export default function AdminDashboardPage() {
             <span>🎖️</span> Your Agent View
           </Link>
         </div>
-        {/* Mobile nav */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 md:hidden">
+        {/* Mobile nav - Improved modern style */}
+        <div className="flex xl:hidden bg-white/80 backdrop-blur-md sticky top-[72px] z-[40] -mx-4 px-4 py-3 border-b border-gray-100 mb-6 overflow-x-auto no-scrollbar gap-2">
           {navItems.map(item => (
             <button
               key={item.key}
-              onClick={() => setSection(item.key)}
-              className={`shrink-0 text-xs font-bold px-4 py-2 rounded-full cursor-pointer ${section === item.key ? 'bg-[#00579e] text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
+              onClick={() => {
+                setSection(item.key);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`flex items-center gap-2 shrink-0 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                section === item.key 
+                  ? 'bg-[#00579e] text-white shadow-lg shadow-blue-900/20 active:scale-95' 
+                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
             >
-              {item.icon} {item.label}
+              <span>{item.icon}</span>
+              {item.label}
             </button>
           ))}
         </div>
@@ -455,6 +482,28 @@ export default function AdminDashboardPage() {
         {section === 'users' && (
           <div>
             <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">User Management</h1>
+            
+            <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-center">
+               <div className="relative flex-1">
+                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                 <input 
+                    type="text" 
+                    placeholder="Search users by name, email, phone..." 
+                    className="w-full bg-white border text-sm text-gray-800 border-gray-200 outline-none pl-11 pr-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 placeholder-gray-400 transition-all"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                 />
+               </div>
+               <select 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 cursor-pointer font-bold"
+                  value={userSortBy}
+                  onChange={(e) => setUserSortBy(e.target.value)}
+               >
+                  <option value="Newest">Joined: Newest First</option>
+                  <option value="Oldest">Joined: Oldest First</option>
+               </select>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -466,7 +515,23 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {users.map(u => (
+                    {users
+                      .filter(u => {
+                        if (!userSearchQuery) return true;
+                        const s = userSearchQuery.toLowerCase();
+                        return (
+                          u.first_name?.toLowerCase().includes(s) || 
+                          u.last_name?.toLowerCase().includes(s) || 
+                          u.email?.toLowerCase().includes(s) || 
+                          u.phone_number?.toLowerCase().includes(s)
+                        );
+                      })
+                      .sort((a, b) => {
+                        const timeA = new Date(a.created_at).getTime();
+                        const timeB = new Date(b.created_at).getTime();
+                        return userSortBy === 'Newest' ? timeB - timeA : timeA - timeB;
+                      })
+                      .map(u => (
                       <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4 font-semibold text-gray-800">{u.first_name} {u.last_name}</td>
                         <td className="p-4 text-sm text-gray-500">{u.email}</td>
@@ -652,15 +717,55 @@ export default function AdminDashboardPage() {
                 <span className="text-xs font-bold text-yellow-700 uppercase tracking-widest">{agentApps.filter(a => a.status === 'pending').length} Pending</span>
               </div>
             </div>
+
+            <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-center">
+               <div className="relative flex-1">
+                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                 <input 
+                    type="text" 
+                    placeholder="Search applications..." 
+                    className="w-full bg-white border text-sm text-gray-800 border-gray-200 outline-none pl-11 pr-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 placeholder-gray-400 transition-all"
+                    value={agentAppSearchQuery}
+                    onChange={(e) => setAgentAppSearchQuery(e.target.value)}
+                 />
+               </div>
+               <select 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 cursor-pointer font-bold"
+                  value={agentAppSortBy}
+                  onChange={(e) => setAgentAppSortBy(e.target.value)}
+               >
+                  <option value="Newest">Applied: Newest First</option>
+                  <option value="Oldest">Applied: Oldest First</option>
+               </select>
+            </div>
             <div className="flex flex-col gap-4">
-              {agentApps.filter(a => a.status === 'pending').map(app => (
+              {agentApps
+                .filter(a => a.status === 'pending')
+                .filter(a => {
+                  if (!agentAppSearchQuery) return true;
+                  const s = agentAppSearchQuery.toLowerCase();
+                  return (
+                    a.user?.first_name?.toLowerCase().includes(s) || 
+                    a.user?.last_name?.toLowerCase().includes(s) || 
+                    a.user?.email?.toLowerCase().includes(s) || 
+                    a.user?.phone_number?.toLowerCase().includes(s) ||
+                    a.notes?.toLowerCase().includes(s)
+                  );
+                })
+                .sort((a, b) => {
+                  const timeA = new Date(a.created_at).getTime();
+                  const timeB = new Date(b.created_at).getTime();
+                  return agentAppSortBy === 'Newest' ? timeB - timeA : timeA - timeB;
+                })
+                .map(app => (
                 <div key={app.id} className="bg-white rounded-xl border border-yellow-200 border-l-4 border-l-yellow-400 shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:shadow-md transition-all">
                   <div className="flex-1">
-                    <p className="font-bold text-gray-800 text-lg">{app.user?.first_name} {app.user?.last_name}</p>
-                    <p className="text-xs text-gray-500 mb-3 font-medium">📞 {app.user?.phone_number} | ✉️ {app.user?.email}</p>
+                    <p className="font-bold text-gray-800 text-lg">{app.full_name || `${app.user?.first_name} ${app.user?.last_name}`}</p>
+                    <p className="text-xs text-gray-500 mb-3 font-medium">📞 {app.phone || app.user?.phone_number} | ✉️ {app.email || app.user?.email}</p>
                     <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-100">
                        <p className="text-[10px] uppercase font-black text-gray-400 mb-2">Application Notes</p>
-                       <p className="text-sm text-gray-700 leading-relaxed">{app.notes}</p>
+                       <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{app.reason || app.notes || "No details provided."}</p>
+                       <button onClick={() => setSelectedAgentApp(app)} className="text-[#00b48f] text-xs font-bold mt-2 hover:underline">View Full Application & Docs</button>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 shrink-0 md:pt-2 min-w-[160px]">
@@ -691,8 +796,46 @@ export default function AdminDashboardPage() {
                 <span className="text-xs font-bold text-teal-700 uppercase tracking-widest">{users.filter(u => u.role === 'agent').length} Active</span>
               </div>
             </div>
+
+            <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-center">
+               <div className="relative flex-1">
+                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                 <input 
+                    type="text" 
+                    placeholder="Search agents..." 
+                    className="w-full bg-white border text-sm text-gray-800 border-gray-200 outline-none pl-11 pr-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 placeholder-gray-400 transition-all"
+                    value={activeAgentSearchQuery}
+                    onChange={(e) => setActiveAgentSearchQuery(e.target.value)}
+                 />
+               </div>
+               <select 
+                  className="bg-white border text-sm text-gray-800 border-gray-200 outline-none px-4 py-2.5 rounded-xl shadow-sm focus:border-teal-500 cursor-pointer font-bold"
+                  value={activeAgentSortBy}
+                  onChange={(e) => setActiveAgentSortBy(e.target.value)}
+               >
+                  <option value="Newest">Joined: Newest First</option>
+                  <option value="Oldest">Joined: Oldest First</option>
+               </select>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {users.filter(u => u.role === 'agent').map(agent => (
+              {users
+                .filter(u => u.role === 'agent')
+                .filter(u => {
+                  if (!activeAgentSearchQuery) return true;
+                  const s = activeAgentSearchQuery.toLowerCase();
+                  return (
+                    u.first_name?.toLowerCase().includes(s) || 
+                    u.last_name?.toLowerCase().includes(s) || 
+                    u.email?.toLowerCase().includes(s) || 
+                    u.phone_number?.toLowerCase().includes(s)
+                  );
+                })
+                .sort((a, b) => {
+                  const timeA = new Date(a.created_at).getTime();
+                  const timeB = new Date(b.created_at).getTime();
+                  return activeAgentSortBy === 'Newest' ? timeB - timeA : timeA - timeB;
+                })
+                .map(agent => (
                 <div
                   key={agent.id}
                   onClick={() => setSelectedAgent(agent)}
@@ -998,6 +1141,120 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* AGENT APPLICATION DETAILS MODAL */}
+      {selectedAgentApp && (
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+             <div className="bg-[#112743] px-6 py-4 flex items-center justify-between">
+                <div>
+                   <h3 className="text-white text-lg font-black tracking-tight">Agent Application</h3>
+                   <p className="text-white/60 text-xs font-medium">Submitted {new Date(selectedAgentApp.created_at).toLocaleString()}</p>
+                </div>
+                <button onClick={() => setSelectedAgentApp(null)} className="text-white/50 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+             </div>
+             
+             <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {/* User Info */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Applicant Name</p>
+                      <p className="font-bold text-gray-900">{selectedAgentApp.full_name || `${selectedAgentApp.user?.first_name} ${selectedAgentApp.user?.last_name}`}</p>
+                   </div>
+                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Contact Info</p>
+                      <p className="font-bold text-gray-900 text-sm mb-1">{selectedAgentApp.email || selectedAgentApp.user?.email}</p>
+                      <p className="font-bold text-gray-900 text-sm">{selectedAgentApp.phone || selectedAgentApp.user?.phone_number}</p>
+                   </div>
+                </div>
+
+                {/* Details */}
+                <div className="mb-6 space-y-4">
+                   {selectedAgentApp.experience && (
+                     <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Experience Level</p>
+                        <p className="font-semibold text-gray-800">{selectedAgentApp.experience}</p>
+                     </div>
+                   )}
+                   {(selectedAgentApp.reason || selectedAgentApp.notes) && (
+                     <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Reason for Joining</p>
+                        <p className="text-sm text-gray-700 bg-blue-50/50 p-3 rounded-xl border border-blue-100 leading-relaxed">
+                          {selectedAgentApp.reason || selectedAgentApp.notes}
+                        </p>
+                     </div>
+                   )}
+                   {selectedAgentApp.skills && selectedAgentApp.skills.length > 0 && (
+                     <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Reported Skills</p>
+                        <div className="flex flex-wrap gap-2">
+                           {Array.isArray(selectedAgentApp.skills) 
+                              ? selectedAgentApp.skills.map((s: string, i: number) => <span key={i} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">{s}</span>)
+                              : typeof selectedAgentApp.skills === 'string' ? selectedAgentApp.skills.split(',').map((s: string, i: number) => <span key={i} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">{s.trim()}</span>)
+                              : <span className="text-sm text-gray-700">{JSON.stringify(selectedAgentApp.skills)}</span>
+                           }
+                        </div>
+                     </div>
+                   )}
+                </div>
+
+                {/* Documents */}
+                <div>
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Uploaded Documents</p>
+                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {selectedAgentApp.aadhaar_url && (
+                        <a href={selectedAgentApp.aadhaar_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
+                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📄</span>
+                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Aadhaar</span>
+                        </a>
+                      )}
+                      {selectedAgentApp.pan_url && (
+                        <a href={selectedAgentApp.pan_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
+                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📄</span>
+                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">PAN Card</span>
+                        </a>
+                      )}
+                      {selectedAgentApp.certificate_url && (
+                        <a href={selectedAgentApp.certificate_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
+                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🎓</span>
+                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Certificate</span>
+                        </a>
+                      )}
+                      {selectedAgentApp.resume_url && (
+                        <a href={selectedAgentApp.resume_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
+                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">💼</span>
+                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Resume</span>
+                        </a>
+                      )}
+                      {!selectedAgentApp.aadhaar_url && !selectedAgentApp.pan_url && !selectedAgentApp.certificate_url && !selectedAgentApp.resume_url && (
+                        <p className="text-xs text-gray-400 col-span-4 italic">No documents uploaded.</p>
+                      )}
+                   </div>
+                </div>
+             </div>
+             
+             <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-3xl">
+                <button onClick={() => setSelectedAgentApp(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">Close</button>
+                {selectedAgentApp.status === 'pending' && (
+                  <>
+                     <button onClick={() => { handleRejectAgent(selectedAgentApp.id); setSelectedAgentApp(null); }} className="px-5 py-2.5 text-sm font-bold bg-white text-red-500 border border-red-200 hover:bg-red-50 rounded-xl transition-colors">Reject</button>
+                     <button onClick={() => { handleApproveAgent(selectedAgentApp.id, selectedAgentApp.full_name || selectedAgentApp.user?.first_name || 'UNK'); setSelectedAgentApp(null); }} className="px-5 py-2.5 text-sm font-bold bg-[#00b48f] text-white hover:bg-teal-600 rounded-xl transition-colors shadow-sm">✓ Approve Agent</button>
+                  </>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
+
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<PremiumLoader />}>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

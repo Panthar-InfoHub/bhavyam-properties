@@ -97,6 +97,7 @@ export default function LoanFacilitySection() {
         <div className="shrink-0">
           <button 
             onClick={() => setIsModalOpen(true)}
+            suppressHydrationWarning
             className="group relative inline-flex items-center justify-center px-8 py-5 text-lg font-black tracking-widest text-white uppercase transition-all duration-300 ease-in-out bg-[#022039] rounded-full hover:bg-white hover:text-[#022039] shadow-[0_10px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_40px_rgba(255,255,255,0.3)] overflow-hidden"
           >
             <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
@@ -120,6 +121,7 @@ export default function LoanFacilitySection() {
             {/* Close Button */}
             <button 
               onClick={closeModal}
+              suppressHydrationWarning
               className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-md border border-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -145,6 +147,7 @@ export default function LoanFacilitySection() {
                       step="100000"
                       value={loanAmount} 
                       onChange={(e) => setLoanAmount(Number(e.target.value))}
+                      suppressHydrationWarning
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-emerald-heritage)]"
                     />
                   </div>
@@ -202,6 +205,7 @@ export default function LoanFacilitySection() {
                         <button
                           key={company.id}
                           onClick={() => handleCompanyClick(company.id)}
+                          suppressHydrationWarning
                           className="flex flex-col items-center justify-center p-6 bg-white border-2 border-gray-100 rounded-2xl hover:border-[var(--color-emerald-heritage)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
                         >
                           <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">{company.logo}</div>
@@ -217,6 +221,7 @@ export default function LoanFacilitySection() {
                   <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-8 duration-300">
                     <button 
                       onClick={() => setSelectedCompany(null)}
+                      suppressHydrationWarning
                       className="self-start mb-6 text-sm font-bold text-gray-500 hover:text-[var(--color-emerald-heritage)] flex items-center gap-1 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -263,6 +268,7 @@ export default function LoanFacilitySection() {
                               required
                               value={formData.name}
                               onChange={e => setFormData({...formData, name: e.target.value})}
+                              suppressHydrationWarning
                               className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[var(--color-emerald-heritage)] focus:border-transparent outline-none font-medium text-gray-800 transition-all"
                               placeholder="John Doe"
                             />
@@ -292,6 +298,7 @@ export default function LoanFacilitySection() {
                           <div className="mt-auto pt-4">
                             <button 
                               type="submit"
+                              suppressHydrationWarning
                               className="w-full py-4 bg-[var(--color-emerald-heritage)] text-white font-black uppercase tracking-widest rounded-xl hover:bg-[#009475] hover:shadow-[0_8px_25px_rgba(0,180,143,0.3)] transition-all active:scale-[0.98]"
                             >
                               Submit Request

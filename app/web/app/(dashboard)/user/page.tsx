@@ -14,6 +14,7 @@ export default function UserDashboardPage() {
   const [recentInterests, setRecentInterests] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
+  const [agentApp, setAgentApp] = useState<{ status: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -45,7 +46,8 @@ export default function UserDashboardPage() {
         { count: intCount },
         { count: revCount },
         { count: txCount },
-        { data: recentInts }
+        { data: recentInts },
+        { data: appData }
       ] = await Promise.all([
         supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
         supabase.from('interest_requests').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
@@ -56,8 +58,17 @@ export default function UserDashboardPage() {
           .select('id, status, message, created_at, property:properties(property_type, city)')
           .eq('user_id', session.user.id)
           .order('created_at', { ascending: false })
-          .limit(5)
+          .limit(5),
+        supabase
+          .from('agent_applications')
+          .select('status')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
       ]);
+
+      setAgentApp(appData);
 
       setStats({
         favorites: favCount || 0,
@@ -171,6 +182,47 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
+        {/* -- Agent Application Status / Call to Action -- */}
+        {profile?.role === 'buyer' && (
+          <div className={`rounded-2xl p-6 border flex flex-col md:flex-row items-center justify-between gap-6 transition-all ${
+            agentApp?.status === 'pending' ? 'bg-yellow-50 border-yellow-100' : 
+            agentApp?.status === 'rejected' ? 'bg-red-50 border-red-100' :
+            'bg-linear-to-r from-[#00579e] to-[#00c69d] border-none shadow-lg'
+          }`}>
+             <div className="flex items-center gap-5 text-center md:text-left">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm ${
+                  agentApp?.status === 'pending' ? 'bg-white text-yellow-500' : 
+                  agentApp?.status === 'rejected' ? 'bg-white text-red-500' :
+                  'bg-white/20 text-white'
+                }`}>
+                   {agentApp?.status === 'pending' ? '⏳' : agentApp?.status === 'rejected' ? '❌' : '🎖️'}
+                </div>
+                <div>
+                   <h3 className={`text-lg font-black tracking-tight ${agentApp?.status === 'pending' || agentApp?.status === 'rejected' ? 'text-gray-800' : 'text-white'}`}>
+                      {agentApp?.status === 'pending' ? 'Agent Application Pending' : 
+                       agentApp?.status === 'rejected' ? 'Application Rejected' :
+                       'Become a Verified Agent'}
+                   </h3>
+                   <p className={`text-sm font-medium ${agentApp?.status === 'pending' || agentApp?.status === 'rejected' ? 'text-gray-600' : 'text-white/80'}`}>
+                      {agentApp?.status === 'pending' ? 'Your application is being reviewed by our team.' : 
+                       agentApp?.status === 'rejected' ? 'You can update your profile and re-apply anytime.' :
+                       'Become verified to speed up and increase the chances of selling your properties.'}
+                   </p>
+                </div>
+             </div>
+             
+             {!agentApp || agentApp.status === 'rejected' ? (
+                <Link href="/user/apply-agent" className="bg-white text-[#112743] hover:bg-gray-50 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 whitespace-nowrap">
+                   Apply Now
+                </Link>
+             ) : (
+                <div className="bg-white/50 px-6 py-2 rounded-full text-xs font-black uppercase tracking-tighter text-gray-800">
+                   Status: {agentApp.status}
+                </div>
+             )}
+          </div>
+        )}
+
         {/* -- Conditional Render Content -- */}
         {activeTab === 'overview' ? (
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -210,6 +262,7 @@ export default function UserDashboardPage() {
                   { label: 'My Favorites',      icon: '❤️', href: '/user/favorites' },
                   { label: 'My Transactions',   icon: '💸', href: '/user/transactions' },
                   { label: 'Submit Property',   icon: '➕', href: '/submit-property' },
+                  { label: 'Apply as Agent',    icon: '🎖️', href: '/user/apply-agent' },
                 ].map(action => (
                   <Link
                     key={action.label}

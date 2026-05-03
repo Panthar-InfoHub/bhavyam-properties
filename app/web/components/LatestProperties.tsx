@@ -66,6 +66,7 @@ export default function LatestProperties() {
              {['Sell', 'Buy', 'Rent'].map((type) => (
                 <button 
                   key={type}
+                  suppressHydrationWarning
                   onClick={async () => {
                     if (type === 'Buy') {
                       router.push('/properties');

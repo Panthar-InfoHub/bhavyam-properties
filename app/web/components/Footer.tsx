@@ -32,7 +32,7 @@ export default function Footer() {
             <div className="w-6 h-0.5 bg-[#00b48f] mt-3 mb-6"></div>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
+                <Link href="/about" className="hover:text-white transition-colors flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                   About Us
                 </Link>
@@ -47,6 +47,12 @@ export default function Footer() {
                 <Link href="/privacy-policy" className="hover:text-white transition-colors flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                   Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/user/apply-agent" className="hover:text-white transition-colors flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                  Join as Agent
                 </Link>
               </li>
               <li>
@@ -98,7 +104,7 @@ export default function Footer() {
       <div className="bg-[#0b1a29] py-5">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href="#" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">About Us</Link>
+            <Link href="/about" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">About Us</Link>
             <span className="text-gray-600">.</span>
             <Link href="/terms-and-conditions" className="hover:text-white transition-colors text-[11px] uppercase tracking-wider">Terms and Conditions</Link>
             <span className="text-gray-600">.</span>
@@ -115,6 +121,7 @@ export default function Footer() {
       {/* Scroll to Top Button */}
       <button 
         onClick={scrollToTop}
+        suppressHydrationWarning
         className="absolute bottom-6 right-6 p-2 bg-[#00ecbd] hover:bg-[#00b48f] text-white rounded shadow-lg transition-colors z-50 flex items-center justify-center"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,4 +1,5 @@
 import LatestListingsSidebar from '@/components/LatestListingsSidebar';
+import { Suspense } from 'react';
 
 export default function TermsAndConditions() {
   return (
@@ -279,7 +280,22 @@ export default function TermsAndConditions() {
 
         {/* Right Sidebar column */}
         <div className="w-full lg:w-[30%]">
-           <LatestListingsSidebar />
+           <Suspense fallback={
+             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-pulse">
+               <div className="h-6 bg-gray-200 rounded w-1/2 mb-6"></div>
+               {[1,2,3].map(i => (
+                 <div key={i} className="flex gap-4 mb-6">
+                   <div className="w-20 h-20 bg-gray-100 rounded-xl"></div>
+                   <div className="flex-1 space-y-2 py-1">
+                     <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+                     <div className="h-3 bg-gray-50 rounded w-1/2"></div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           }>
+             <LatestListingsSidebar />
+           </Suspense>
         </div>
 
       </div>
