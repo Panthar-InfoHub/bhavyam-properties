@@ -281,7 +281,7 @@ export default function LoanFacilitySection() {
                               value={formData.phone}
                               onChange={e => setFormData({...formData, phone: e.target.value})}
                               className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[var(--color-emerald-heritage)] focus:border-transparent outline-none font-medium text-gray-800 transition-all"
-                              placeholder="+91 98765 43210"
+                              placeholder="+91 94515 67034"
                             />
                           </div>
                           <div>

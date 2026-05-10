@@ -43,7 +43,7 @@ export default function PhoneVerificationModal({ userId, onSuccess, onClose }: P
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500">
         {/* Header Decoration */}
         <div className="h-2 bg-linear-to-r from-[#00b48f] to-[#00579e]"></div>

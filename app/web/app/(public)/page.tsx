@@ -8,6 +8,7 @@ import VideoTourSection from '@/components/VideoTourSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import LatestProperties from '@/components/LatestProperties';
 import LoanFacilitySection from '@/components/LoanFacilitySection';
+import VerifyPropertyCTA from '@/components/VerifyPropertyCTA';
 
 export default function Home() {
   return (
@@ -31,6 +32,7 @@ export default function Home() {
       <TestimonialsSection />
 
 
+      <VerifyPropertyCTA />
       <AgentCTASection />
     </main>
   );

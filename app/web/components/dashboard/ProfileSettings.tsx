@@ -9,6 +9,7 @@ export default function ProfileSettings({ profile, onUpdate }: { profile: any, o
     first_name: profile?.first_name || '',
     last_name: profile?.last_name || '',
     phone_number: profile?.phone_number || '',
+    username: profile?.username || '',
     bio: profile?.bio || '',
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -18,6 +19,7 @@ export default function ProfileSettings({ profile, onUpdate }: { profile: any, o
       first_name: profile?.first_name || '',
       last_name: profile?.last_name || '',
       phone_number: profile?.phone_number || '',
+      username: profile?.username || '',
       bio: profile?.bio || '',
     });
   }, [profile]);
@@ -33,6 +35,7 @@ export default function ProfileSettings({ profile, onUpdate }: { profile: any, o
           first_name: formData.first_name,
           last_name: formData.last_name,
           phone_number: formData.phone_number,
+          username: formData.username,
           bio: formData.bio,
           updated_at: new Date().toISOString(),
         })
@@ -40,7 +43,13 @@ export default function ProfileSettings({ profile, onUpdate }: { profile: any, o
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+            toast.error('Username already taken. Please choose another.');
+            return;
+        }
+        throw error;
+      }
       
       onUpdate(data);
       toast.success('Profile updated successfully!', { icon: '✅' });
@@ -86,27 +95,32 @@ export default function ProfileSettings({ profile, onUpdate }: { profile: any, o
           </div>
         </div>
 
-        {/* Email (Read Only) */}
-        <div className="space-y-2 opacity-60">
-          <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Email Address (Primary)</label>
-          <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold text-gray-400 cursor-not-allowed">
-            {profile?.email}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           {/* Username */}
+           <div className="space-y-2">
+            <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Username</label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '')})}
+              placeholder="e.g. nikhil99"
+              className="w-full bg-[#fbfcfa] border border-gray-100 rounded-2xl p-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#00ecbd] focus:bg-white transition-all outline-none"
+            />
           </div>
-          <p className="text-[10px] font-bold text-gray-400 ml-2">Email is linked to your Google Account and cannot be changed.</p>
-        </div>
 
-        {/* Phone Number */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Phone Number</label>
-          <div className="relative">
-             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">+91</span>
-             <input
-               type="tel"
-               value={formData.phone_number}
-               onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-               placeholder="9876543210"
-               className="w-full bg-[#fbfcfa] border border-gray-100 rounded-2xl p-4 pl-14 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#00ecbd] focus:bg-white transition-all outline-none"
-             />
+          {/* Phone Number */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Phone Number</label>
+            <div className="relative">
+               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">+91</span>
+               <input
+                 type="tel"
+                 value={formData.phone_number}
+                 onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                 placeholder="9451567034"
+                 className="w-full bg-[#fbfcfa] border border-gray-100 rounded-2xl p-4 pl-14 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#00ecbd] focus:bg-white transition-all outline-none"
+               />
+            </div>
           </div>
         </div>
 

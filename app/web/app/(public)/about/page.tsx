@@ -4,6 +4,7 @@ import CounterSection from '@/components/CounterSection';
 import ExpertSolutionsSection from '@/components/ExpertSolutionsSection';
 import AboutMeetSection from '@/components/AboutMeetSection';
 import ProblemsSection from '@/components/ProblemsSection';
+import VerifyPropertyCTA from '@/components/VerifyPropertyCTA';
 
 export default function AboutPage() {
   return (
@@ -67,23 +68,7 @@ export default function AboutPage() {
         <ExpertSolutionsSection />
       </div>
 
-      {/* Action CTA */}
-      <section className="py-24 px-6 md:px-12 text-center bg-white pb-32">
-         <div className="max-w-3xl mx-auto bg-linear-to-r from-[#112743] to-[#1e3a5a] p-12 md:p-16 rounded-[3rem] shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00ecbd]/10 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-[#00ecbd]/20 transition-all"></div>
-            <h2 className="text-white text-3xl md:text-4xl font-black tracking-tight mb-8 relative z-10">
-               Ready to experience <br/> real estate with trust?
-            </h2>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-               <Link href="/properties" className="bg-[#00ecbd] hover:bg-[#00d0a5] text-[#112743] px-10 py-4 rounded-full font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95">
-                  Browse Properties
-               </Link>
-               <Link href="/login" className="bg-transparent border border-white/20 hover:bg-white/10 text-white px-10 py-4 rounded-full font-black text-sm uppercase tracking-widest transition-all active:scale-95">
-                  Become an Agent
-               </Link>
-            </div>
-         </div>
-      </section>
+      <VerifyPropertyCTA />
     </main>
   );
 }

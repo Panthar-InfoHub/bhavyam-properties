@@ -158,7 +158,7 @@ Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
       } catch (err: any) {
          toast.dismiss('uploading');
          console.error("Error applying:", err);
-         alert("Error applying: " + err.message);
+         toast.error("Error applying: " + err.message);
       } finally {
          setIsSubmitting(false);
       }
@@ -385,7 +385,7 @@ Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
 
       {/* MODAL / POPUP FORM */}
       {showPopup && (
-         <div className="fixed inset-0 z-[100] pt-24 pb-8 overflow-y-auto bg-[#112743]/90 flex justify-center items-start backdrop-blur-md animate-in fade-in duration-300">
+         <div className="fixed inset-0 z-[1000] pt-32 pb-8 overflow-y-auto bg-[#112743]/95 flex justify-center items-start backdrop-blur-md animate-in fade-in duration-300">
              <div className="bg-white w-full max-w-4xl rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col mb-12 mx-4 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
                  
                  {/* Modal Header */}

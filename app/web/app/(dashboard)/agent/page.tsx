@@ -372,9 +372,9 @@ function AgentDashboardContent() {
                                            const { error } = await supabase.from('properties').delete().eq('id', p.id);
                                            if (!error) {
                                               setProperties(prev => prev.filter(item => item.id !== p.id));
-                                              alert('Property permanently removed from the system.');
+                                              toast.success('Property permanently removed from the system.');
                                            } else {
-                                              alert('Error deleting property: ' + error.message);
+                                              toast.error('Error deleting property: ' + error.message);
                                            }
                                         }}
                                         className="bg-gray-800 text-white hover:bg-black text-[10px] font-black px-3 py-2 rounded-lg transition-all uppercase tracking-widest shadow-lg shadow-black/10 cursor-pointer"

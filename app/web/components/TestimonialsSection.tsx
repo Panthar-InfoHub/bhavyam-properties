@@ -36,6 +36,20 @@ export default function TestimonialsSection() {
           property: { property_type: 'Villa', city: 'Pune' },
           rating: 5,
           comment: "The direct expert access feature saved me so much time. I was able to connect directly with the owner without agent hurdles. A top-notch real estate experience."
+        },
+        {
+          id: 'static-3',
+          user: { first_name: 'Amit', last_name: 'Verma' },
+          property: { property_type: 'Plot', city: 'Jhansi' },
+          rating: 4,
+          comment: "The property verification service is a game changer. I felt confident making a big investment knowing the documents were thoroughly checked by experts."
+        },
+        {
+          id: 'static-4',
+          user: { first_name: 'Neha', last_name: 'Gupta' },
+          property: { property_type: 'Apartment', city: 'Lucknow' },
+          rating: 4,
+          comment: "Great platform for finding rental properties. The interface is clean and the search filters work perfectly to find exactly what you need in your budget."
         }
       ];
 
@@ -45,10 +59,21 @@ export default function TestimonialsSection() {
     fetchReviews();
   }, []);
 
-  if (reviews.length === 0) return null;
-
   const nextReview = () => setCurrentIndex((prev) => (prev + 1) % reviews.length);
   const prevReview = () => setCurrentIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+
+  // Auto-switch logic
+  useEffect(() => {
+    if (reviews.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      nextReview();
+    }, 5000); // Switch every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [reviews.length]);
+
+  if (reviews.length === 0) return null;
 
   const currentReview = reviews[currentIndex];
 

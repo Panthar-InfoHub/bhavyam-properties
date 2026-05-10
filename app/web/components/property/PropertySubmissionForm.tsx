@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -157,7 +158,7 @@ export default function PropertySubmissionForm() {
     // Validate Size
     for (const f of newFiles) {
       if (f.size > MAX_FILE_SIZE_BYTES) {
-        alert(`File ${f.name} exceeds standard 10MB limit!`);
+        toast.error(`File ${f.name} exceeds standard 10MB limit!`);
         return;
       }
     }
@@ -170,7 +171,7 @@ export default function PropertySubmissionForm() {
         const combined = [...existingFiles, ...newFiles];
         
         if (combined.length > maxFiles) {
-          alert(`You can only upload a maximum of ${maxFiles} files here. Taking the first ${maxFiles} only.`);
+          toast.error(`You can only upload a maximum of ${maxFiles} files here.`);
           return { ...prev, [name]: combined.slice(0, maxFiles) };
         }
         
@@ -191,7 +192,7 @@ export default function PropertySubmissionForm() {
 
   const nextStep = () => {
     if (currentStep === 8 && !formData.agreements.termsAgreed) {
-      alert("Please agree to the terms and conditions in Step 8 before proceeding.");
+      toast.error("Please agree to the terms and conditions in Step 8 before proceeding.");
       return;
     }
     setCurrentStep(prev => Math.min(prev + 1, 9));
@@ -285,7 +286,8 @@ export default function PropertySubmissionForm() {
           address: formData.address || 'Unspecified',
           status: 'pending', // Admin must approve
           map_url: formData.mapUrl || null,
-          description: formData.propertyDetails || 'No details provided'
+          description: formData.propertyDetails || 'No details provided',
+          floor_plan_url: null // Will update after upload if exists
         })
         .select()
         .single();
@@ -345,8 +347,19 @@ export default function PropertySubmissionForm() {
         if (mediaError) throw mediaError;
       }
 
-      // 5. Success
-      alert('Property securely submitted! It is in Pending status waiting for an Admin review.');
+      // 5. Update property record with floor_plan_url if it was uploaded
+      const floorPlanMedia = mediaRecords.find(m => m.media_type === 'document' && m.url.includes('floor-plans'));
+      if (floorPlanMedia) {
+        const { error: updateError } = await supabase
+          .from('properties')
+          .update({ floor_plan_url: floorPlanMedia.url })
+          .eq('id', propertyRecord.id);
+        
+        if (updateError) console.warn("Failed to update floor_plan_url on property record:", updateError);
+      }
+
+      // 6. Success
+      toast.success('Property securely submitted! Waiting for Admin review.');
       router.push('/dashboard');
 
     } catch (err: any) {

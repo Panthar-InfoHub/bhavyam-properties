@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 import GlobalPreloader from "@/components/ui/GlobalPreloader";
+import WhatsAppFAB from "@/components/WhatsAppFAB";
+import VerifyFAB from "@/components/VerifyFAB";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,6 +65,8 @@ export default function RootLayout({
         <main className="flex-1">
           {children}
         </main>
+        <WhatsAppFAB />
+        <VerifyFAB />
         <Footer />
       </body>
     </html>

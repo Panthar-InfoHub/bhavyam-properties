@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import PhoneVerificationModal from '@/components/auth/PhoneVerificationModal';
+import toast from 'react-hot-toast';
 
 export default function InterestButton({ propertyId }: { propertyId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +28,7 @@ export default function InterestButton({ propertyId }: { propertyId: string }) {
     e.preventDefault();
     
     if (!user) {
-      alert("Please log in to express interest in a property.");
+      toast.error("Please log in to express interest.");
       router.push('/login');
       return;
     }
@@ -51,8 +52,9 @@ export default function InterestButton({ propertyId }: { propertyId: string }) {
       
       setSubmitted(true);
       setIsOpen(false);
+      toast.success("Interest request sent successfully!");
     } catch (err: any) {
-      alert("Error sending request: " + err.message);
+      toast.error("Error sending request: " + err.message);
     } finally {
       setIsSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter, useParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function EditPropertyPage() {
   const { id } = useParams();
@@ -29,11 +30,13 @@ export default function EditPropertyPage() {
   const [newFiles, setNewFiles] = useState<{
     photos: File[],
     map: File | null,
-    video: File | null
+    video: File | null,
+    floorPlan: File | null
   }>({
     photos: [],
     map: null,
-    video: null
+    video: null,
+    floorPlan: null
   });
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export default function EditPropertyPage() {
         .single();
 
       if (propErr || !prop) {
-        alert("Property not found or access denied.");
+        toast.error("Property not found or access denied.");
         router.push('/agent');
         return;
       }
@@ -104,7 +107,7 @@ export default function EditPropertyPage() {
     }
   };
 
-  const removeNewFile = (type: 'photos' | 'map' | 'video', index?: number) => {
+  const removeNewFile = (type: 'photos' | 'map' | 'video' | 'floorPlan', index?: number) => {
     setNewFiles(prev => {
       if (type === 'photos' && typeof index === 'number') {
         return { ...prev, photos: prev.photos.filter((_, i) => i !== index) };
@@ -148,6 +151,12 @@ export default function EditPropertyPage() {
         const url = await uploadFile(newFiles.video, 'videos');
         mediaRecords.push({ property_id: id, url, media_type: 'video' });
       }
+      if (newFiles.floorPlan) {
+        const url = await uploadFile(newFiles.floorPlan, 'floor-plans');
+        mediaRecords.push({ property_id: id, url, media_type: 'document' });
+        // Update main record directly too
+        await supabase.from('properties').update({ floor_plan_url: url }).eq('id', id);
+      }
       for (const file of newFiles.photos) {
         const url = await uploadFile(file, 'general');
         mediaRecords.push({ property_id: id, url, media_type: 'image' });
@@ -158,10 +167,10 @@ export default function EditPropertyPage() {
         if (mediaErr) throw mediaErr;
       }
 
-      alert("Property updated and set to Pending for Admin approval.");
+      toast.success("Property updated and set to Pending for Admin approval.");
       router.push('/agent');
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -341,6 +350,12 @@ export default function EditPropertyPage() {
                            <button type="button" onClick={() => removeNewFile('video')} className="p-1 px-2.5 rounded-full bg-purple-50 text-purple-600 hover:bg-black hover:text-white transition-all text-[10px] font-black leading-none">×</button>
                         </div>
                      )}
+                     {newFiles.floorPlan && (
+                        <div className="flex items-center gap-3 bg-white border border-orange-200 pl-4 pr-1 py-1 rounded-full shadow-sm">
+                           <span className="text-[10px] font-black text-orange-700 truncate max-w-[150px]">Floor Plan: {newFiles.floorPlan.name}</span>
+                           <button type="button" onClick={() => removeNewFile('floorPlan')} className="p-1 px-2.5 rounded-full bg-orange-50 text-orange-600 hover:bg-black hover:text-white transition-all text-[10px] font-black leading-none">×</button>
+                        </div>
+                     )}
                   </div>
                </div>
             )}
@@ -362,6 +377,11 @@ export default function EditPropertyPage() {
                 <span className="text-2xl mb-2">🎞️</span>
                 <label className="block text-[10px] font-black text-[#00579e] uppercase tracking-widest mb-4">Update Video</label>
                 <input type="file" accept="video/*" onChange={e => setNewFiles({...newFiles, video: e.target.files?.[0] || null})} className="text-[10px] w-full file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
+              </div>
+              <div className="p-6 border-2 border-dashed border-gray-100 rounded-4xl bg-gray-50/30 flex flex-col items-center text-center">
+                <span className="text-2xl mb-2">📐</span>
+                <label className="block text-[10px] font-black text-[#00579e] uppercase tracking-widest mb-4">Add Floor Plan</label>
+                <input type="file" accept=".pdf,image/*" onChange={e => setNewFiles({...newFiles, floorPlan: e.target.files?.[0] || null})} className="text-[10px] w-full file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200 cursor-pointer" />
               </div>
             </div>
           </section>

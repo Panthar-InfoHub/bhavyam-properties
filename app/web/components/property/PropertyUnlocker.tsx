@@ -39,14 +39,22 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           p_property_id: propertyId
         });
         if (accessError) throw accessError;
-        hasAccess = rpcAccess;
+
+        // NEW: Check if current user is the owner of this property
+        const { data: ownerCheck } = await supabase
+          .from('properties')
+          .select('owner_id')
+          .eq('id', propertyId)
+          .single();
+
+        hasAccess = rpcAccess || (ownerCheck?.owner_id === currentUser.id);
       }
 
       if (hasAccess) {
         const { data: secureProp, error: fetchError } = await supabase
           .from('properties')
           .select(`
-            address, map_url, price, owner_id,
+            address, map_url, price, owner_id, floor_plan_url,
             owner:profiles (id, first_name, last_name, phone_number, role),
             media:property_media (url, media_type)
           `)
@@ -79,6 +87,9 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           ) {
             setAccessType('membership');
             setExpiresAt(currentUser.profile?.subscription_expires_at);
+          } else if (securedData?.owner_id === currentUser.id) {
+            setAccessType('admin'); // Treat owner as admin for UI
+            setExpiresAt('2099-12-31T23:59:59Z');
           } else {
             setAccessType(null);
           }
@@ -255,7 +266,11 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           <PhoneVerificationModal
             userId={user.id}
             onClose={() => setShowPhoneModal(false)}
-            onSuccess={() => { setShowPhoneModal(false); handleDirectUnlock(); }}
+            onSuccess={async () => { 
+              await fetchAccess();
+              setShowPhoneModal(false); 
+              handleDirectUnlock(); 
+            }}
           />
         )}
 
@@ -266,7 +281,7 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
               <h3 className="text-xl font-bold text-[#00b48f]">Access Granted</h3>
               <p className="text-[10px] text-[#8a8479] mt-0.5 uppercase tracking-widest font-bold">
                 Via {
-                  accessType === 'admin' ? 'Admin' : 
+                  accessType === 'admin' ? (securedData?.owner_id === user?.id ? 'Property Owner' : 'Admin') : 
                   accessType === 'membership' ? 'Elite Membership' : 
                   accessType === 'credit' ? 'Credit Unlock' : 
                   'Property Unlock'
@@ -336,6 +351,20 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
             </div>
           )}
 
+          {/* Floor Plan */}
+          {securedData.floor_plan_url && (
+            <div className="bg-[#f3f0e6] p-5 rounded-2xl border border-[#eeeae0]">
+              <p className="text-[#8a8479] text-[10px] uppercase font-black mb-4 flex items-center gap-1.5">
+                <span className="text-orange-500">📐</span> Property Floor Plan
+              </p>
+              <a href={securedData.floor_plan_url} target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-3 w-full bg-white hover:bg-orange-50 text-orange-600 border border-orange-200 font-bold py-3.5 rounded-xl transition-all shadow-sm group">
+                <span className="text-xl group-hover:scale-110 transition-transform">📐</span>
+                View Floor Plan
+              </a>
+            </div>
+          )}
+
           {/* Legal docs */}
           {otherMedia.length > 0 && (
             <div className="bg-[#f3f0e6] p-5 rounded-2xl border border-[#eeeae0]">
@@ -343,13 +372,17 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
                 <span className="text-teal-500">📄</span> Legal Assets
               </p>
               <div className="flex flex-col gap-3">
-                {otherMedia.map((m: any, i: number) => (
-                  <a key={i} href={m.url} target="_blank"
-                    className={`flex items-center gap-3 p-3 bg-white rounded-xl text-sm transition-all border group ${m.media_type === 'video' ? 'text-teal-600 border-teal-500/20 hover:bg-teal-500/5' : 'text-blue-600 border-blue-500/20 hover:bg-blue-500/5'}`}>
-                    <span className="text-xl group-hover:scale-110 transition-transform">{m.media_type === 'video' ? '🎥' : '📄'}</span>
-                    {m.media_type === 'video' ? 'Watch Video Tour' : `Legal Document ${i + 1}`}
-                  </a>
-                ))}
+                {otherMedia.map((m: any, i: number) => {
+                  // Skip if it's the same URL as the floor_plan_url to avoid duplication
+                  if (m.url === securedData.floor_plan_url) return null;
+                  return (
+                    <a key={i} href={m.url} target="_blank"
+                      className={`flex items-center gap-3 p-3 bg-white rounded-xl text-sm transition-all border group ${m.media_type === 'video' ? 'text-teal-600 border-teal-500/20 hover:bg-teal-500/5' : 'text-blue-600 border-blue-500/20 hover:bg-blue-500/5'}`}>
+                      <span className="text-xl group-hover:scale-110 transition-transform">{m.media_type === 'video' ? '🎥' : '📄'}</span>
+                      {m.media_type === 'video' ? 'Watch Video Tour' : `Legal Document ${i + 1}`}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -368,7 +401,11 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
         <PhoneVerificationModal
           userId={user.id}
           onClose={() => setShowPhoneModal(false)}
-          onSuccess={() => { setShowPhoneModal(false); handleDirectUnlock(); }}
+          onSuccess={async () => { 
+            await fetchAccess();
+            setShowPhoneModal(false); 
+            handleDirectUnlock(); 
+          }}
         />
       )}
 

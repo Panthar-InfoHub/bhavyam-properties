@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function AgentCTASection() {
   return (
-    <section className="bg-[var(--color-pure-white)] py-12 px-4 md:px-8 overflow-hidden">
+    <section id="agent-cta-section" className="bg-[var(--color-pure-white)] py-12 px-4 md:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto relative bg-gradient-to-r from-[var(--color-cloud)] to-[var(--color-warm-ivory)] border border-[var(--color-ghost)]/20 rounded-3xl flex flex-col md:flex-row items-center justify-between shadow-[var(--shadow-ambient)]">
         
         {/* Faint Background Buildings */}
@@ -33,7 +33,7 @@ export default function AgentCTASection() {
            <img 
              src="/images/image copy.png" 
              alt="Real Estate Agent" 
-             className="relative z-10 h-[280px] md:h-[340px] w-auto object-contain -mb-2 md:-mt-16"
+             className="relative z-10 h-[280px] md:h-[340px] w-auto object-contain -mb-8 md:-mt-16"
            />
         </div>
 
@@ -49,7 +49,7 @@ export default function AgentCTASection() {
              </p>
            </div>
            
-           <Link href="/user/apply-agent" className="whitespace-nowrap bg-[var(--color-deep-navy)] text-white font-bold text-[14px] uppercase tracking-[0.1em] px-8 py-4 hover:bg-[var(--color-electric-mint-glow)] hover:text-black shadow-[0_4px_15px_rgba(17,39,67,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-full">
+           <Link href="/user/apply-agent" className="whitespace-nowrap bg-[var(--color-deep-navy)] text-white font-bold text-[14px] uppercase tracking-[0.1em] px-8 py-4 hover:bg-[var(--color-emerald-heritage)] shadow-[0_4px_15px_rgba(17,39,67,0.3)] transition-all duration-300 hover:-translate-y-1 rounded-full">
              Register Now
            </Link>
            

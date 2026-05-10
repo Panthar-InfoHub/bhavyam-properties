@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function AdminAgentsPage() {
   const [apps, setApps] = useState<any[]>([]);
@@ -96,8 +97,9 @@ export default function AdminAgentsPage() {
     });
 
     if (error) {
-       alert("Failed to approve agent: " + error.message);
+       toast.error("Failed to approve agent: " + error.message);
     } else {
+       toast.success("Agent application approved!");
        setShowModal(false);
        fetchApps();
     }
@@ -109,8 +111,9 @@ export default function AdminAgentsPage() {
     });
 
     if (error) {
-       alert("Failed to reject agent: " + error.message);
+       toast.error("Failed to reject agent: " + error.message);
     } else {
+       toast.success("Application rejected.");
        setShowModal(false);
        fetchApps();
     }

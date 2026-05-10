@@ -8,10 +8,13 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSection';
+import { RefreshCw } from 'lucide-react';
+import VerificationManager from '@/components/admin/VerificationManager';
 
-type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans';
+type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications';
 
 function AdminDashboardContent() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [section, setSection] = useState<Section>('overview');
   const [stats, setStats] = useState({ listings: 0, users: 0, revenue: 0, pending: 0, pendingAgents: 0 });
   const [properties, setProperties] = useState<any[]>([]);
@@ -72,56 +75,60 @@ function AdminDashboardContent() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
      });
 
+  const fetchData = async (showToast = false) => {
+    if (showToast) setIsRefreshing(true);
+    const user = await getCurrentUser();
+    if (!user || user.profile?.role !== 'admin') { router.push('/dashboard'); return; }
+
+    // Parallel fetch everything needed
+    const [
+      { data: props },
+      { data: allUsers },
+      { data: pays },
+      { data: ints },
+      { data: srvReqs },
+      { data: revs },
+      { data: apps },
+      { data: allPlans }
+    ] = await Promise.all([
+      supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, admin_feedback, owner:profiles(first_name, last_name, role, agent_code), media:property_media(url, media_type)').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
+      supabase.from('transactions').select('*, user:profiles(first_name, last_name, email), property:properties(id, property_type, city)').order('created_at', { ascending: false }),
+      supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(id, property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number, email))').order('created_at', { ascending: false }),
+      supabase.from('service_requests').select('*').order('created_at', { ascending: false }),
+      supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
+      supabase.from('agent_applications').select('id, user_id, status, notes, full_name, email, phone, experience, reason, skills, aadhaar_url, pan_url, certificate_url, resume_url, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
+      supabase.from('plans').select('*').order('type', { ascending: true })
+    ]);
+
+    const propList = props || [];
+    setProperties(propList);
+    setUsers(allUsers || []);
+    setTransactions(pays || []);
+    setInterests(ints || []);
+    setServiceRequests(srvReqs || []);
+    setReviews(revs || []);
+    setAgentApps(apps || []);
+    setPlans(allPlans || []);
+
+    const revenue = (pays || []).filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
+    setStats({
+      listings: propList.length,
+      users: (allUsers || []).length,
+      revenue,
+      pending: propList.filter((p: any) => p.status === 'pending').length,
+      pendingAgents: (apps || []).filter((a: any) => a.status === 'pending').length
+    });
+
+    setIsLoading(false);
+    if (showToast) {
+      setIsRefreshing(false);
+      toast.success("Dashboard data synced");
+    }
+  };
+
   useEffect(() => {
-    const init = async () => {
-      const user = await getCurrentUser();
-      if (!user || user.profile?.role !== 'admin') { router.push('/dashboard'); return; }
-
-      // Parallel fetch everything needed
-      const [
-        { data: props },
-        { data: allUsers },
-        { data: pays },
-        { data: ints },
-        { data: srvReqs },
-        { data: revs },
-        { data: apps },
-        { data: allPlans }
-      ] = await Promise.all([
-        supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, admin_feedback, owner:profiles(first_name, last_name, role, agent_code), media:property_media(url, media_type)').order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
-        supabase.from('transactions').select('*, user:profiles(first_name, last_name, email), property:properties(id, property_type, city)').order('created_at', { ascending: false }),
-        supabase.from('interest_requests').select('id, message, status, created_at, user:profiles(first_name, last_name, email, phone_number), property:properties(id, property_type, city, owner:profiles!properties_owner_id_fkey(first_name, last_name, phone_number, email))').order('created_at', { ascending: false }),
-        supabase.from('service_requests').select('*').order('created_at', { ascending: false }),
-        supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
-        supabase.from('agent_applications').select('id, status, notes, full_name, email, phone, experience, reason, skills, aadhaar_url, pan_url, certificate_url, resume_url, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
-        supabase.from('plans').select('*').order('type', { ascending: true })
-      ]);
-
-      const propList = props || [];
-      const payList = pays || [];
-
-      setProperties(propList);
-      setUsers(allUsers || []);
-      setTransactions(pays || []);
-      setInterests(ints || []);
-      setServiceRequests(srvReqs || []);
-      setReviews(revs || []);
-      setAgentApps(apps || []);
-      setPlans(allPlans || []);
-
-      const revenue = (pays || []).filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
-      setStats({
-        listings: propList.length,
-        users: (allUsers || []).length,
-        revenue,
-        pending: propList.filter((p: any) => p.status === 'pending').length,
-        pendingAgents: (apps || []).filter((a: any) => a.status === 'pending').length
-      });
-
-      setIsLoading(false);
-    };
-    init();
+    fetchData();
   }, [router]);
 
   const updatePropertyStatus = async (id: string, status: string, note?: string) => {
@@ -229,6 +236,7 @@ function AdminDashboardContent() {
     { key: 'interests', label: 'Interests', icon: '📋' },
     { key: 'service_requests', label: 'Service Queries', icon: '📩' },
     { key: 'transactions', label: 'Transactions', icon: '💸' },
+    { key: 'verifications', label: 'Verifications', icon: '🛡️' },
     { key: 'plans', label: 'Plan Settings', icon: '⚙️' },
     { key: 'reviews', label: 'Reviews', icon: '⭐' },
   ];
@@ -276,9 +284,17 @@ function AdminDashboardContent() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 py-8 px-4 sm:px-8 overflow-x-hidden">
+      <main className="flex-1 pt-24 pb-8 px-4 sm:px-8 overflow-x-hidden">
         {/* Top Actions */}
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end items-center gap-4 mb-6">
+          <button 
+            onClick={() => fetchData(true)} 
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 text-gray-500 text-xs font-black uppercase tracking-widest rounded-full shadow-sm hover:bg-gray-50 hover:border-[#00ecbd] hover:text-[#00ecbd] transition-all group disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={`${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+            {isRefreshing ? 'Syncing...' : 'Sync Data'}
+          </button>
           <Link href="/agent" className="bg-[#112743] hover:bg-[#1a3a61] text-white text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95">
             <span>🎖️</span> Your Agent View
           </Link>
@@ -758,17 +774,21 @@ function AdminDashboardContent() {
                   return agentAppSortBy === 'Newest' ? timeB - timeA : timeA - timeB;
                 })
                 .map(app => (
-                <div key={app.id} className="bg-white rounded-xl border border-yellow-200 border-l-4 border-l-yellow-400 shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:shadow-md transition-all">
+                <div 
+                  key={app.id} 
+                  onClick={() => setSelectedAgentApp(app)}
+                  className="bg-white rounded-xl border border-yellow-200 border-l-4 border-l-yellow-400 shadow-sm p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:shadow-md transition-all cursor-pointer group"
+                >
                   <div className="flex-1">
-                    <p className="font-bold text-gray-800 text-lg">{app.full_name || `${app.user?.first_name} ${app.user?.last_name}`}</p>
+                    <p className="font-bold text-gray-800 text-lg group-hover:text-[#00579e] transition-colors">{app.full_name || `${app.user?.first_name} ${app.user?.last_name}`}</p>
                     <p className="text-xs text-gray-500 mb-3 font-medium">📞 {app.phone || app.user?.phone_number} | ✉️ {app.email || app.user?.email}</p>
                     <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-100">
                        <p className="text-[10px] uppercase font-black text-gray-400 mb-2">Application Notes</p>
                        <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{app.reason || app.notes || "No details provided."}</p>
-                       <button onClick={() => setSelectedAgentApp(app)} className="text-[#00b48f] text-xs font-bold mt-2 hover:underline">View Full Application & Docs</button>
+                       <span className="text-[#00b48f] text-xs font-bold mt-2 inline-block">View Full Application & Docs →</span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 shrink-0 md:pt-2 min-w-[160px]">
+                  <div className="flex flex-col gap-2 shrink-0 md:pt-2 min-w-[160px]" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleApproveAgent(app.id, app.user?.first_name || 'UNK')} className="bg-[#00b48f] text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-teal-600 transition-colors shadow-sm">✓ Approve Agent</button>
                     <button onClick={() => handleRejectAgent(app.id)} className="bg-white text-red-500 border border-red-200 text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-red-50 transition-colors">✗ Reject</button>
                     <p className="text-[10px] text-gray-400 text-center">{new Date(app.created_at).toLocaleDateString()}</p>
@@ -1003,6 +1023,10 @@ function AdminDashboardContent() {
           </div>
         )}
 
+        {section === 'verifications' && (
+          <VerificationManager />
+        )}
+
       </main>
 
       {/* LEAD MODAL POPUP */}
@@ -1083,8 +1107,8 @@ function AdminDashboardContent() {
 
       {/* AGENT DETAIL MODAL */}
       {selectedAgent && (
-        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedAgent(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4" onClick={() => setSelectedAgent(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
             <button onClick={() => setSelectedAgent(null)} className="absolute top-4 right-4 h-8 w-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors cursor-pointer z-[100]">✕</button>
 
             {/* Header */}
@@ -1103,38 +1127,108 @@ function AdminDashboardContent() {
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6 -mt-4 relative z-10">
-              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 mb-5 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
-                    <p className="text-sm font-bold text-gray-800 break-all">{selectedAgent.email}</p>
+            {/* Content Split Layout */}
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 -mt-6 relative z-10">
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 space-y-4">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Core Contact Info</p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                      <p className="text-sm font-bold text-gray-800 break-all">{selectedAgent.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone</p>
+                      <p className="text-sm font-bold text-gray-800">{selectedAgent.phone_number || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</p>
+                      <span className="text-xs font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">{selectedAgent.role}</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Joined</p>
+                      <p className="text-sm font-bold text-gray-800">{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone</p>
-                    <p className="text-sm font-bold text-gray-800">{selectedAgent.phone_number || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</p>
-                    <span className="text-xs font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">{selectedAgent.role}</span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Joined</p>
-                    <p className="text-sm font-bold text-gray-800">{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
-                  </div>
+                </div>
+
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-6">
+                  <p className="text-xs font-black text-red-700 uppercase tracking-widest mb-1 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    Account Control
+                  </p>
+                  <p className="text-[10px] text-red-500 mb-4 font-bold leading-relaxed uppercase tracking-tight">Suspending resets role to Seller and invalidates ID.</p>
+                  <button
+                    onClick={() => suspendAgent(selectedAgent.id)}
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-red-100"
+                  >
+                    Suspend Agent
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
-                <p className="text-xs font-black text-red-700 uppercase tracking-widest mb-1">⚠️ Danger Zone</p>
-                <p className="text-xs text-red-500 mb-4 font-medium">Suspending this agent will reset their role to Seller and invalidate their Agent ID. They will need to submit a new application with updated documents.</p>
-                <button
-                  onClick={() => suspendAgent(selectedAgent.id)}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-red-100"
-                >
-                  Suspend Agent
-                </button>
+              <div className="space-y-6">
+                {/* Application Details Integration */}
+                {(() => {
+                  const app = agentApps.find(a => a.user_id === selectedAgent.id && a.status === 'approved');
+                  if (!app) return (
+                    <div className="bg-gray-50 rounded-2xl p-8 border border-dashed border-gray-200 text-center flex flex-col items-center justify-center h-full">
+                      <p className="text-4xl mb-3">📄</p>
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No detailed application found</p>
+                    </div>
+                  );
+                  return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 shadow-inner">
+                        <p className="text-[10px] font-black text-[#00b48f] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#00b48f]"></span>
+                          Verified Credentials
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          {app.experience && (
+                            <div>
+                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Exp.</p>
+                              <p className="text-xs font-bold text-gray-800">{app.experience}</p>
+                            </div>
+                          )}
+                          {app.skills && (
+                            <div>
+                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Top Skills</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {Array.isArray(app.skills) 
+                                  ? app.skills.slice(0,2).map((s: string, i: number) => <span key={i} className="px-1.5 py-0.5 bg-white text-emerald-600 text-[8px] font-black uppercase rounded border border-emerald-100">{s}</span>)
+                                  : null
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {(app.reason || app.notes) && (
+                          <div className="mb-6">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Statement</p>
+                            <p className="text-[11px] text-gray-600 italic leading-relaxed line-clamp-3">"{app.reason || app.notes}"</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { label: 'ID', url: app.aadhaar_url, icon: '🆔' },
+                            { label: 'PAN', url: app.pan_url, icon: '💳' },
+                            { label: 'Cert', url: app.certificate_url, icon: '🎓' },
+                            { label: 'CV', url: app.resume_url, icon: '💼' }
+                          ].map((doc, idx) => doc.url ? (
+                            <a key={idx} href={doc.url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center py-3 px-1 rounded-2xl bg-white border border-gray-100 hover:border-[#00b48f] hover:shadow-lg transition-all group">
+                               <span className="text-xl mb-1 group-hover:scale-110 transition-transform">{doc.icon}</span>
+                               <span className="text-[8px] font-black text-gray-400 uppercase">{doc.label}</span>
+                            </a>
+                          ) : null)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1143,105 +1237,100 @@ function AdminDashboardContent() {
 
       {/* AGENT APPLICATION DETAILS MODAL */}
       {selectedAgentApp && (
-        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-             <div className="bg-[#112743] px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+             <div className="bg-[#112743] px-8 py-6 flex items-center justify-between">
                 <div>
-                   <h3 className="text-white text-lg font-black tracking-tight">Agent Application</h3>
-                   <p className="text-white/60 text-xs font-medium">Submitted {new Date(selectedAgentApp.created_at).toLocaleString()}</p>
+                   <h3 className="text-white text-2xl font-black tracking-tight">Review Application</h3>
+                   <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-1">Submitted {new Date(selectedAgentApp.created_at).toLocaleString()}</p>
                 </div>
-                <button onClick={() => setSelectedAgentApp(null)} className="text-white/50 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+                <button onClick={() => setSelectedAgentApp(null)} className="text-white/50 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
              </div>
              
-             <div className="p-6 max-h-[70vh] overflow-y-auto">
-                {/* User Info */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Applicant Name</p>
-                      <p className="font-bold text-gray-900">{selectedAgentApp.full_name || `${selectedAgentApp.user?.first_name} ${selectedAgentApp.user?.last_name}`}</p>
-                   </div>
-                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Contact Info</p>
-                      <p className="font-bold text-gray-900 text-sm mb-1">{selectedAgentApp.email || selectedAgentApp.user?.email}</p>
-                      <p className="font-bold text-gray-900 text-sm">{selectedAgentApp.phone || selectedAgentApp.user?.phone_number}</p>
-                   </div>
+             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[80vh] overflow-y-auto">
+                {/* Left Column */}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Applicant Name</p>
+                        <p className="font-bold text-gray-900">{selectedAgentApp.full_name || `${selectedAgentApp.user?.first_name} ${selectedAgentApp.user?.last_name}`}</p>
+                     </div>
+                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                        <p className="font-bold text-gray-900 break-all text-xs">{selectedAgentApp.email || selectedAgentApp.user?.email}</p>
+                     </div>
+                  </div>
+
+                  {(selectedAgentApp.reason || selectedAgentApp.notes) && (
+                    <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Professional Statement / Reason</p>
+                       <p className="text-sm text-gray-700 leading-relaxed font-medium italic">
+                         "{selectedAgentApp.reason || selectedAgentApp.notes}"
+                       </p>
+                    </div>
+                  )}
+
+                  {selectedAgentApp.skills && (
+                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                         Reported Skills
+                       </p>
+                       <div className="flex flex-wrap gap-1.5">
+                          {Array.isArray(selectedAgentApp.skills) 
+                             ? selectedAgentApp.skills.map((s: string, i: number) => <span key={i} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-100">{s}</span>)
+                             : typeof selectedAgentApp.skills === 'string' ? selectedAgentApp.skills.split(',').map((s: string, i: number) => <span key={i} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-100">{s.trim()}</span>)
+                             : null
+                          }
+                       </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Details */}
-                <div className="mb-6 space-y-4">
-                   {selectedAgentApp.experience && (
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Experience Level</p>
-                        <p className="font-semibold text-gray-800">{selectedAgentApp.experience}</p>
-                     </div>
-                   )}
-                   {(selectedAgentApp.reason || selectedAgentApp.notes) && (
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Reason for Joining</p>
-                        <p className="text-sm text-gray-700 bg-blue-50/50 p-3 rounded-xl border border-blue-100 leading-relaxed">
-                          {selectedAgentApp.reason || selectedAgentApp.notes}
-                        </p>
-                     </div>
-                   )}
-                   {selectedAgentApp.skills && selectedAgentApp.skills.length > 0 && (
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Reported Skills</p>
-                        <div className="flex flex-wrap gap-2">
-                           {Array.isArray(selectedAgentApp.skills) 
-                              ? selectedAgentApp.skills.map((s: string, i: number) => <span key={i} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">{s}</span>)
-                              : typeof selectedAgentApp.skills === 'string' ? selectedAgentApp.skills.split(',').map((s: string, i: number) => <span key={i} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">{s.trim()}</span>)
-                              : <span className="text-sm text-gray-700">{JSON.stringify(selectedAgentApp.skills)}</span>
-                           }
+                {/* Right Column */}
+                <div className="space-y-6">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                     Verification Documents
+                   </p>
+                   <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Aadhaar', url: selectedAgentApp.aadhaar_url, icon: '🆔' },
+                        { label: 'PAN Card', url: selectedAgentApp.pan_url, icon: '💳' },
+                        { label: 'Certificate', url: selectedAgentApp.certificate_url, icon: '🎓' },
+                        { label: 'Resume', url: selectedAgentApp.resume_url, icon: '💼' }
+                      ].map((doc, idx) => doc.url ? (
+                        <a 
+                          key={idx}
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white border border-gray-100 shadow-sm hover:border-[#00b48f] hover:bg-teal-50 transition-all duration-300 group hover:-translate-y-1"
+                        >
+                           <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">{doc.icon}</span>
+                           <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 group-hover:text-[#00b48f]">{doc.label}</span>
+                        </a>
+                      ) : (
+                        <div key={idx} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-50 border border-dashed border-gray-200 opacity-40">
+                           <span className="text-3xl mb-2 grayscale">{doc.icon}</span>
+                           <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">{doc.label}</span>
                         </div>
+                      ))}
+                   </div>
+
+                   {selectedAgentApp.status === 'pending' && (
+                     <div className="flex gap-3 pt-6 border-t border-gray-100">
+                        <button onClick={() => { handleRejectAgent(selectedAgentApp.id); setSelectedAgentApp(null); }} className="flex-1 px-5 py-4 text-xs font-black uppercase tracking-widest bg-white text-red-500 border border-red-200 hover:bg-red-50 rounded-xl transition-colors">Reject</button>
+                        <button onClick={() => { handleApproveAgent(selectedAgentApp.id, selectedAgentApp.user_id); setSelectedAgentApp(null); }} className="flex-[2] px-5 py-4 text-xs font-black uppercase tracking-widest bg-[#00b48f] text-white hover:bg-teal-600 rounded-xl transition-colors shadow-lg shadow-teal-500/20">Approve Agent</button>
                      </div>
                    )}
-                </div>
-
-                {/* Documents */}
-                <div>
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Uploaded Documents</p>
-                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {selectedAgentApp.aadhaar_url && (
-                        <a href={selectedAgentApp.aadhaar_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
-                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📄</span>
-                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Aadhaar</span>
-                        </a>
-                      )}
-                      {selectedAgentApp.pan_url && (
-                        <a href={selectedAgentApp.pan_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
-                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📄</span>
-                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">PAN Card</span>
-                        </a>
-                      )}
-                      {selectedAgentApp.certificate_url && (
-                        <a href={selectedAgentApp.certificate_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
-                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🎓</span>
-                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Certificate</span>
-                        </a>
-                      )}
-                      {selectedAgentApp.resume_url && (
-                        <a href={selectedAgentApp.resume_url} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 hover:border-[#00b48f] hover:bg-teal-50 transition-colors group">
-                           <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">💼</span>
-                           <span className="text-[10px] font-bold text-gray-600 group-hover:text-[#00b48f]">Resume</span>
-                        </a>
-                      )}
-                      {!selectedAgentApp.aadhaar_url && !selectedAgentApp.pan_url && !selectedAgentApp.certificate_url && !selectedAgentApp.resume_url && (
-                        <p className="text-xs text-gray-400 col-span-4 italic">No documents uploaded.</p>
-                      )}
-                   </div>
                 </div>
              </div>
-             
-             <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-3xl">
-                <button onClick={() => setSelectedAgentApp(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">Close</button>
-                {selectedAgentApp.status === 'pending' && (
-                  <>
-                     <button onClick={() => { handleRejectAgent(selectedAgentApp.id); setSelectedAgentApp(null); }} className="px-5 py-2.5 text-sm font-bold bg-white text-red-500 border border-red-200 hover:bg-red-50 rounded-xl transition-colors">Reject</button>
-                     <button onClick={() => { handleApproveAgent(selectedAgentApp.id, selectedAgentApp.full_name || selectedAgentApp.user?.first_name || 'UNK'); setSelectedAgentApp(null); }} className="px-5 py-2.5 text-sm font-bold bg-[#00b48f] text-white hover:bg-teal-600 rounded-xl transition-colors shadow-sm">✓ Approve Agent</button>
-                  </>
-                )}
+
+             <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-3xl">
+                <button onClick={() => setSelectedAgentApp(null)} className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">Close Review</button>
              </div>
           </div>
         </div>

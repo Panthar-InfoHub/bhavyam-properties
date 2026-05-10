@@ -51,6 +51,22 @@ export default function MembershipPage() {
       return;
     }
 
+    // NEW: Prevent buying Elite Membership (₹9,999 / subscription) if already active
+    if (plan.type === 'subscription' && plans.some(p => p.type === 'subscription')) {
+        // We need to check if the user CURRENTLY has this plan
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await supabase.from('profiles').select('subscription_plan, subscription_expires_at').eq('id', user.id).maybeSingle();
+            if (profile?.subscription_plan === 'premium' && (!profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date())) {
+                toast.error("You already have an active Elite Membership!", {
+                    icon: '👑',
+                    style: { borderRadius: '1rem', background: '#112743', color: '#fff', fontWeight: 'bold' }
+                });
+                return;
+            }
+        }
+    }
+
     try {
       setIsProcessing(plan.id);
       

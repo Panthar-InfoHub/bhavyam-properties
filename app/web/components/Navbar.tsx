@@ -333,7 +333,14 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                   onClick={() => setIsProfileOpen(false)}
                   className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
                 >
-                  <span className="text-xl">👤</span> My Profile & Dashboard
+                  <span className="text-xl">📊</span> My Dashboard
+                </Link>
+                <Link 
+                  href="/profile" 
+                  onClick={() => setIsProfileOpen(false)}
+                  className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
+                >
+                  <span className="text-xl">👤</span> Edit Profile
                 </Link>
                 <Link 
                   href="/user/transactions" 

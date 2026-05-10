@@ -9,6 +9,7 @@ import InterestButton from '@/components/property/InterestButton';
 import ReviewSystem from '@/components/property/ReviewSystem';
 import MortgageCalculator from '@/components/property/MortgageCalculator';
 import PremiumLoader from '@/components/ui/PremiumLoader';
+import ServiceRequestModal from '@/components/ServiceRequestModal';
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function PropertyDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState<number | null>(null);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showLoanModal, setShowLoanModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -291,47 +293,41 @@ export default function PropertyDetailsPage() {
             )}
 
              {/* 2. Meet Your Agent Card */}
-            <div className="bg-[#f0f0f0] p-6 rounded-3xl mt-4">
-               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Gateway</h3>
-               <div className="flex items-center gap-4 mb-5">
-                 <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-300">
+            <div className="bg-[#fbfcfa] p-8 rounded-3xl mt-4 border border-teal-500/10 shadow-xl">
+               <h3 className="text-xl font-black text-[#112743] uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-sm">🤝</span>
+                  Contact Gateway
+               </h3>
+               <div className="flex items-center gap-4 mb-8 p-4 bg-white rounded-2xl border border-gray-50 shadow-sm">
+                 <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-linear-to-br from-[#00b48f] to-[#112743] shadow-inner">
                     <svg className="w-8 h-8 text-white mt-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
                  </div>
                  <div>
-                   <h4 className="font-semibold text-gray-900 text-sm">Bhavyam Properties</h4>
-                   <p className="text-[#00b48f] text-xs font-semibold">Official Representation</p>
+                   <h4 className="font-extrabold text-[#112743] text-base">Bhavyam Properties</h4>
+                   <p className="text-[#00b48f] text-[10px] font-black uppercase tracking-[0.2em] mt-0.5">Official Representation</p>
                  </div>
                </div>
+               
                {/* Phone + Email side by side */}
-               <div className="flex gap-2 mb-4">
-                 <a href="tel:+919876543210" className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition">
-                   <span className="text-base">📞</span>
-                   <span>+91 98765 43210</span>
+               <div className="flex flex-col gap-3 mb-6">
+                 <a href="tel:+919451567034" className="w-full flex items-center gap-4 bg-white border border-gray-100 rounded-2xl p-4 text-sm font-bold text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition-all group shadow-sm hover:shadow-md">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center group-hover:scale-110 transition-transform">📞</div>
+                    <span>+91 94515 67034</span>
                  </a>
-                 <a href="mailto:admin@bhavyamproperties.com" className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition">
-                   <span className="text-base">✉️</span>
-                   <span className="truncate">admin@...</span>
+                 <a href="mailto:admin@bhavyamproperties.com" className="w-full flex items-center gap-4 bg-white border border-gray-100 rounded-2xl p-4 text-sm font-bold text-gray-700 hover:border-[#00b48f] hover:text-[#00b48f] transition-all group shadow-sm hover:shadow-md">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">✉️</div>
+                    <span className="truncate">admin@bhavyamproperties.com</span>
                  </a>
                </div>
-               <div className="flex flex-col gap-3">
-                 <div className="w-full">
-                   <style dangerouslySetInnerHTML={{__html: `
-                     .custom-interest-btn > div > button {
-                       background-color: #e4e4e4 !important;
-                       color: #1f2937 !important;
-                       box-shadow: none !important;
-                       border-radius: 0.75rem !important;
-                       padding: 0.75rem !important;
-                     }
-                     .custom-interest-btn > div > button:hover {
-                       background-color: #d8d8d8 !important;
-                     }
-                   `}} />
-                   <div className="custom-interest-btn -mt-8">
-                     <InterestButton propertyId={property.id} />
-                   </div>
-                 </div>
-                 <button onClick={() => setShowAdminModal(true)} className="w-full py-3 bg-black hover:bg-gray-800 text-white font-semibold rounded-xl text-sm transition shadow-md">Contact Admin</button>
+
+               <div className="flex flex-col gap-4">
+                 <InterestButton propertyId={property.id} />
+                 <button 
+                   onClick={() => setShowAdminModal(true)} 
+                   className="w-full py-5 bg-[#112743] hover:bg-[#1a3b63] text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95"
+                 >
+                   Direct Admin Inquiry
+                 </button>
                </div>
             </div>
 
@@ -351,9 +347,9 @@ export default function PropertyDetailsPage() {
                          <span className="text-2xl group-hover:scale-110 transition-transform">✉️</span>
                          <span className="text-xs font-medium text-gray-700 text-center leading-tight">admin@bhavyam<br/>properties.com</span>
                        </a>
-                       <a href="tel:+919876543210" className="flex-1 bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-100 transition border border-gray-100 group">
+                       <a href="tel:+919451567034" className="flex-1 bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-gray-100 transition border border-gray-100 group">
                          <span className="text-2xl group-hover:scale-110 transition-transform">📞</span>
-                         <span className="text-xs font-medium text-gray-700 text-center">+91 98765<br/>43210</span>
+                         <span className="text-xs font-medium text-gray-700 text-center">+91 94515<br/>67034</span>
                        </a>
                     </div>
                  </div>
@@ -366,7 +362,10 @@ export default function PropertyDetailsPage() {
             </div>
 
             {/* Property Loan Card */}
-            <div className="mt-4 bg-[#1a1a1a] rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+            <div 
+              onClick={() => setShowLoanModal(true)}
+              className="mt-4 bg-[#1a1a1a] rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+            >
               <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/5 group-hover:bg-white/10 transition-all duration-500 group-hover:scale-125" />
               <div className="text-white mb-5 relative z-10">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
@@ -377,11 +376,21 @@ export default function PropertyDetailsPage() {
               </div>
               <h3 className="text-white text-lg font-semibold mb-1.5 relative z-10">Property Loan</h3>
               <p className="text-white/60 text-sm leading-relaxed relative z-10 mb-5">Get expert guidance and quick approvals for home and property loans.</p>
-              <a href="/contact" className="relative z-10 inline-flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold tracking-wide transition-all">
+              <button className="relative z-10 inline-flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold tracking-wide transition-all">
                 Inquire Now
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
+              </button>
             </div>
+
+            {/* Service Request Modal for Loan */}
+            {showLoanModal && (
+              <ServiceRequestModal
+                isOpen={showLoanModal}
+                onClose={() => setShowLoanModal(false)}
+                serviceType="Property Loan"
+                color="bg-[#1a1a1a]"
+              />
+            )}
 
           </div>
         </div>
