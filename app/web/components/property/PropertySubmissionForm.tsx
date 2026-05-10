@@ -392,6 +392,8 @@ export default function PropertySubmissionForm() {
   const renderStep = () => {
     const inputClasses = "w-full border-2 border-gray-200 p-3 rounded-xl outline-none focus:border-[#00b48f] focus:ring-4 focus:ring-teal-500/10 transition-all bg-white text-gray-800 placeholder-gray-400";
     const labelClasses = "block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1";
+    const isAgentOrAdmin = currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin';
+
 
     switch (currentStep) {
       case 1:
@@ -405,7 +407,7 @@ export default function PropertySubmissionForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClasses}>Listing Type</label>
-                <select name="listingType" onChange={handleChange} value={formData.listingType} className={inputClasses}>
+                <select name="listingType" onChange={handleChange} value={formData.listingType || ''} className={inputClasses}>
                   <option value="">Select Type</option>
                   <option value="Sell">For Sell</option>
                   <option value="Rent">For Rent</option>
@@ -415,7 +417,7 @@ export default function PropertySubmissionForm() {
 
               <div>
                 <label className={labelClasses}>Property Type</label>
-                <select name="propertyType" onChange={handleChange} value={formData.propertyType} className={inputClasses}>
+                <select name="propertyType" onChange={handleChange} value={formData.propertyType || ''} className={inputClasses}>
                   <option value="">Select Category</option>
                   <option value="Agriculture">Agriculture Land</option>
                   <option value="Flat">Flat / Apartment</option>
@@ -433,7 +435,7 @@ export default function PropertySubmissionForm() {
                       name="propertyTypeOther" 
                       placeholder="e.g. Penthouse, Studio, etc." 
                       onChange={handleChange} 
-                      value={formData.propertyTypeOther} 
+                      value={formData.propertyTypeOther || ''} 
                       className={inputClasses} 
                     />
                   </div>
@@ -442,7 +444,7 @@ export default function PropertySubmissionForm() {
 
               <div>
                 <label className={labelClasses}>Pricing Type</label>
-                <select name="pricingType" onChange={handleChange} value={formData.pricingType} className={inputClasses}>
+                <select name="pricingType" onChange={handleChange} value={formData.pricingType || ''} className={inputClasses}>
                   <option value="">Select Pricing</option>
                   <option value="Fixed">Fixed Price</option>
                   <option value="Negotiable">Negotiable</option>
@@ -452,18 +454,18 @@ export default function PropertySubmissionForm() {
 
               <div>
                 <label className={labelClasses}>Your Demand (₹)</label>
-                <input type="text" name="yourDemand" placeholder="e.g. 45,00,000" onChange={handleChange} value={formData.yourDemand} className={inputClasses} />
+                <input type="text" name="yourDemand" placeholder="e.g. 45,00,000" onChange={handleChange} value={formData.yourDemand || ''} className={inputClasses} />
               </div>
 
               <div>
                 <label className={labelClasses}>Price Range (Optional)</label>
-                <input type="text" name="priceRange" placeholder="e.g. 40L - 50L" onChange={handleChange} value={formData.priceRange} className={inputClasses} />
+                <input type="text" name="priceRange" placeholder="e.g. 40L - 50L" onChange={handleChange} value={formData.priceRange || ''} className={inputClasses} />
               </div>
             </div>
 
             <div>
               <label className={labelClasses}>Property Description</label>
-              <textarea name="propertyDetails" placeholder="Tell us about the property, its history, and unique selling points..." rows={5} onChange={handleChange} value={formData.propertyDetails} className={inputClasses}></textarea>
+              <textarea name="propertyDetails" placeholder="Tell us about the property, its history, and unique selling points..." rows={5} onChange={handleChange} value={formData.propertyDetails || ''} className={inputClasses}></textarea>
             </div>
           </div>
         );
@@ -503,7 +505,7 @@ export default function PropertySubmissionForm() {
               {formData.amenities.includes('Other') && (
                 <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className={labelClasses}>Please Specify Other Amenities</label>
-                  <input type="text" name="amenitiesOther" placeholder="e.g. Park, Community Center, etc." onChange={handleChange} value={formData.amenitiesOther} className={inputClasses} />
+                  <input type="text" name="amenitiesOther" placeholder="e.g. Park, Community Center, etc." onChange={handleChange} value={formData.amenitiesOther || ''} className={inputClasses} />
                 </div>
               )}
             </div>
@@ -525,7 +527,7 @@ export default function PropertySubmissionForm() {
               {formData.furnishedAmenities.includes('Other') && (
                 <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className={labelClasses}>Please Specify Other Furnishings</label>
-                  <input type="text" name="furnishedAmenitiesOther" placeholder="e.g. Microwave, Curtains, etc." onChange={handleChange} value={formData.furnishedAmenitiesOther} className={inputClasses} />
+                  <input type="text" name="furnishedAmenitiesOther" placeholder="e.g. Microwave, Curtains, etc." onChange={handleChange} value={formData.furnishedAmenitiesOther || ''} className={inputClasses} />
                 </div>
               )}
             </div>
@@ -541,23 +543,23 @@ export default function PropertySubmissionForm() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className={labelClasses}>Bedrooms</label>
-                <input type="number" name="bedrooms" placeholder="0" onChange={handleChange} value={formData.bedrooms} className={inputClasses} min="0" />
+                <input type="number" name="bedrooms" placeholder="0" onChange={handleChange} value={formData.bedrooms || ''} className={inputClasses} min="0" />
               </div>
               <div>
                 <label className={labelClasses}>Bathrooms</label>
-                <input type="number" name="bathrooms" placeholder="0" onChange={handleChange} value={formData.bathrooms} className={inputClasses} min="0" />
+                <input type="number" name="bathrooms" placeholder="0" onChange={handleChange} value={formData.bathrooms || ''} className={inputClasses} min="0" />
               </div>
               <div>
                 <label className={labelClasses}>Total Built-up Area (sqft)</label>
-                <input type="text" name="builtUpArea" placeholder="e.g. 1500" onChange={handleChange} value={formData.builtUpArea} className={inputClasses} />
+                <input type="text" name="builtUpArea" placeholder="e.g. 1500" onChange={handleChange} value={formData.builtUpArea || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>Carpet Area (sqft)</label>
-                <input type="text" name="carpetArea" placeholder="e.g. 1200" onChange={handleChange} value={formData.carpetArea} className={inputClasses} />
+                <input type="text" name="carpetArea" placeholder="e.g. 1200" onChange={handleChange} value={formData.carpetArea || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>Build Year</label>
-                <input type="text" name="buildYear" placeholder="e.g. 2022" onChange={handleChange} value={formData.buildYear} className={inputClasses} />
+                <input type="text" name="buildYear" placeholder="e.g. 2022" onChange={handleChange} value={formData.buildYear || ''} className={inputClasses} />
               </div>
             </div>
           </div>
@@ -646,19 +648,19 @@ export default function PropertySubmissionForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClasses}>Owner Full Name</label>
-                <input type="text" name="ownerName" placeholder="Full Legal Name" onChange={handleChange} value={formData.ownerName} className={inputClasses} />
+                <input type="text" name="ownerName" placeholder="Full Legal Name" onChange={handleChange} value={formData.ownerName || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>Contact Number</label>
-                <input type="tel" name="contactNumber" placeholder="+91 00000 00000" onChange={handleChange} value={formData.contactNumber} className={inputClasses} />
+                <input type="tel" name="contactNumber" placeholder="+91 00000 00000" onChange={handleChange} value={formData.contactNumber || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>WhatsApp Number</label>
-                <input type="tel" name="whatsappNumber" placeholder="Same as contact?" onChange={handleChange} value={formData.whatsappNumber} className={inputClasses} />
+                <input type="tel" name="whatsappNumber" placeholder="Same as contact?" onChange={handleChange} value={formData.whatsappNumber || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>Official Email</label>
-                <input type="email" name="ownerEmail" placeholder="email@address.com" onChange={handleChange} value={formData.ownerEmail} className={inputClasses} />
+                <input type="email" name="ownerEmail" placeholder="email@address.com" onChange={handleChange} value={formData.ownerEmail || ''} className={inputClasses} />
               </div>
             </div>
           </div>
@@ -672,21 +674,21 @@ export default function PropertySubmissionForm() {
             </div>
             <div>
               <label className={labelClasses}>Street Address / Landmark</label>
-              <input type="text" name="address" placeholder="e.g. Near Shiv Temple, Station Road" onChange={handleChange} value={formData.address} className={inputClasses} />
+              <input type="text" name="address" placeholder="e.g. Near Shiv Temple, Station Road" onChange={handleChange} value={formData.address || ''} className={inputClasses} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClasses}>City / Location</label>
-                <input type="text" name="cityLocation" placeholder="e.g. Mumbai, Navi Mumbai" onChange={handleChange} value={formData.cityLocation} className={inputClasses} />
+                <input type="text" name="cityLocation" placeholder="e.g. Mumbai, Navi Mumbai" onChange={handleChange} value={formData.cityLocation || ''} className={inputClasses} />
               </div>
               <div>
                 <label className={labelClasses}>Zip / Post Code</label>
-                <input type="text" name="zipCode" placeholder="400001" onChange={handleChange} value={formData.zipCode} className={inputClasses} />
+                <input type="text" name="zipCode" placeholder="400001" onChange={handleChange} value={formData.zipCode || ''} className={inputClasses} />
               </div>
             </div>
             <div>
               <label className={labelClasses}>Additional Directionals</label>
-              <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails} className={inputClasses}></textarea>
+              <textarea name="otherLocationDetails" placeholder="Any specific turns or nearby landmarks to help find it?" rows={3} onChange={handleChange} value={formData.otherLocationDetails || ''} className={inputClasses}></textarea>
             </div>
             <div className="pt-4 border-t border-gray-100">
                 <label className={labelClasses}>Google Maps Link <span className="text-red-500">* Required</span></label>
@@ -695,7 +697,7 @@ export default function PropertySubmissionForm() {
                  name="mapUrl" 
                  placeholder="Paste Google Maps link here..." 
                  onChange={handleChange} 
-                 value={formData.mapUrl} 
+                 value={formData.mapUrl || ''} 
                  className={inputClasses} 
                />
                
@@ -759,20 +761,32 @@ export default function PropertySubmissionForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClasses}>Agent Full Name</label>
-                <input type="text" name="agentName" placeholder="Representative Name" onChange={handleChange} value={formData.agentName} className={inputClasses} />
+                <input type="text" name="agentName" placeholder="Representative Name" onChange={handleChange} value={formData.agentName || ''} className={inputClasses} />
               </div>
               <div>
-                <label className={labelClasses}>Verification Code / ID {(currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin') && <span className="text-red-500">* Required</span>}</label>
+                <label className={labelClasses}>
+                  Verification Code / ID 
+                  {isAgentOrAdmin ? (
+                    <span className="ml-2 bg-red-50 text-red-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border border-red-100">Required</span>
+                  ) : (
+                    <span className="ml-2 bg-gray-100 text-gray-400 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border border-gray-200">Optional for Sellers</span>
+                  )}
+                </label>
                 <input 
                   type="text" 
                   name="agentCode" 
-                  placeholder="AGNT-XXXX" 
+                  placeholder={isAgentOrAdmin ? "LOCKED" : "AGNT-XXXX"} 
                   onChange={handleChange} 
-                  value={formData.agentCode} 
-                  className={inputClasses} 
-                  readOnly={currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin'}
+                  value={formData.agentCode || ''} 
+                  className={`${inputClasses} ${isAgentOrAdmin ? 'bg-gray-50 border-teal-100/50 cursor-not-allowed text-teal-700' : ''}`} 
+                  readOnly={isAgentOrAdmin}
                 />
-                {(currentUser?.profile?.role === 'agent' || currentUser?.profile?.role === 'admin') && <p className="text-[10px] text-teal-600 mt-2 font-bold uppercase">Locked to your verified profile ID</p>}
+                {isAgentOrAdmin && (
+                  <p className="text-[10px] text-teal-600 mt-2 font-bold uppercase flex items-center gap-1.5">
+                    <span className="w-4 h-4 bg-teal-500 text-white rounded-full flex items-center justify-center text-[8px]">✓</span>
+                    Locked to your verified profile ID
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -814,11 +828,11 @@ export default function PropertySubmissionForm() {
              </div>
              <div>
                 <label className={labelClasses}>Inquiries for Reviewer</label>
-                <textarea name="questions" placeholder="Questions for the admin during review..." rows={3} onChange={handleChange} value={formData.questions} className={inputClasses}></textarea>
+                <textarea name="questions" placeholder="Questions for the admin during review..." rows={3} onChange={handleChange} value={formData.questions || ''} className={inputClasses}></textarea>
              </div>
              <div>
                 <label className={labelClasses}>Private Admin Notes</label>
-                <textarea name="otherNotes" placeholder="Any internal specifics our team should know?" rows={3} onChange={handleChange} value={formData.otherNotes} className={inputClasses}></textarea>
+                <textarea name="otherNotes" placeholder="Any internal specifics our team should know?" rows={3} onChange={handleChange} value={formData.otherNotes || ''} className={inputClasses}></textarea>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
