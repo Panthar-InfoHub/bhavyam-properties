@@ -16,8 +16,8 @@ export default function Home() {
       <Hero />
       
       <LatestProperties />
-
       <LoanFacilitySection />
+      <VerifyPropertyCTA />
 
       <WhyChooseUs />
 
@@ -31,8 +31,6 @@ export default function Home() {
 
       <TestimonialsSection />
 
-
-      <VerifyPropertyCTA />
       <AgentCTASection />
     </main>
   );

@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   title: "Bhavyam Properties",
   description: "Innovative Solutions for Modern Living",
   icons: {
-    icon: "/image.png",
-    apple: "/image.png",
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
   },
 };
 

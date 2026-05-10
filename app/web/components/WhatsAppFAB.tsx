@@ -13,27 +13,9 @@ export default function WhatsAppFAB() {
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${initialMessage}`;
 
   useEffect(() => {
-    // Only show visibility logic on home page
-    if (pathname !== '/') {
-      setIsVisible(false);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    const target = document.getElementById('agent-cta-section');
-    if (target) {
-      observer.observe(target);
-    }
-
-    return () => {
-      if (target) observer.unobserve(target);
-    };
+    // Show fixed on landing and about pages
+    const isTargetPage = pathname === '/' || pathname === '/about';
+    setIsVisible(isTargetPage);
   }, [pathname]);
 
   if (!isVisible) return null;
@@ -43,7 +25,7 @@ export default function WhatsAppFAB() {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-8 left-8 z-[100] group flex items-center gap-3 animate-in fade-in slide-in-from-bottom-10 duration-500"
+      className="fixed bottom-6 right-6 z-[100] group flex items-center gap-3 animate-in fade-in slide-in-from-bottom-10 duration-500"
       aria-label="Contact us on WhatsApp"
     >
       {/* Tooltip */}
@@ -52,8 +34,8 @@ export default function WhatsAppFAB() {
       </div>
 
       {/* Button */}
-      <div className="relative bg-[#25D366] text-white p-4 rounded-[1.5rem] shadow-[0_20px_50px_rgba(37,211,102,0.4)] hover:shadow-[0_20px_50px_rgba(37,211,102,0.6)] hover:scale-110 active:scale-95 transition-all duration-300 border-4 border-white">
-        <MessageCircle className="w-8 h-8 fill-current" />
+      <div className="relative p-0 rounded-[1.5rem] shadow-[0_20px_50px_rgba(37,211,102,0.3)] hover:shadow-[0_20px_50px_rgba(37,211,102,0.5)] hover:scale-110 active:scale-95 transition-all duration-300">
+        <img src="/images/whatsapp.png" alt="WhatsApp" className="w-16 h-16 object-contain" />
         
         {/* Notification Dot */}
         <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 border-2 border-white rounded-full animate-bounce" />
