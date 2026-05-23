@@ -19,6 +19,8 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
   const [securedData, setSecuredData]   = useState<any>(null);
   const [accessType, setAccessType]     = useState<AccessType>(null);
   const [expiresAt, setExpiresAt]       = useState<string | null>(null);
+  const [singleUnlockPlans, setSingleUnlockPlans] = useState<any[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const router = useRouter();
 
   /* ─── Fetch Access ─────────────────────────────────────────────── */
@@ -104,7 +106,29 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
   useEffect(() => { fetchAccess(); }, [fetchAccess]);
 
-  /* ─── Direct ₹99 Unlock ────────────────────────────────────────── */
+  useEffect(() => {
+    const fetchSingleUnlockPlans = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('type', 'single_unlock')
+          .eq('is_active', true)
+          .order('price', { ascending: true });
+        if (!error && data) {
+          setSingleUnlockPlans(data);
+          if (data.length > 0) {
+            setSelectedPlan(data[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching single unlock plans:", err);
+      }
+    };
+    fetchSingleUnlockPlans();
+  }, []);
+
+  /* ─── Direct Unlock ────────────────────────────────────────────── */
   const handleDirectUnlock = async () => {
     if (!user) { router.push('/login'); return; }
     if (!user.profile?.phone_number) { setShowPhoneModal(true); return; }
@@ -114,15 +138,18 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Session not found");
 
-      // Fetch the single_unlock plan
-      const { data: plan, error: planErr } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('type', 'single_unlock')
-        .eq('is_active', true)
-        .single();
-
-      if (planErr || !plan) throw new Error("Unlock plan not available. Please try again later.");
+      let plan = selectedPlan;
+      if (!plan) {
+        const { data: fetchedPlan, error: planErr } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('type', 'single_unlock')
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        if (planErr || !fetchedPlan) throw new Error("Unlock plan not available. Please try again later.");
+        plan = fetchedPlan;
+      }
 
       const response = await fetch('/api/payments/create-order', {
         method: 'POST',
@@ -131,6 +158,42 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
       });
       const order = await response.json();
       if (!response.ok) throw new Error(order.error || 'Failed to create order');
+
+      if (order.mock) {
+        toast.loading("Simulating payment checkout...", { duration: 1500 });
+        setTimeout(async () => {
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-test-bypass': 'true'
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id:   order.id,
+                razorpay_payment_id: 'pay_mock_' + Math.random().toString(36).substring(2, 10),
+                razorpay_signature:  'sig_mock',
+                planId: plan.id,
+                propertyId,
+              }),
+            });
+            
+            if (verifyRes.ok) {
+              toast.success("Property unlocked! Contact details are now visible.");
+              setTimeout(() => fetchAccess(), 800);
+            } else {
+              toast.error("Verification failed.");
+            }
+          } catch (e) {
+            console.error("Verification error:", e);
+            toast.error("Verification failed.");
+          } finally {
+            setIsUnlocking(false);
+          }
+        }, 1500);
+        return;
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -426,13 +489,19 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
 
         <div className="p-6 flex flex-col gap-4">
 
-          {/* ── Primary: Direct ₹99 unlock ── */}
+          {/* ── Primary: Direct unlock / Dropdown ── */}
           <div className="bg-[#2d2a26] rounded-2xl p-5 text-white">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-white/60 mb-0.5">Quick View</p>
-                <p className="text-2xl font-black">₹99</p>
-                <p className="text-white/70 text-xs mt-0.5">7-day access to this property</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-white/60 mb-0.5">
+                  {singleUnlockPlans.length > 1 ? "Single Unlock Options" : "Quick View"}
+                </p>
+                <p className="text-2xl font-black">
+                  ₹{selectedPlan ? selectedPlan.price : 99}
+                </p>
+                <p className="text-white/70 text-xs mt-0.5">
+                  {selectedPlan ? `${selectedPlan.duration_days}-day access to this property` : "7-day access to this property"}
+                </p>
               </div>
               <div className="w-10 h-10 bg-teal-500/20 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -440,6 +509,29 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
                 </svg>
               </div>
             </div>
+
+            {singleUnlockPlans.length > 1 && (
+              <div className="mb-4">
+                <label className="text-[10px] uppercase font-bold text-white/50 tracking-wider mb-1.5 block">
+                  Select Unlock Duration
+                </label>
+                <select
+                  value={selectedPlan?.id}
+                  onChange={(e) => {
+                    const found = singleUnlockPlans.find(p => p.id === e.target.value);
+                    if (found) setSelectedPlan(found);
+                  }}
+                  className="w-full bg-white/10 border border-white/20 text-white font-bold text-sm rounded-xl px-3 py-2.5 outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 cursor-pointer transition-all"
+                >
+                  {singleUnlockPlans.map((plan) => (
+                    <option key={plan.id} value={plan.id} className="text-[#2d2a26]">
+                      {plan.name || `${plan.duration_days} Days`} (₹{plan.price})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={handleDirectUnlock}
               disabled={isUnlocking}
@@ -448,7 +540,7 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
               {isUnlocking ? (
                 <><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Processing...</>
               ) : (
-                <>🔓 Unlock for ₹99</>
+                <>🔓 Unlock for ₹{selectedPlan ? selectedPlan.price : 99}</>
               )}
             </button>
           </div>

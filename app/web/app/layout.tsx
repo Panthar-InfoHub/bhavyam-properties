@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import GlobalPreloader from "@/components/ui/GlobalPreloader";
 import WhatsAppFAB from "@/components/WhatsAppFAB";
 import VerifyFAB from "@/components/VerifyFAB";
+import LoanFAB from "@/components/LoanFAB";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default function RootLayout({
         </main>
         <WhatsAppFAB />
         <VerifyFAB />
+        <LoanFAB />
         <Footer />
       </body>
     </html>

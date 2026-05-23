@@ -123,7 +123,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
   if (!mounted || !isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4">
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -141,9 +141,9 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
       `}} />
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative bg-white w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="relative bg-white w-full max-w-6xl rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         {/* Header */}
-        <div className={`${color} p-6 md:p-8 text-white relative overflow-hidden`}>
+        <div className={`${color} p-4 sm:p-6 md:p-8 text-white relative overflow-hidden`}>
           {/* Decorative SVG Patterns */}
           <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
             <svg viewBox="0 0 400 400" className="w-full h-full">
@@ -175,38 +175,38 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
               e.stopPropagation();
               onClose();
             }}
-            className="absolute top-6 right-6 p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/10 backdrop-blur-md z-50 cursor-pointer"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/10 backdrop-blur-md z-50 cursor-pointer"
             aria-label="Close modal"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-
-          <div className="relative z-10">
-            <p className="text-white/70 font-bold text-[10px] tracking-[0.3em] uppercase mb-2 flex items-center gap-2">
+ 
+          <div className="relative z-10 pr-10 sm:pr-0">
+            <p className="text-white/70 font-bold text-[10px] tracking-[0.3em] uppercase mb-1.5 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               Service Inquiry
             </p>
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight">{serviceType}</h2>
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">{serviceType}</h2>
           </div>
         </div>
-
+ 
         {/* Form */}
-        <div className="p-5 md:p-7 max-h-[85vh] overflow-y-auto custom-scrollbar bg-gray-50/50">
+        <div className="p-4 sm:p-6 md:p-7 max-h-[80vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar bg-gray-50/50">
           {success ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center animate-in zoom-in duration-500">
+            <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center animate-in zoom-in duration-500">
               <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/10">
                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-3xl font-black text-gray-800 mb-2 tracking-tight">Inquiry Received!</h3>
-              <p className="text-gray-500 text-lg font-medium max-w-md">Our specialized consultant will contact you within 24 hours.</p>
+              <h3 className="text-xl sm:text-3xl font-black text-gray-800 mb-2 tracking-tight">Inquiry Received!</h3>
+              <p className="text-gray-500 text-sm sm:text-lg font-medium max-w-md">Our specialized consultant will contact you within 24 hours.</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Common Fields */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Your Name *</label>
@@ -216,7 +216,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Full name"
-                    className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                    className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -227,10 +227,10 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                     value={formData.contact}
                     onChange={handleChange}
                     placeholder="Contact detail"
-                    className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                    className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                   />
                 </div>
-
+ 
                 {/* Specific Fields */}
                 {serviceType === 'Commercial Spaces' && (
                   <>
@@ -241,7 +241,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.businessName}
                         onChange={handleChange}
                         placeholder="Company Name"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2">
@@ -250,7 +250,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         name="businessType"
                         value={formData.businessType}
                         onChange={handleChange}
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       >
                         <option value="">Select Type</option>
                         <option value="Retail">Retail</option>
@@ -261,7 +261,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                     </div>
                   </>
                 )}
-
+ 
                 {serviceType === 'Rent Property' && (
                   <>
                     <div className="space-y-2 lg:col-span-1">
@@ -271,7 +271,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.location}
                         onChange={handleChange}
                         placeholder="Preferred location"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2 lg:col-span-1">
@@ -281,12 +281,12 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.budget}
                         onChange={handleChange}
                         placeholder="e.g. ₹20,000"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2 lg:col-span-3">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Choose Property Type</label>
-                      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
                         {['Apartment', 'House', 'Villa', 'Studio', 'Penthouse', 'Plot'].map(type => (
                           <button
                             key={type}
@@ -305,7 +305,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                     </div>
                   </>
                 )}
-
+ 
                 {serviceType === 'Sell Property' && (
                   <>
                     <div className="space-y-2">
@@ -315,7 +315,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.propertyType}
                         onChange={handleChange}
                         placeholder="e.g. 3BHK Flat"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2">
@@ -325,7 +325,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.location}
                         onChange={handleChange}
                         placeholder="Property location"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2">
@@ -335,12 +335,12 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.expectedPrice}
                         onChange={handleChange}
                         placeholder="Your asking price"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                   </>
                 )}
-
+ 
                 {serviceType === 'Legal Assistance' && (
                   <div className="space-y-2 md:col-span-2 lg:col-span-3">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Type of Assistance</label>
@@ -348,7 +348,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                       name="assistanceType"
                       value={formData.assistanceType}
                       onChange={handleChange}
-                      className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                      className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                     >
                       <option value="">Select Assistance</option>
                       <option value="Property Documentation">Property Documentation</option>
@@ -359,7 +359,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                     </select>
                   </div>
                 )}
-
+ 
                 {serviceType === 'Property Loan' && (
                   <>
                     <div className="space-y-2">
@@ -369,7 +369,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         value={formData.loanAmount}
                         onChange={handleChange}
                         placeholder="Estimated amount"
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       />
                     </div>
                     <div className="space-y-2">
@@ -378,7 +378,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                         name="employmentStatus"
                         value={formData.employmentStatus}
                         onChange={handleChange}
-                        className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-sm"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all text-gray-700 font-medium text-xs sm:text-sm"
                       >
                         <option value="">Select Status</option>
                         <option value="Salaried">Salaried</option>
@@ -389,7 +389,7 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                   </>
                 )}
               </div>
-
+ 
               {/* Common Query Field */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Describe your query *</label>
@@ -400,15 +400,15 @@ export default function ServiceRequestModal({ isOpen, onClose, serviceType, colo
                   value={formData.query}
                   onChange={handleChange}
                   placeholder="How can we help?"
-                  className="w-full px-5 py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all resize-none text-gray-700 font-medium text-sm"
+                  className="w-full px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-100 bg-white shadow-sm focus:ring-4 focus:ring-[var(--color-emerald-heritage)]/10 focus:border-[var(--color-emerald-heritage)] outline-none transition-all resize-none text-gray-700 font-medium text-xs sm:text-sm"
                 />
               </div>
-
+ 
               <div className="flex justify-end pt-2">
                 <button
                   disabled={loading}
                   type="submit"
-                  className="px-8 py-3.5 bg-[var(--color-near-black)] text-white font-black uppercase tracking-widest rounded-xl shadow-xl hover:shadow-[var(--color-emerald-heritage)]/20 hover:bg-[var(--color-emerald-heritage)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 text-xs"
+                  className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-[var(--color-near-black)] text-white font-black uppercase tracking-widest rounded-xl shadow-xl hover:shadow-[var(--color-emerald-heritage)]/20 hover:bg-[var(--color-emerald-heritage)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
                 >
                   {loading ? (
                     <>

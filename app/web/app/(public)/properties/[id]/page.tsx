@@ -122,7 +122,7 @@ export default function PropertyDetailsPage() {
   const displayImages = images.slice(1, 6); // Up to 5 thumb images for the right sidebar
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
   };
   const actualPrice = formatPrice(property.price);
   const displayedPrice = actualPrice;

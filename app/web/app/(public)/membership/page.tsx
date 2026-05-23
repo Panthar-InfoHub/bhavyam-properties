@@ -98,6 +98,39 @@ export default function MembershipPage() {
       const order = await response.json();
       if (!response.ok) throw new Error(order.error || 'Failed to create order');
 
+      if (order.mock) {
+        toast.loading("Simulating payment checkout...", { duration: 1500 });
+        setTimeout(async () => {
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-test-bypass': 'true'
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id: order.id,
+                razorpay_payment_id: 'pay_mock_' + Math.random().toString(36).substring(2, 10),
+                razorpay_signature: 'sig_mock',
+                planId: plan.id,
+              })
+            });
+
+            if (!verifyRes.ok) throw new Error('Verification failed.');
+
+            toast.success("Payment successful! Processing your purchase...");
+            setTimeout(() => router.push("/dashboard"), 2000);
+          } catch (err) {
+            console.error("Verification error:", err);
+            toast.error("Mock verification failed.");
+          } finally {
+            setIsProcessing(null);
+          }
+        }, 1500);
+        return;
+      }
+
       // 2. Open Razorpay Checkout
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,

@@ -50,6 +50,19 @@ function AdminDashboardContent() {
   const [activeAgentSearchQuery, setActiveAgentSearchQuery] = useState('');
   const [activeAgentSortBy, setActiveAgentSortBy] = useState('Newest');
 
+  // Create Plan State
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [newPlan, setNewPlan] = useState<any>({
+    name: '',
+    description: '',
+    price: '',
+    duration_days: '',
+    type: 'subscription',
+    features: [],
+    credits_awarded: 0
+  });
+  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -224,6 +237,48 @@ function AdminDashboardContent() {
     } else {
       setPlans(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
       toast.success("Plan updated successfully");
+    }
+  };
+
+  const handleCreatePlan = async () => {
+    const isCreditPack = newPlan.type === 'credit_pack';
+    if (!newPlan.name || newPlan.price === '' || (!isCreditPack && newPlan.duration_days === '')) {
+      toast.error('Name, Price, and Duration are required');
+      return;
+    }
+    
+    setIsSubmittingPlan(true);
+    
+    const planData = {
+      name: newPlan.name,
+      description: newPlan.description,
+      type: newPlan.type,
+      price: parseFloat(newPlan.price),
+      duration_days: isCreditPack ? 30 : parseInt(newPlan.duration_days),
+      credits_awarded: isCreditPack ? parseInt(newPlan.credits_awarded) || 0 : null,
+      features: Array.isArray(newPlan.features) ? newPlan.features.filter((f: string) => f.trim() !== '') : [],
+      is_active: true
+    };
+    
+    const { data, error } = await supabase.from('plans').insert(planData).select().single();
+    
+    setIsSubmittingPlan(false);
+    
+    if (error) {
+      toast.error('Failed to create plan: ' + error.message);
+    } else if (data) {
+      setPlans(prev => [...prev, data]);
+      toast.success('Plan created successfully');
+      setIsCreatingPlan(false);
+      setNewPlan({
+        name: '',
+        description: '',
+        price: '',
+        duration_days: '',
+        type: 'subscription',
+        features: [],
+        credits_awarded: 0
+      });
     }
   };
 
@@ -894,7 +949,15 @@ function AdminDashboardContent() {
         {/* ─── PLANS MANAGEMENT ─── */}
         {section === 'plans' && (
           <div>
-             <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Plan Control Center</h1>
+             <div className="flex justify-between items-center mb-6">
+               <h1 className="text-3xl font-extrabold text-[#00579e]">Plan Control Center</h1>
+               <button
+                 onClick={() => setIsCreatingPlan(true)}
+                 className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+               >
+                 <span className="text-lg leading-none">+</span> Create New Plan
+               </button>
+             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {plans.map(p => (
                   <div key={p.id} className={`bg-white rounded-3xl p-8 border shadow-sm transition-all flex flex-col ${p.is_active ? 'border-teal-100 hover:shadow-xl' : 'opacity-60 bg-gray-50'}`}>
@@ -950,8 +1013,9 @@ function AdminDashboardContent() {
                           <input 
                             type="number" 
                             min="0"
-                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20"
-                            value={p.duration_days}
+                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                            value={p.type === 'credit_pack' ? 30 : p.duration_days}
+                            disabled={p.type === 'credit_pack'}
                             onChange={(e) => {
                               const val = parseInt(e.target.value);
                               if (!isNaN(val) && val >= 0) {
@@ -1000,7 +1064,8 @@ function AdminDashboardContent() {
 
                     <button 
                       onClick={() => {
-                        if (p.price === '' || p.duration_days === '') {
+                        const isCreditPack = p.type === 'credit_pack';
+                        if (p.price === '' || (!isCreditPack && p.duration_days === '')) {
                           toast.error("Price and Duration are required");
                           return;
                         }
@@ -1008,9 +1073,9 @@ function AdminDashboardContent() {
                           name: p.name,
                           description: p.description,
                           price: parseFloat(p.price as any),
-                          duration_days: parseInt(p.duration_days as any),
+                          duration_days: isCreditPack ? 30 : parseInt(p.duration_days as any),
                           features: p.features,
-                          credits_awarded: p.type === 'credit_pack' ? parseInt(p.credits_awarded as any) : null
+                          credits_awarded: isCreditPack ? parseInt(p.credits_awarded as any) : null
                         });
                       }}
                       className="mt-8 w-full bg-[#00579e] hover:bg-[#1a3a61] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95"
@@ -1238,7 +1303,7 @@ function AdminDashboardContent() {
       {/* AGENT APPLICATION DETAILS MODAL */}
       {selectedAgentApp && (
         <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-6xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
              <div className="bg-[#112743] px-8 py-6 flex items-center justify-between">
                 <div>
                    <h3 className="text-white text-2xl font-black tracking-tight">Review Application</h3>
@@ -1249,7 +1314,7 @@ function AdminDashboardContent() {
                 </button>
              </div>
              
-             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[80vh] overflow-y-auto">
+             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[88vh] overflow-y-auto">
                 {/* Left Column */}
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
@@ -1331,6 +1396,95 @@ function AdminDashboardContent() {
 
              <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-3xl">
                 <button onClick={() => setSelectedAgentApp(null)} className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">Close Review</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE PLAN MODAL */}
+      {isCreatingPlan && (
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+             <div className="bg-[#00579e] px-8 py-6 flex items-center justify-between">
+                <div>
+                   <h3 className="text-white text-2xl font-black tracking-tight">Create New Plan</h3>
+                   <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-1">Configure pricing and features</p>
+                </div>
+                <button onClick={() => setIsCreatingPlan(false)} className="text-white/50 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
+                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+             </div>
+             
+             <div className="p-8 max-h-[85vh] overflow-y-auto space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-4">
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Plan Name</label>
+                         <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-bold text-[#112743]" placeholder="e.g. Pro Membership" value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} />
+                      </div>
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Description</label>
+                         <textarea className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-medium text-[#112743] text-sm resize-none" rows={3} placeholder="Brief description..." value={newPlan.description} onChange={e => setNewPlan({...newPlan, description: e.target.value})} />
+                      </div>
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Plan Type</label>
+                         <select 
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-bold text-[#112743] text-sm cursor-pointer" 
+                            value={newPlan.type} 
+                            onChange={e => {
+                               const val = e.target.value;
+                               setNewPlan({
+                                  ...newPlan, 
+                                  type: val,
+                                  duration_days: val === 'credit_pack' ? '30' : newPlan.duration_days
+                               });
+                            }}
+                         >
+                            <option value="subscription">Subscription</option>
+                            <option value="single_unlock">Single Unlock</option>
+                            <option value="credit_pack">Credit Pack</option>
+                         </select>
+                      </div>
+                   </div>
+                   
+                   <div className="space-y-4">
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Price (INR)</label>
+                         <input type="number" min="0" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-black text-[#112743]" placeholder="e.g. 999" value={newPlan.price} onChange={e => setNewPlan({...newPlan, price: e.target.value})} />
+                      </div>
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Duration (Days)</label>
+                         <input 
+                            type="number" 
+                            min="0" 
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-black text-[#112743] disabled:opacity-60 disabled:cursor-not-allowed" 
+                            placeholder="e.g. 30" 
+                            value={newPlan.type === 'credit_pack' ? 30 : newPlan.duration_days} 
+                            disabled={newPlan.type === 'credit_pack'}
+                            onChange={e => setNewPlan({...newPlan, duration_days: e.target.value})} 
+                         />
+                      </div>
+                      {newPlan.type === 'credit_pack' && (
+                         <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Credits Awarded</label>
+                            <input type="number" min="0" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-black text-[#112743]" placeholder="e.g. 50" value={newPlan.credits_awarded} onChange={e => setNewPlan({...newPlan, credits_awarded: e.target.value})} />
+                         </div>
+                      )}
+                      <div>
+                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block flex items-center justify-between">
+                            <span>Features (One per line)</span>
+                         </label>
+                         <textarea className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-medium text-[#112743] text-xs resize-none" rows={4} placeholder={"Feature 1\nFeature 2\nFeature 3"} value={Array.isArray(newPlan.features) ? newPlan.features.join('\n') : newPlan.features} onChange={e => setNewPlan({...newPlan, features: e.target.value.split('\n')})} />
+                      </div>
+                   </div>
+                </div>
+             </div>
+
+             <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-3xl">
+                <button onClick={() => setIsCreatingPlan(false)} className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-800 transition-colors cursor-pointer bg-white border border-gray-200 rounded-xl shadow-sm">Cancel</button>
+                <button onClick={handleCreatePlan} disabled={isSubmittingPlan} className="px-8 py-2.5 text-xs font-black uppercase tracking-widest text-white bg-[#00b48f] hover:bg-teal-600 rounded-xl shadow-lg shadow-teal-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                   {isSubmittingPlan ? 'Creating...' : 'Create Plan'}
+                </button>
              </div>
           </div>
         </div>

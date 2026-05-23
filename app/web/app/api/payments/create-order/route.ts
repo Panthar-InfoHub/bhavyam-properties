@@ -51,7 +51,18 @@ export async function POST(req: NextRequest) {
       });
     } catch (rzpErr: any) {
       console.error('❌ [create-order] Razorpay Error:', rzpErr.message);
-      return NextResponse.json({ error: 'Payment Provider Error: ' + rzpErr.message }, { status: 500 });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ [create-order] Falling back to MOCK Razorpay order in development.');
+        order = {
+          id: `order_mock_${Math.random().toString(36).substring(2, 15)}`,
+          amount: Math.round(Number(amount) * 100),
+          currency,
+          receipt: `rcpt_mock_${Date.now()}`,
+          mock: true
+        };
+      } else {
+        return NextResponse.json({ error: 'Payment Provider Error: ' + rzpErr.message }, { status: 500 });
+      }
     }
     
     // 6. Profile Synchronization (FK Fix)
