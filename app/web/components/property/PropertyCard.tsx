@@ -88,7 +88,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         {/* Middle Content */}
         <div className="px-6 pt-8 pb-5 flex-1 bg-[var(--color-pure-white)] text-left">
             <h3 className="text-[22px] font-bold text-[var(--color-near-black)] group-hover:text-[var(--color-emerald-heritage)] transition-colors mb-2.5 line-clamp-1">
-              {property.area ? `${property.area} ` : ''}{property.property_type || 'property'}
+              {property.area && property.area.toLowerCase() !== 'unspecified' ? `${property.area} ` : ''}{property.property_type || 'property'}
             </h3>
             <p className="text-[var(--color-slate)] text-[14px] flex items-center gap-1.5 font-medium">
               <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

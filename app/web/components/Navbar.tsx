@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getCurrentUser, signOutUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
+import LoanFacilityModal from '@/components/LoanFacilityModal';
 
 interface NavbarProps {
   transparent?: boolean;
@@ -20,6 +21,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +39,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   // Auto-set transparent for homepage if not explicitly passed
   const transparent = propTransparent ?? (pathname === '/');
 
@@ -53,7 +55,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
           .from('favorites')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', currentUser.id);
-        
+
         if (!error) setWishlistCount(count || 0);
 
         // Realtime Subscription for Wishlist
@@ -180,7 +182,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
   // Handle scroll for changing transparent navbar to solid
   useEffect(() => {
     if (!transparent) return;
-    
+
     const handleScroll = () => {
       if (window.scrollY > 50) {
         setIsScrolled(true);
@@ -198,211 +200,213 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
 
   return (
     <>
-    <nav className={`w-full flex items-center justify-between px-6 md:px-12 py-4 fixed top-0 left-0 right-0 z-100 transition-all duration-500 ${
-      isLight ? 'bg-transparent py-6' : 'bg-white/95 backdrop-blur-md shadow-xl py-4 border-b border-gray-100'
-    }`}>
-      
-      {/* Brand Logo */}
-      <Link href="/" className="flex items-center group">
-        <div className={`transition-all duration-500 bg-[var(--color-deep-navy)] rounded-xl md:rounded-2xl py-1.5 px-3 md:py-2 md:px-5 shadow-lg group-hover:shadow-[var(--color-emerald-heritage)]/20 group-hover:-translate-y-0.5 border border-white/5`}>
-          <Image 
-            src="/image.png" 
-            alt="Bhavyam Properties" 
-            width={140} 
-            height={40} 
-            className="h-7 md:h-9 w-auto object-contain brightness-110"
-            priority
-          />
-        </div>
-      </Link>
+      <nav className={`w-full flex items-center justify-between px-6 md:px-12 py-2 fixed top-0 left-0 right-0 z-100 transition-all duration-500 ${isLight ? 'bg-transparent py-4' : 'bg-white/95 backdrop-blur-md shadow-xl py-3 border-b border-gray-100'
+        }`}>
 
-      {/* Main Navigation (Desktop) */}
-      <ul className={`hidden xl:flex gap-8 items-center text-[15px] font-medium ${
-        isLight ? 'text-white' : 'text-gray-800'
-      }`}>
-        <li className="relative group">
-          <Link href="/" className={`transition-colors ${pathname === '/' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Home</Link>
-        </li>
-        <li>
-          <Link href="/about" className={`transition-colors ${pathname === '/about' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>About</Link>
-        </li>
-        <li>
-          <Link href="/properties" className={`transition-colors ${pathname === '/properties' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>All Properties</Link>
-        </li>
-        <li>
-          <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
-        </li>
-        <li>
-          <Link href="/terms-and-conditions" className={`transition-colors ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Terms and Conditions</Link>
-        </li>
-        <li>
-          <Link href="/privacy-policy" className={`transition-colors ${pathname === '/privacy-policy' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Privacy Policy</Link>
-        </li>
-        {(!user || (user.profile?.role !== 'agent' && user.profile?.role !== 'admin')) && (
-          <li>
-            <Link 
-              href="/user/apply-agent" 
-              className={`px-5 py-2 rounded-full border transition-all font-bold text-sm ${
-                isLight 
-                  ? 'border-white/40 text-white hover:bg-white hover:text-[#0f2336]' 
-                  : 'border-[var(--color-emerald-heritage)] text-[var(--color-emerald-heritage)] hover:bg-[var(--color-emerald-heritage)] hover:text-white'
-              }`}
-            >
-              Join as Agent
-            </Link>
-          </li>
-        )}
-      </ul>
-
-      {/* Dynamic Actions Container */}
-      <div className="flex items-center gap-1.5 md:gap-4">
-        
-        {/* Mobile Menu Toggle */}
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          suppressHydrationWarning
-          className={`xl:hidden flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border transition-all ${
-            isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
-          }`}
-        >
-          <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isMobileMenuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-        
-        {user ? (
-          <div ref={profileRef} className="relative flex items-center gap-2">
-            {/* Heart (Wishlist) Icon */}
-            <Link 
-              href={user ? "/user/favorites" : "/login"} 
-              suppressHydrationWarning
-              className={`flex items-center justify-center relative w-9 h-9 md:w-10 md:h-10 rounded-full border border-[#00b48f] transition-all group ${
-                isLight ? 'border-white/20 hover:bg-white/10' : 'hover:bg-teal-50'
-              }`}
-            >
-              <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {/* Badge */}
-              {wishlistCount > 0 && (
-                <span className={`absolute -top-1 -right-1 w-5 h-5 bg-[#00b48f] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 ${isLight ? 'border-[#112743]' : 'border-white'} animate-in zoom-in duration-300`}>
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Profile Button (Simplified) */}
-            <button 
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              suppressHydrationWarning
-              className={`flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full transition-all border ${
-                isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
-              }`}
-            >
-              <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </button>
-
-            {/* Dropdown Menu */}
-            {isProfileOpen && (
-              <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-300 z-[100]">
-                <div className="px-6 py-4 border-b border-gray-50 mb-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Signed in as</p>
-                  <p className="text-sm font-bold text-gray-900 truncate mb-2">{user.email}</p>
-                  <div className="flex items-center justify-between bg-teal-50 px-4 py-3 rounded-2xl border border-teal-100">
-                     <div className="flex flex-col">
-                       <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Balance</span>
-                       <span className="text-base font-black text-teal-700">{user.profile?.credits || 0} Credits</span>
-                     </div>
-                     <Link 
-                        href="/membership" 
-                        onClick={() => setIsProfileOpen(false)}
-                        className="w-10 h-10 bg-[#00b48f] text-white rounded-xl flex items-center justify-center text-xl font-bold hover:bg-[#009475] transition-all shadow-md active:scale-95"
-                     >
-                        +
-                     </Link>
-                  </div>
-                </div>
-                <Link 
-                  href="/dashboard" 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
-                >
-                  <span className="text-xl">📊</span> My Dashboard
-                </Link>
-                <Link 
-                  href="/profile" 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
-                >
-                  <span className="text-xl">👤</span> Edit Profile
-                </Link>
-                <Link 
-                  href="/user/transactions" 
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-3 px-6 py-4 text-sm font-bold text-gray-600 hover:bg-teal-50 hover:text-[#00b48f] transition-all"
-                >
-                  <span className="text-xl">💸</span> My Transactions
-                </Link>
-                <div className="border-t border-gray-50 my-1"></div>
-                <button 
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-6 py-4 text-sm font-black text-red-500 hover:bg-red-50 transition-all text-left uppercase tracking-widest"
-                >
-                  <span className="text-xl">🚪</span> Logout
-                </button>
-              </div>
-            )}
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center group">
+          <div className={`transition-all duration-500 bg-[var(--color-deep-navy)] rounded-xl md:rounded-2xl py-1.5 px-3 md:py-2 md:px-5 shadow-lg group-hover:shadow-[var(--color-emerald-heritage)]/20 group-hover:-translate-y-0.5 border border-white/5`}>
+            <Image
+              src="/image.png"
+              alt="Bhavyam Properties"
+              width={140}
+              height={40}
+              className="h-7 md:h-9 w-auto object-contain brightness-110"
+              priority
+            />
           </div>
-        ) : (
-          <Link href="/login" className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all ${
-            isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
+        </Link>
+
+        {/* Main Navigation (Desktop) */}
+        <ul className={`hidden xl:flex gap-6 items-center text-[15px] font-semibold ${isLight ? 'text-white' : 'text-gray-800'
           }`}>
-            <svg className={`w-5 h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </Link>
-        )}
+          <li>
+            <Link href="/about" className={`transition-colors ${pathname === '/about' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>About</Link>
+          </li>
+          <li>
+            <Link href="/properties" className={`transition-colors ${pathname === '/properties' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>All Properties</Link>
+          </li>
+          <li>
+            <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
+          </li>
+          <li>
+            <Link href="/terms-and-conditions" className={`transition-colors ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>T&C</Link>
+          </li>
+          <li>
+            <Link href="/privacy-policy" className={`transition-colors ${pathname === '/privacy-policy' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Privacy Policy</Link>
+          </li>
+          {(!user || (user.profile?.role !== 'agent' && user.profile?.role !== 'admin')) && (
+            <li>
+              <Link
+                href="/user/apply-agent"
+                className={`px-5 py-2 rounded-full border transition-all font-bold text-xs ${isLight
+                  ? 'border-white/40 text-white hover:bg-white hover:text-[#0f2336]'
+                  : 'border-[var(--color-emerald-heritage)] text-[var(--color-emerald-heritage)] hover:bg-[var(--color-emerald-heritage)] hover:text-white'
+                  }`}
+              >
+                Join as Agent
+              </Link>
+            </li>
+          )}
+        </ul>
 
-        {/* Add Property Button (Always Visible) */}
-        <button 
-          onClick={handleAddProperty} 
-          suppressHydrationWarning
-          className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20"
-        >
-          <div className="w-5 h-5 bg-white text-[#00b48f] rounded-full flex items-center justify-center shadow-sm">
-            <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        {/* Dynamic Actions Container */}
+        <div className="flex items-center gap-1.5 md:gap-4">
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            suppressHydrationWarning
+            className={`xl:hidden flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border transition-all ${isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
+              }`}
+          >
+            <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
             </svg>
-          </div>
-          <span className="whitespace-nowrap">Add Property</span>
-        </button>
-      </div>
-    </nav>
-    
-    {/* Mobile Menu Overlay (Full Screen) - Outside main nav for z-index safety */}
-    {isMobileMenuOpen && (
+          </button>
+
+          {user ? (
+            <div ref={profileRef} className="relative flex items-center gap-2">
+              {/* Heart (Wishlist) Icon */}
+              <Link
+                href={user ? "/user/favorites" : "/login"}
+                suppressHydrationWarning
+                className={`flex items-center justify-center relative w-9 h-9 md:w-10 md:h-10 rounded-full border border-[#00b48f] transition-all group ${isLight ? 'border-white/20 hover:bg-white/10' : 'hover:bg-teal-50'
+                  }`}
+              >
+                <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {/* Badge */}
+                {wishlistCount > 0 && (
+                  <span className={`absolute -top-1 -right-1 w-5 h-5 bg-[#00b48f] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 ${isLight ? 'border-[#112743]' : 'border-white'} animate-in zoom-in duration-300`}>
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Profile Button (Simplified) */}
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                suppressHydrationWarning
+                className={`flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full transition-all border ${isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
+                  }`}
+              >
+                <svg className={`w-4 h-4 md:w-5 md:h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isProfileOpen && (
+                <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden py-1.5 animate-in fade-in slide-in-from-top-2 duration-300 z-[100]">
+                  <div className="px-6 pt-5 pb-3 border-b border-gray-50 mb-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Signed in as</p>
+                    <p className="text-sm font-bold text-gray-900 truncate mb-2">{user.email}</p>
+                    <div className="flex items-center justify-between bg-teal-50 px-4 py-3 rounded-xl border border-teal-100">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Balance</span>
+                        <span className="text-base font-black text-teal-700">{user.profile?.credits || 0} Credits</span>
+                      </div>
+                      <Link
+                        href="/membership"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="w-10 h-10 bg-[#00b48f] text-white rounded-lg flex items-center justify-center text-xl font-bold hover:bg-[#009475] transition-all shadow-md active:scale-95"
+                      >
+                        +
+                      </Link>
+                    </div>
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-3 px-6 py-1.5 text-sm font-bold text-gray-600 border-l-4 border-transparent hover:border-[#00b48f] hover:bg-gradient-to-r hover:from-teal-50 hover:to-transparent hover:text-[#00b48f] transition-all"
+                  >
+                    <span className="text-xl">📊</span> My Dashboard
+                  </Link>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-3 px-6 py-1.5 text-sm font-bold text-gray-600 border-l-4 border-transparent hover:border-[#00b48f] hover:bg-gradient-to-r hover:from-teal-50 hover:to-transparent hover:text-[#00b48f] transition-all"
+                  >
+                    <span className="text-xl">👤</span> Edit Profile
+                  </Link>
+                  <Link
+                    href="/user/transactions"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-3 px-6 py-1.5 text-sm font-bold text-gray-600 border-l-4 border-transparent hover:border-[#00b48f] hover:bg-gradient-to-r hover:from-teal-50 hover:to-transparent hover:text-[#00b48f] transition-all"
+                  >
+                    <span className="text-xl">💸</span> My Transactions
+                  </Link>
+                  <div className="border-t border-gray-50 my-1"></div>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-6 py-1.5 text-sm font-black text-red-500 border-l-4 border-transparent hover:border-red-500 hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent transition-all text-left uppercase tracking-widest"
+                  >
+                    <span className="text-xl">🚪</span> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/login" className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all ${isLight ? 'border-white/20 hover:bg-white/10' : 'border-[#00b48f] hover:bg-teal-50'
+              }`}>
+              <svg className={`w-5 h-5 ${isLight ? 'text-white' : 'text-[#00b48f]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </Link>
+          )}
+
+          {/* Loan Options Button */}
+          <button
+            onClick={() => setIsLoanModalOpen(true)}
+            suppressHydrationWarning
+            className="hidden md:flex items-center gap-2 bg-[#112743] hover:bg-[#1a3b63] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-blue-900/10"
+          >
+            <div className="w-5 h-5 bg-white text-[#112743] rounded-full flex items-center justify-center shadow-sm">
+              <span className="text-xs group-hover:scale-110 transition-transform font-bold">🏦</span>
+            </div>
+            <span className="whitespace-nowrap">Loan Options</span>
+          </button>
+
+          {/* Add Property Button (Always Visible) */}
+          <button
+            onClick={handleAddProperty}
+            suppressHydrationWarning
+            className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20"
+          >
+            <div className="w-5 h-5 bg-white text-[#00b48f] rounded-full flex items-center justify-center shadow-sm">
+              <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <span className="whitespace-nowrap">Add Property</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay (Full Screen) - Outside main nav for z-index safety */}
+      {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-white z-[9999] xl:hidden flex flex-col animate-in slide-in-from-right duration-300">
           {/* Mobile Menu Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center group">
               <div className="bg-[var(--color-deep-navy)] rounded-xl py-1.5 px-3 border border-white/5 shadow-lg">
-                <Image 
-                  src="/image.png" 
-                  alt="Bhavyam Properties" 
-                  width={120} 
-                  height={34} 
+                <Image
+                  src="/image.png"
+                  alt="Bhavyam Properties"
+                  width={120}
+                  height={34}
                   className="h-6 w-auto object-contain brightness-110"
                   priority
                 />
               </div>
             </Link>
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
             >
@@ -444,13 +448,12 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                   { label: 'Terms & Conditions', href: '/terms-and-conditions' },
                   { label: 'Privacy Policy', href: '/privacy-policy' }
                 ]).map((item) => (
-                  <Link 
+                  <Link
                     key={item.href}
-                    href={item.href} 
-                    onClick={() => setIsMobileMenuOpen(false)} 
-                    className={`px-4 py-3.5 text-base font-black uppercase tracking-[0.1em] border-b border-gray-50 flex items-center justify-between group ${
-                      pathname === item.href ? 'text-[#00b48f]' : 'text-gray-900 hover:text-[#00b48f]'
-                    }`}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`px-4 py-3.5 text-base font-black uppercase tracking-[0.1em] border-b border-gray-50 flex items-center justify-between group ${pathname === item.href ? 'text-[#00b48f]' : 'text-gray-900 hover:text-[#00b48f]'
+                      }`}
                   >
                     {item.label}
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity text-sm">→</span>
@@ -461,57 +464,65 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
 
             {/* Account / Actions */}
             <div className="mt-auto flex flex-col gap-4 pb-12">
-               {user && (
-                 <div className="bg-teal-50/50 rounded-3xl p-6 border border-teal-100 mb-2">
-                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1">Account Balance</p>
-                    <p className="text-2xl font-black text-teal-700 mb-4">{user.profile?.credits || 0} Credits</p>
-                    <Link 
-                      href="/dashboard" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-2 text-sm font-bold text-teal-800 hover:underline"
-                    >
-                      👤 Go to Dashboard
-                    </Link>
-                 </div>
-               )}
-
-               {(!user || (user.profile?.role !== 'agent' && user.profile?.role !== 'admin')) && (
-                  <Link 
-                    href="/user/apply-agent" 
-                    onClick={() => setIsMobileMenuOpen(false)} 
-                    className="flex items-center justify-center gap-2 bg-[#112743] text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl"
+              {user && (
+                <div className="bg-teal-50/50 rounded-3xl p-6 border border-teal-100 mb-2">
+                  <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1">Account Balance</p>
+                  <p className="text-2xl font-black text-teal-700 mb-4">{user.profile?.credits || 0} Credits</p>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-2 text-sm font-bold text-teal-800 hover:underline"
                   >
-                    🚀 Join as Agent
+                    👤 Go to Dashboard
                   </Link>
-               )}
+                </div>
+              )}
 
-               <button 
-                 onClick={() => { setIsMobileMenuOpen(false); handleAddProperty(); }} 
-                 className="flex items-center justify-center gap-2 bg-[#00b48f] text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-teal-500/20"
-               >
-                 🏠 Post New Property
-               </button>
+              {(!user || (user.profile?.role !== 'agent' && user.profile?.role !== 'admin')) && (
+                <Link
+                  href="/user/apply-agent"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-[#112743] text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl"
+                >
+                  🚀 Join as Agent
+                </Link>
+              )}
 
-               {user ? (
-                 <button 
-                   onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }}
-                   className="mt-4 text-center text-xs font-black text-red-500 uppercase tracking-widest py-2"
-                 >
-                   Logout
-                 </button>
-               ) : (
-                 <Link 
-                   href="/login" 
-                   onClick={() => setIsMobileMenuOpen(false)}
-                   className="mt-4 text-center text-xs font-black text-gray-500 uppercase tracking-widest py-2"
-                 >
-                   Sign In
-                 </Link>
-               )}
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); setIsLoanModalOpen(true); }}
+                className="flex items-center justify-center gap-2 bg-[#112743] text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl"
+              >
+                🏦 Explore Loan Options
+              </button>
+
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); handleAddProperty(); }}
+                className="flex items-center justify-center gap-2 bg-[#00b48f] text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-teal-500/20"
+              >
+                🏠 Post New Property
+              </button>
+
+              {user ? (
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }}
+                  className="mt-4 text-center text-xs font-black text-red-500 uppercase tracking-widest py-2"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="mt-4 text-center text-xs font-black text-gray-500 uppercase tracking-widest py-2"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         </div>
       )}
+      <LoanFacilityModal isOpen={isLoanModalOpen} onClose={() => setIsLoanModalOpen(false)} />
     </>
   );
 }

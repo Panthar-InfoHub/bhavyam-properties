@@ -63,7 +63,7 @@ export default function LatestProperties() {
 
            {/* Filters */}
            <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
-             {['Sell', 'Buy', 'Rent'].map((type) => (
+             {['Sell', 'Buy'].map((type) => (
                 <button 
                   key={type}
                   suppressHydrationWarning
@@ -75,11 +75,11 @@ export default function LatestProperties() {
                     
                     const user = await getCurrentUser();
                     if (!user) {
-                      toast.error("Please sign up first");
+                      toast.error("Please login/signup first to publish your property");
                       return;
                     }
                     
-                    router.push('/dashboard');
+                    router.push('/submit-property');
                   }}
                   className={`px-6 md:px-8 py-2 md:py-2.5 rounded-full font-semibold transition-all duration-300 border text-xs md:text-base ${
                     type === 'Buy' 

@@ -11,7 +11,7 @@ import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSectio
 import { RefreshCw } from 'lucide-react';
 import VerificationManager from '@/components/admin/VerificationManager';
 
-type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications';
+type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications' | 'loan_inquiries';
 
 function AdminDashboardContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -26,6 +26,7 @@ function AdminDashboardContent() {
   const [agentApps, setAgentApps] = useState<any[]>([]);
   const [selectedAgentApp, setSelectedAgentApp] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
+  const [loanInquiries, setLoanInquiries] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
@@ -102,7 +103,8 @@ function AdminDashboardContent() {
       { data: srvReqs },
       { data: revs },
       { data: apps },
-      { data: allPlans }
+      { data: allPlans },
+      { data: loans }
     ] = await Promise.all([
       supabase.from('properties').select('id, property_type, city, listing_type, status, price, created_at, admin_feedback, owner:profiles(first_name, last_name, role, agent_code), media:property_media(url, media_type)').order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, first_name, last_name, email, phone_number, role, created_at').order('created_at', { ascending: false }),
@@ -111,7 +113,8 @@ function AdminDashboardContent() {
       supabase.from('service_requests').select('*').order('created_at', { ascending: false }),
       supabase.from('reviews').select('id, rating, comment, status, created_at, user:profiles(first_name, last_name), property:properties(property_type, city)').order('created_at', { ascending: false }),
       supabase.from('agent_applications').select('id, user_id, status, notes, full_name, email, phone, experience, reason, skills, aadhaar_url, pan_url, certificate_url, resume_url, created_at, user:profiles(id, first_name, last_name, email, phone_number, role)').order('created_at', { ascending: false }),
-      supabase.from('plans').select('*').order('type', { ascending: true })
+      supabase.from('plans').select('*').order('type', { ascending: true }),
+      supabase.from('loan_inquiries').select('*').order('created_at', { ascending: false })
     ]);
 
     const propList = props || [];
@@ -123,6 +126,7 @@ function AdminDashboardContent() {
     setReviews(revs || []);
     setAgentApps(apps || []);
     setPlans(allPlans || []);
+    setLoanInquiries(loans || []);
 
     const revenue = (pays || []).filter((p: any) => p.status === 'completed').reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
     setStats({
@@ -199,6 +203,21 @@ function AdminDashboardContent() {
     const { error } = await supabase.from('service_requests').delete().eq('id', id);
     if (error) toast.error("Failed to delete request");
     else toast.success("Request deleted successfully");
+  };
+
+  const updateLoanStatus = async (id: string, status: string) => {
+    setLoanInquiries(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    const { error } = await supabase.from('loan_inquiries').update({ status }).eq('id', id);
+    if (error) toast.error("Failed to update status");
+    else toast.success("Loan inquiry status updated");
+  };
+
+  const deleteLoanInquiry = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this loan inquiry?')) return;
+    setLoanInquiries(prev => prev.filter(l => l.id !== id));
+    const { error } = await supabase.from('loan_inquiries').delete().eq('id', id);
+    if (error) toast.error("Failed to delete loan inquiry");
+    else toast.success("Loan inquiry deleted successfully");
   };
 
   const handleApproveAgent = async (appId: string, userName: string) => {
@@ -290,6 +309,7 @@ function AdminDashboardContent() {
     { key: 'agents_list', label: 'Agents', icon: '🎖️' },
     { key: 'interests', label: 'Interests', icon: '📋' },
     { key: 'service_requests', label: 'Service Queries', icon: '📩' },
+    { key: 'loan_inquiries', label: 'Loan Inquiries', icon: '🏦' },
     { key: 'transactions', label: 'Transactions', icon: '💸' },
     { key: 'verifications', label: 'Verifications', icon: '🛡️' },
     { key: 'plans', label: 'Plan Settings', icon: '⚙️' },
@@ -743,6 +763,119 @@ function AdminDashboardContent() {
             onStatusUpdate={updateServiceRequestStatus} 
             onDelete={deleteServiceRequest}
           />
+        )}
+
+        {/* ─── LOAN INQUIRIES ─── */}
+        {section === 'loan_inquiries' && (
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#00579e] mb-6">Home Loan Inquiries</h1>
+            
+            <div className="flex flex-col gap-4">
+              {loanInquiries.map(loan => {
+                const partnerName = 
+                  loan.company_id === 'sbi' ? 'SBI Home Loans 🏦' :
+                  loan.company_id === 'hdfc' ? 'HDFC Bank 💳' :
+                  loan.company_id === 'icici' ? 'ICICI Bank 🏢' :
+                  loan.company_id === 'bajaj' ? 'Bajaj Housing 🏠' :
+                  loan.company_id;
+
+                const formattedAmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(loan.loan_amount);
+
+                const rate = 
+                  loan.company_id === 'sbi' ? 8.4 :
+                  loan.company_id === 'hdfc' ? 8.5 :
+                  loan.company_id === 'icici' ? 8.65 :
+                  loan.company_id === 'bajaj' ? 8.45 :
+                  8.5;
+                
+                const P = loan.loan_amount;
+                const R = rate / 12 / 100;
+                const N = 20 * 12;
+                const emi = P > 0 && R > 0 ? Math.round((P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1)) : 0;
+                const formattedEmi = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(emi);
+
+                return (
+                  <div key={loan.id} className={`bg-white rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-6 border-l-4 ${loan.status === 'contacted' ? 'border-l-teal-400' : 'border-l-yellow-400'}`}>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-bold text-gray-800">{loan.name}</h3>
+                        <span className="text-xs text-gray-400 font-medium">{new Date(loan.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number</p>
+                          <a href={`tel:${loan.phone}`} className="text-sm font-bold text-[#00579e] hover:underline">📞 {loan.phone}</a>
+                        </div>
+                        {loan.email && (
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</p>
+                            <a href={`mailto:${loan.email}`} className="text-sm font-bold text-[#00579e] hover:underline">✉️ {loan.email}</a>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 flex flex-wrap gap-6">
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Partner Bank</p>
+                          <p className="text-sm font-bold text-gray-700">{partnerName}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loan Amount</p>
+                          <p className="text-sm font-bold text-gray-700">{formattedAmt}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Est. EMI (20 Yrs)</p>
+                          <p className="text-sm font-bold text-gray-700">{formattedEmi} / mo</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full md:w-48 flex flex-col justify-between items-end border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Inquiry Status</p>
+                        <span className={`text-xs font-black uppercase tracking-wider px-3 py-1 rounded ${loan.status === 'contacted' ? 'bg-teal-50 text-teal-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                          {loan.status || 'pending'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 w-full">
+                        {loan.status !== 'contacted' ? (
+                          <button 
+                            onClick={() => updateLoanStatus(loan.id, 'contacted')}
+                            className="w-full bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold py-2 rounded-lg transition-all shadow-sm cursor-pointer text-center"
+                          >
+                            Mark Contacted
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => updateLoanStatus(loan.id, 'pending')}
+                            className="w-full bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200 text-xs font-bold py-2 rounded-lg transition-all shadow-sm cursor-pointer text-center"
+                          >
+                            Mark Pending
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => deleteLoanInquiry(loan.id)}
+                          className="w-full bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white text-xs font-bold py-2 rounded-lg transition-all shadow-sm cursor-pointer text-center"
+                        >
+                          Delete Lead
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {loanInquiries.length === 0 && (
+                <div className="bg-white p-16 rounded-3xl border border-gray-100 text-center text-gray-400 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <span className="text-5xl">🏦</span>
+                  <p className="font-bold text-lg text-gray-500 uppercase tracking-widest">No Loan Inquiries Submitted Yet</p>
+                  <p className="text-sm text-gray-400 max-w-sm">All leads collected via the Explore Loan Options calculator forms will be logged here in real-time.</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* ─── REVIEWS ─── */}

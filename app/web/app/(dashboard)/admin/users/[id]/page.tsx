@@ -158,7 +158,9 @@ export default function AdminUserDetailPage() {
                             <h3 className="text-2xl font-black text-gray-800 tracking-tight transition-colors uppercase">
                               {prop.property_type} <span className="text-gray-300 font-normal lowercase italic text-base">in {prop.city}</span>
                             </h3>
-                            <p className="text-teal-600 text-xs font-black uppercase tracking-widest mt-1">{prop.area}</p>
+                            {prop.area && prop.area.toLowerCase() !== 'unspecified' && (
+                               <p className="text-teal-600 text-xs font-black uppercase tracking-widest mt-1">{prop.area}</p>
+                            )}
                           </div>
                           <p className="text-3xl font-black text-[#00579e] tracking-tighter">{formattedP}</p>
                         </div>

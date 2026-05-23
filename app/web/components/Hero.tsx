@@ -97,7 +97,7 @@ export default function Hero() {
         </div>
 
         {/* Search Bar Container */}
-        <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl border border-white/30 p-2 md:p-2 rounded-3xl lg:rounded-full shadow-[var(--shadow-ambient)] flex flex-col lg:flex-row items-stretch animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500 text-gray-800 relative z-30">
+        <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="w-full max-w-4xl bg-white/80 backdrop-blur-xl border border-white/30 p-2 md:p-2 rounded-3xl lg:rounded-full shadow-[var(--shadow-ambient)] flex flex-col lg:flex-row items-stretch animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500 text-gray-800 relative z-30">
            {/* Keyword Input */}
            <div className="flex-1 flex items-center px-4 py-3 border-b lg:border-b-0 lg:border-r border-gray-200 group">
               <Search className="w-5 h-5 text-gray-400 group-focus-within:text-[var(--color-emerald-heritage)] transition-colors shrink-0" />
@@ -143,6 +143,7 @@ export default function Hero() {
                       ].map((item) => (
                         <button
                           key={item.label}
+                          type="button"
                           onClick={() => {
                             setPropertyType(item.value);
                             setIsTypeDropdownOpen(false);
@@ -203,6 +204,7 @@ export default function Hero() {
                       .map((city) => (
                         <button
                           key={city}
+                          type="button"
                           onClick={() => {
                             setLocation(city);
                             setIsLocDropdownOpen(false);
@@ -221,13 +223,13 @@ export default function Hero() {
 
            {/* Search Submit */}
            <button 
-             onClick={handleSearch}
+             type="submit"
              suppressHydrationWarning
              className="bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-electric-mint-glow)] hover:text-[var(--color-deep-navy)] text-white px-8 py-3 mt-2 lg:mt-0 rounded-2xl lg:rounded-full font-bold tracking-wide transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base shrink-0"
            >
               Search <Search className="w-4 h-4 ml-1" />
            </button>
-        </div>
+        </form>
       </div>
 
       {/* Curved Bottom Divider */}
