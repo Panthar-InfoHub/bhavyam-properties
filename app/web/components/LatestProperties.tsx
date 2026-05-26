@@ -110,6 +110,25 @@ export default function LatestProperties() {
            </div>
         )}
 
+        {/* More Properties Action CTA */}
+        <div className="mt-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+          <Link
+            href="/properties"
+            className="group inline-flex items-center gap-3 bg-[var(--color-emerald-heritage)] hover:bg-[var(--color-deep-navy)] text-white font-semibold text-xs uppercase tracking-widest px-10 py-4.5 rounded-full transition-all duration-300 shadow-lg shadow-[#006B54]/10 hover:shadow-xl hover:shadow-[#001229]/15 hover:-translate-y-0.5 active:scale-95"
+          >
+            <span>More Properties</span>
+            <svg 
+              className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
+        </div>
+
       </div>
     </section>
   );

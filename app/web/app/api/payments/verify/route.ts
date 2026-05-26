@@ -57,19 +57,27 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: 'Success (Already Fulfilled)' });
     }
 
-    // 2. Fetch Plan Details
-    const { data: plan, error: planError } = await adminSupabase
-      .from('plans')
-      .select('*')
-      .eq('id', planId || transaction.plan_id)
-      .single();
+    // 2. Fetch Plan Details (If it is not a direct verification payment)
+    let plan = null;
+    if (transaction.payment_type !== 'verification') {
+      const { data: fetchedPlan, error: planError } = await adminSupabase
+        .from('plans')
+        .select('*')
+        .eq('id', planId || transaction.plan_id)
+        .single();
 
-    if (planError || !plan) {
-      console.error('❌ Plan configuration not found');
-      throw new Error('Plan not found');
+      if (planError || !fetchedPlan) {
+        console.error('❌ Plan configuration not found');
+        throw new Error('Plan not found');
+      }
+      plan = fetchedPlan;
     }
 
-    console.log(`📑 Processing Fulfillment (Admin): ${plan.type} for user ${user.id}`);
+    if (plan) {
+      console.log(`📑 Processing Fulfillment (Admin): ${plan.type} for user ${user.id}`);
+    } else {
+      console.log(`📑 Processing Direct Fulfillment (Admin): verification for user ${user.id}`);
+    }
 
     // 3. Mark transaction as completed
     await adminSupabase.from('transactions')
@@ -80,42 +88,46 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', transaction.id);
 
-    // 4. Update User Access (Same logic as Webhook)
-    const duration = plan.duration_days || 30;
+    // 4. Update User Access (Only if it is a plan-based payment)
+    if (plan) {
+      const duration = plan.duration_days || 30;
 
-    if (plan.type === 'subscription') {
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + duration);
+      if (plan.type === 'subscription') {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + duration);
 
-      await adminSupabase.from('profiles').update({
-        plan_id: plan.id,
-        subscription_plan: 'premium',
-        subscription_expires_at: expiry.toISOString()
-      }).eq('id', user.id);
-      
-      console.log(`✅ Membership ACTIVATED until ${expiry.toLocaleDateString()}`);
-    } 
-    else if (plan.type === 'credit_pack') {
-        const credits = plan.credits_awarded || 0;
-        const { error: rpcError } = await adminSupabase.rpc('increment_user_credits', {
-            p_user_id: user.id,
-            p_credits: credits
-        });
+        await adminSupabase.from('profiles').update({
+          plan_id: plan.id,
+          subscription_plan: 'premium',
+          subscription_expires_at: expiry.toISOString()
+        }).eq('id', user.id);
         
-        if (rpcError) console.error('❌ Wallet Update Error:', rpcError);
-        else console.log(`✅ Awarded ${credits} CREDITS to balance`);
-    }
-    else if ((plan.type === 'single_unlock' || plan.type === 'unlock') && (propertyId || transaction.property_id)) {
-      const pid = propertyId || transaction.property_id;
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + (plan.duration_days || 7));
+        console.log(`✅ Membership ACTIVATED until ${expiry.toLocaleDateString()}`);
+      } 
+      else if (plan.type === 'credit_pack') {
+          const credits = plan.credits_awarded || 0;
+          const { error: rpcError } = await adminSupabase.rpc('increment_user_credits', {
+              p_user_id: user.id,
+              p_credits: credits
+          });
+          
+          if (rpcError) console.error('❌ Wallet Update Error:', rpcError);
+          else console.log(`✅ Awarded ${credits} CREDITS to balance`);
+      }
+      else if ((plan.type === 'single_unlock' || plan.type === 'unlock') && (propertyId || transaction.property_id)) {
+        const pid = propertyId || transaction.property_id;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + (plan.duration_days || 7));
 
-      await adminSupabase.from('property_unlocks').upsert({
-        user_id: user.id,
-        property_id: pid,
-        expires_at: expiry.toISOString()
-      });
-      console.log(`✅ Property ${pid} UNLOCKED`);
+        await adminSupabase.from('property_unlocks').upsert({
+          user_id: user.id,
+          property_id: pid,
+          expires_at: expiry.toISOString()
+        });
+        console.log(`✅ Property ${pid} UNLOCKED`);
+      }
+    } else {
+      console.log('✅ Direct Verification Payment fulfilled successfully.');
     }
 
     console.log('🏁 Verification and Fulfillment COMPLETE.');

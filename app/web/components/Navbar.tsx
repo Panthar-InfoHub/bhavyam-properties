@@ -8,6 +8,7 @@ import { getCurrentUser, signOutUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 import LoanFacilityModal from '@/components/LoanFacilityModal';
+import PhoneVerificationModal from '@/components/auth/PhoneVerificationModal';
 
 interface NavbarProps {
   transparent?: boolean;
@@ -22,6 +23,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+  const [showPhonePromptModal, setShowPhonePromptModal] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +52,12 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
       setUser(currentUser);
 
       if (currentUser) {
+        // Prompt for phone number if missing and not dismissed in current session
+        const hasPhone = currentUser.profile?.phone_number;
+        const dismissed = typeof window !== 'undefined' && sessionStorage.getItem('dismissedPhonePrompt') === 'true';
+        if (!hasPhone && !dismissed) {
+          setShowPhonePromptModal(true);
+        }
         // Initial Fetch
         const { count, error } = await supabase
           .from('favorites')
@@ -521,6 +529,23 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
             </div>
           </div>
         </div>
+      )}
+      {showPhonePromptModal && user && (
+        <PhoneVerificationModal
+          userId={user.id}
+          onSuccess={async () => {
+            const freshUser = await getCurrentUser();
+            if (freshUser) setUser(freshUser);
+            setShowPhonePromptModal(false);
+            toast.success("Phone number saved successfully!");
+          }}
+          onClose={() => {
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('dismissedPhonePrompt', 'true');
+            }
+            setShowPhonePromptModal(false);
+          }}
+        />
       )}
       <LoanFacilityModal isOpen={isLoanModalOpen} onClose={() => setIsLoanModalOpen(false)} />
     </>

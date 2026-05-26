@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import Script from 'next/script';
 
 export default function ApplyAgentPage() {
   const [hasApplied, setHasApplied] = useState(false);
@@ -13,6 +14,8 @@ export default function ApplyAgentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [agentFeePlan, setAgentFeePlan] = useState<any>(null);
+  const [agentFee, setAgentFee] = useState<number>(999);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -62,6 +65,22 @@ export default function ApplyAgentPage() {
             if (data.reason || data.notes) setReason(data.reason || data.notes);
             if (data.skills) setSkills(Array.isArray(data.skills) ? data.skills : []);
          }
+
+         // Fetch dynamic agent application fee
+         try {
+           const { data: feePlan, error: feeError } = await supabase
+              .from('plans')
+              .select('*')
+              .eq('name', 'Agent Application Fee')
+              .eq('is_active', true)
+              .maybeSingle();
+           if (feePlan && !feeError) {
+              setAgentFeePlan(feePlan);
+              setAgentFee(Number(feePlan.price));
+           }
+         } catch (e) {
+           console.error("Error fetching agent application fee:", e);
+         }
        }
        setIsLoading(false);
     };
@@ -83,6 +102,53 @@ export default function ApplyAgentPage() {
     if (signError) throw signError;
     
     return signedData.signedUrl;
+  };
+
+  const executeDatabaseSubmit = async (
+    aadhaarUrl: string,
+    panUrl: string,
+    certUrl: string,
+    resumeUrl: string,
+    orderId: string,
+    paymentId: string
+  ) => {
+    try {
+      // Delete any existing pending application to avoid duplicates when updating
+      if (appStatus === 'pending') {
+        await supabase
+          .from('agent_applications')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('status', 'pending');
+      }
+
+      const { error } = await supabase.from('agent_applications').insert([
+        { 
+          user_id: currentUser.id, 
+          notes: reason, 
+          full_name: fullName,
+          email: email,
+          phone: phone,
+          experience: experience,
+          reason: reason,
+          skills: skills,
+          aadhaar_url: aadhaarUrl,
+          pan_url: panUrl,
+          certificate_url: certUrl,
+          resume_url: resumeUrl
+        }
+      ]);
+
+      if (error) throw error;
+      
+      toast.success("Application submitted successfully!");
+      setHasApplied(true);
+      setAppStatus('pending');
+      setShowPopup(false);
+    } catch (dbErr: any) {
+      console.error("Database Save Error:", dbErr);
+      toast.error("Failed to register application details. Please contact support. Error: " + dbErr.message);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,51 +181,129 @@ export default function ApplyAgentPage() {
 
         toast.dismiss('uploading');
 
-        const generatedNotes = `Full Name: ${fullName}
-Email: ${email}
-Phone Number: ${phone}
-Experience: ${experience}
-Reason for Joining Us: ${reason}
-Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
+        // Now start checkout payment flow
+        toast.loading(`Initializing ₹${agentFee} payment gateway...`, { id: 'gateway' });
+        const response = await fetch('/api/payments/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            amount: agentFee, 
+            payment_type: 'agent_apply',
+            planId: agentFeePlan?.id || null
+          }),
+        });
+        toast.dismiss('gateway');
 
-        // Delete any existing pending application to avoid duplicates when updating
-        if (appStatus === 'pending') {
-          await supabase
-            .from('agent_applications')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('status', 'pending');
+        const order = await response.json();
+        if (!response.ok) throw new Error(order.error || 'Failed to initialize payment gateway.');
+
+        // Mock checkout flow for local dev bypass
+        if (order.mock) {
+          toast.loading(`Simulating ₹${agentFee} payment checkout...`, { duration: 1500 });
+          setTimeout(async () => {
+            try {
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'x-test-bypass': 'true'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  razorpay_order_id:   order.id,
+                  razorpay_payment_id: 'pay_mock_' + Math.random().toString(36).substring(2, 10),
+                  razorpay_signature:  'sig_mock',
+                  planId: agentFeePlan?.id || null
+                }),
+              });
+              
+              if (verifyRes.ok) {
+                toast.success("Payment verified successfully!");
+                await executeDatabaseSubmit(
+                  aadhaarUrl,
+                  panUrl,
+                  certUrl,
+                  resumeUrl,
+                  order.id,
+                  'pay_mock_' + Math.random().toString(36).substring(2, 6)
+                );
+              } else {
+                toast.error("Payment verification failed.");
+              }
+            } catch (vErr) {
+              console.error("Payment Verification error:", vErr);
+              toast.error("Payment verification failed.");
+            } finally {
+              setIsSubmitting(false);
+            }
+          }, 1500);
+          return;
         }
 
-        const { error } = await supabase.from('agent_applications').insert([
-           { 
-             user_id: currentUser.id, 
-             notes: reason, // Store only the reason in notes or keep reason separate
-             full_name: fullName,
-             email: email,
-             phone: phone,
-             experience: experience,
-             reason: reason,
-             skills: skills,
-             aadhaar_url: aadhaarUrl,
-             pan_url: panUrl,
-             certificate_url: certUrl,
-             resume_url: resumeUrl
-           }
-        ]);
+        // Live Razorpay order checkout
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: "Bhavyam Properties",
+          description: `Agent Application Fee`,
+          order_id: order.id,
+          handler: async (rzpResponse: any) => {
+            try {
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  razorpay_order_id:   rzpResponse.razorpay_order_id,
+                  razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                  razorpay_signature:  rzpResponse.razorpay_signature,
+                  planId: agentFeePlan?.id || null
+                }),
+              });
+              if (verifyRes.ok) {
+                toast.success("Payment verified successfully!");
+                await executeDatabaseSubmit(
+                  aadhaarUrl,
+                  panUrl,
+                  certUrl,
+                  resumeUrl,
+                  rzpResponse.razorpay_order_id,
+                  rzpResponse.razorpay_payment_id
+                );
+              } else {
+                toast.error("Payment verification failed. Contact support if charged.");
+              }
+            } catch (vErr) {
+              console.error("Payment Verification error:", vErr);
+              toast.error("Failed to verify payment.");
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+          prefill: { 
+            name: fullName,
+            email: email, 
+            contact: phone
+          },
+          theme: { color: "#00b48f" },
+          modal: {
+            ondismiss: () => setIsSubmitting(false),
+          },
+        };
 
-        if (error) throw error;
-        
-        toast.success("Application submitted successfully!");
-        setHasApplied(true);
-        setAppStatus('pending');
-        setShowPopup(false);
-        
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (r: any) => {
+          toast.error(`Payment failed: ${r.error.description}`);
+          setIsSubmitting(false);
+        });
+        rzp.open();
+
       } catch (err: any) {
          toast.dismiss('uploading');
+         toast.dismiss('gateway');
          console.error("Error applying:", err);
          toast.error("Error applying: " + err.message);
-      } finally {
          setIsSubmitting(false);
       }
   };
@@ -243,8 +387,11 @@ Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
                   <div className="md:w-[45%] bg-[#112743] p-10 flex flex-col justify-center text-white">
                      <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center text-3xl mb-6 shadow-inner">🤝</div>
                      <h2 className="text-3xl font-black mb-4 leading-tight">Apply for <br/>Agent Verification</h2>
-                     <p className="text-white/60 text-sm font-medium leading-relaxed mb-8">
+                     <p className="text-white/60 text-sm font-medium leading-relaxed mb-4">
                         Our verified agents close properties 3x faster than standard users. Start your journey today.
+                     </p>
+                     <p className="text-[#00ecbd] text-lg font-black tracking-tight mb-8">
+                        Application Fee: ₹{agentFee}
                      </p>
                      
                      <div className="space-y-4">
@@ -480,6 +627,7 @@ Skills: ${skills.length > 0 ? skills.join(', ') : 'None'}`;
              </div>
          </div>
       )}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
     </div>
   );
 }

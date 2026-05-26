@@ -67,24 +67,15 @@ export default function WhyChooseUs() {
           </div>
 
           {/* Thumbnail + play button */}
+          {/* Autoplay Muted Looping Video */}
           <div className="relative z-10 ml-6 md:ml-10 mt-4 shadow-xl overflow-hidden aspect-video bg-white rounded-2xl">
-            <img
-              src="/images/image.png"
-              alt="Innovative Solutions"
-              className="w-full h-full object-cover"
-            />
-            {/* Dark overlay for readability */}
-            <div className="absolute inset-0 bg-black/20" />
-
-            <VideoPopup
-              videoId="4jnzf1yj48M"
-              className="absolute inset-0 flex items-center justify-center"
-              popupContent={popupContent}
-            >
-              <button className="w-[72px] h-[72px] bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white hover:scale-110 transition-all shadow-2xl border border-white/60 group">
-                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-[var(--color-emerald-heritage)] border-b-[10px] border-b-transparent ml-1.5" />
-              </button>
-            </VideoPopup>
+            <iframe
+              className="w-full h-full object-cover border-0"
+              src="https://www.youtube.com/embed/4jnzf1yj48M?autoplay=1&mute=1&loop=1&playlist=4jnzf1yj48M&controls=0&showinfo=0&rel=0&iv_load_policy=3&playsinline=1"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="Innovative Solutions for Modern Living"
+            ></iframe>
           </div>
         </div>
 

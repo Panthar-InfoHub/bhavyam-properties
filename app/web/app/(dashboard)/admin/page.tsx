@@ -11,7 +11,7 @@ import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSectio
 import { RefreshCw } from 'lucide-react';
 import VerificationManager from '@/components/admin/VerificationManager';
 
-type Section = 'overview' | 'properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications' | 'loan_inquiries';
+type Section = 'overview' | 'properties' | 'pending_properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications' | 'loan_inquiries';
 
 function AdminDashboardContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -304,6 +304,7 @@ function AdminDashboardContent() {
   const navItems: { key: Section; label: string; icon: string }[] = [
     { key: 'overview', label: 'Analytics', icon: '📊' },
     { key: 'properties', label: 'All Properties', icon: '🏠' },
+    { key: 'pending_properties', label: 'Pending Properties', icon: '⏳' },
     { key: 'users', label: 'Users', icon: '👥' },
     { key: 'agents', label: 'Agent Applications', icon: '📝' },
     { key: 'agents_list', label: 'Agents', icon: '🎖️' },
@@ -433,19 +434,13 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {/* ─── PROPERTIES ─── */}
-        {section === 'properties' && (
+        {/* ─── PROPERTIES & PENDING PROPERTIES ─── */}
+        {(section === 'properties' || section === 'pending_properties') && (
           <div>
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
               <h1 className="text-3xl font-extrabold text-[#00579e]">
-                {showPendingOnly ? 'Pending Property Requests' : 'All Properties'}
+                {section === 'pending_properties' ? 'Pending Property Requests' : 'All Properties'}
               </h1>
-              <button
-                onClick={() => setShowPendingOnly(!showPendingOnly)}
-                className={`text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-sm transition-all focus:outline-none ${showPendingOnly ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200'}`}
-              >
-                {showPendingOnly ? 'Show All Properties' : `Pending Property Requests (${stats.pending})`}
-              </button>
             </div>
             
             <div className="flex flex-col md:flex-row gap-4 mb-6 md:items-center">
@@ -477,94 +472,103 @@ function AdminDashboardContent() {
             </div>
 
             <div className="flex flex-col gap-4">
-              {filteredAndSortedProperties
-                .filter(p => showPendingOnly ? p.status === 'pending' : p.status === 'approved')
-                .map(p => (
-                <div key={p.id} className={`bg-white rounded-xl border shadow-sm p-6 flex flex-col gap-4 border-l-4 ${p.status === 'pending' ? 'border-l-yellow-400' : p.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <Link href={`/properties/${p.id}`} className="font-bold text-gray-800 text-lg hover:underline hover:text-teal-600 block transition-colors cursor-pointer">
-                        {p.property_type} in {p.city}
-                      </Link>
-                      <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">
-                        Owner: {p.owner?.first_name} {p.owner?.last_name} 
-                        {p.owner?.role === 'agent' && (
-                          <span className="ml-2 bg-blue-50 text-[#00579e] px-2 py-0.5 rounded text-[9px] font-black border border-blue-100">
-                             ID: {p.owner?.agent_code || 'N/A'}
-                          </span>
-                        )}
-                        <span className="mx-2">·</span> {p.listing_type} <span className="mx-2">·</span> ₹{p.price?.toLocaleString('en-IN')} <span className="mx-2">·</span> {new Date(p.created_at).toLocaleDateString()}
-                      </p>
-                      <span className={`mt-2 inline-block text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter ${p.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : p.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{p.status}</span>
+              {(() => {
+                const displayProps = filteredAndSortedProperties.filter(p => section === 'pending_properties' ? p.status === 'pending' : p.status === 'approved');
+                if (displayProps.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+                      No properties found for the selected filters.
                     </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <div className="flex gap-2">
-                        {p.status !== 'approved' && (
-                          <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Approve</button>
-                        )}
-                        {p.status !== 'rejected' && (
-                          <button 
-                            onClick={() => {
-                              if (rejectingId === p.id) {
-                                if (!feedback) return toast.error('Please enter a reason for rejection');
-                                updatePropertyStatus(p.id, 'rejected', feedback);
-                              } else {
-                                setRejectingId(p.id);
-                              }
-                            }} 
-                            className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+                  );
+                }
+                return displayProps.map(p => (
+                  <div key={p.id} className={`bg-white rounded-xl border shadow-sm p-6 flex flex-col gap-4 border-l-4 ${p.status === 'pending' ? 'border-l-yellow-400' : p.status === 'approved' ? 'border-l-teal-400' : 'border-l-red-400'}`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <Link href={`/properties/${p.id}`} className="font-bold text-gray-800 text-lg hover:underline hover:text-teal-600 block transition-colors cursor-pointer">
+                          {p.property_type} in {p.city}
+                        </Link>
+                        <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">
+                          Owner: {p.owner?.first_name} {p.owner?.last_name} 
+                          {p.owner?.role === 'agent' && (
+                            <span className="ml-2 bg-blue-50 text-[#00579e] px-2 py-0.5 rounded text-[9px] font-black border border-blue-100">
+                               ID: {p.owner?.agent_code || 'N/A'}
+                            </span>
+                          )}
+                          <span className="mx-2">·</span> {p.listing_type} <span className="mx-2">·</span> ₹{p.price?.toLocaleString('en-IN')} <span className="mx-2">·</span> {new Date(p.created_at).toLocaleDateString()}
+                        </p>
+                        <span className={`mt-2 inline-block text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter ${p.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : p.status === 'approved' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>{p.status}</span>
+                      </div>
+                      <div className="flex flex-col gap-2 items-end">
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/admin/edit-property/${p.id}`}
+                            className="bg-blue-50 text-blue-600 border border-blue-100 hover:bg-[#00579e] hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer flex items-center"
                           >
-                            {rejectingId === p.id ? 'Confirm Reject' : 'Reject'}
-                          </button>
-                        )}
-                        {p.status !== 'pending' && (
-                          <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Reset</button>
+                            Edit
+                          </Link>
+                          {p.status !== 'approved' && (
+                            <button onClick={() => updatePropertyStatus(p.id, 'approved')} className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Approve</button>
+                          )}
+                          {p.status !== 'rejected' && (
+                            <button 
+                              onClick={() => {
+                                if (rejectingId === p.id) {
+                                  if (!feedback) return toast.error('Please enter a reason for rejection');
+                                  updatePropertyStatus(p.id, 'rejected', feedback);
+                                } else {
+                                  setRejectingId(p.id);
+                                }
+                              }} 
+                              className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+                            >
+                              {rejectingId === p.id ? 'Confirm Reject' : 'Reject'}
+                            </button>
+                          )}
+                          {p.status !== 'pending' && (
+                            <button onClick={() => updatePropertyStatus(p.id, 'pending')} className="bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer">Reset</button>
+                          )}
+                        </div>
+                        
+                        {rejectingId === p.id && (
+                          <div className="w-full max-w-xs animate-in slide-in-from-top-2 duration-300">
+                             <textarea 
+                               autoFocus
+                               placeholder="Provide improvement notes for the agent..."
+                               className="w-full bg-red-50/50 border border-red-100 p-2 rounded-lg text-xs outline-none focus:border-red-300 placeholder-red-300 text-red-900 font-medium"
+                               value={feedback}
+                               onChange={(e) => setFeedback(e.target.value)}
+                             />
+                             <button onClick={() => setRejectingId(null)} className="text-[10px] font-black text-gray-500 mt-1 uppercase tracking-widest hover:text-red-600 transition-colors cursor-pointer">Cancel Rejection</button>
+                          </div>
                         )}
                       </div>
-                      
-                      {rejectingId === p.id && (
-                        <div className="w-full max-w-xs animate-in slide-in-from-top-2 duration-300">
-                           <textarea 
-                             autoFocus
-                             placeholder="Provide improvement notes for the agent..."
-                             className="w-full bg-red-50/50 border border-red-100 p-2 rounded-lg text-xs outline-none focus:border-red-300 placeholder-red-300 text-red-900 font-medium"
-                             value={feedback}
-                             onChange={(e) => setFeedback(e.target.value)}
-                           />
-                           <button onClick={() => setRejectingId(null)} className="text-[10px] font-black text-gray-500 mt-1 uppercase tracking-widest hover:text-red-600 transition-colors cursor-pointer">Cancel Rejection</button>
-                        </div>
-                      )}
                     </div>
+
+                    {p.admin_feedback && (
+                      <div className="bg-yellow-50/50 border border-yellow-100 p-3 rounded-lg">
+                        <p className="text-[10px] font-black text-yellow-600 uppercase mb-1">Previous Rejection Note</p>
+                        <p className="text-sm text-yellow-800 italic">"{p.admin_feedback}"</p>
+                      </div>
+                    )}
+
+                    {/* Media Preview */}
+                    {p.media && p.media.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        {p.media.slice(0, 8).map((m: any, idx: number) => (
+                          <a key={idx} href={m.url} target="_blank" rel="noreferrer" className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:ring-2 hover:ring-teal-500 transition-all cursor-pointer">
+                            {m.media_type === 'image' || m.url.match(/\.(jpg|jpeg|png)$/i) ? (
+                              <img src={m.url} className="w-full h-full object-cover" alt="Property asset" />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">DOC</div>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
-
-                  {p.admin_feedback && (
-                    <div className="bg-yellow-50/50 border border-yellow-100 p-3 rounded-lg">
-                      <p className="text-[10px] font-black text-yellow-600 uppercase mb-1">Previous Rejection Note</p>
-                      <p className="text-sm text-yellow-800 italic">"{p.admin_feedback}"</p>
-                    </div>
-                  )}
-
-                  {/* Media Preview */}
-                  {p.media && p.media.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                      {p.media.slice(0, 8).map((m: any, idx: number) => (
-                        <a key={idx} href={m.url} target="_blank" rel="noreferrer" className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:ring-2 hover:ring-teal-500 transition-all cursor-pointer">
-                          {m.media_type === 'image' || m.url.match(/\.(jpg|jpeg|png)$/i) ? (
-                            <img src={m.url} className="w-full h-full object-cover" alt="Property asset" />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">DOC</div>
-                          )}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {filteredAndSortedProperties.length === 0 && (
-                <div className="p-8 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
-                  No properties found for the selected filters.
-                </div>
-              )}
+                ));
+              })()}
             </div>
           </div>
         )}

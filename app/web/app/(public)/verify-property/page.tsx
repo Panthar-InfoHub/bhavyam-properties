@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck, Upload, MapPin, Building2, User, FileText, Camera, Video, ArrowRight, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
+import Script from 'next/script';
 
 export default function VerifyPropertyPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function VerifyPropertyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [verificationFee, setVerificationFee] = useState<number>(499);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -45,7 +47,7 @@ export default function VerifyPropertyPage() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndFee = async () => {
       const currentUser = await getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
@@ -56,9 +58,25 @@ export default function VerifyPropertyPage() {
           phoneNumber: currentUser.profile?.phone_number || '',
         }));
       }
+      
+      // Fetch dynamic verification fee from DB
+      try {
+        const { data, error } = await supabase
+          .from('plans')
+          .select('price')
+          .eq('name', 'Property Verification Fee')
+          .eq('is_active', true)
+          .maybeSingle();
+        if (data && !error) {
+          setVerificationFee(Number(data.price));
+        }
+      } catch (e) {
+        console.error("Error fetching verification fee:", e);
+      }
+      
       setIsLoading(false);
     };
-    fetchUser();
+    fetchUserAndFee();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -108,14 +126,7 @@ export default function VerifyPropertyPage() {
     files.images.length > 0
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      toast.error('Please login to submit verification request');
-      return;
-    }
-    setIsSubmitting(true);
-
+  const executeDatabaseSubmit = async (orderId: string, paymentId: string) => {
     try {
       // 1. Upload files
       let floorPlanUrl = '';
@@ -166,6 +177,120 @@ export default function VerifyPropertyPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const startPaymentAndSubmit = async () => {
+    try {
+      // Step A: Create order on server (amount: verificationFee, payment_type: 'verification')
+      const response = await fetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          amount: verificationFee, 
+          payment_type: 'verification' 
+        }),
+      });
+      const order = await response.json();
+      if (!response.ok) throw new Error(order.error || 'Failed to initialize payment gateway.');
+
+      // Step B: If mock order (local development)
+      if (order.mock) {
+        toast.loading(`Simulating ₹${verificationFee} payment checkout...`, { duration: 1500 });
+        setTimeout(async () => {
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-test-bypass': 'true'
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id:   order.id,
+                razorpay_payment_id: 'pay_mock_' + Math.random().toString(36).substring(2, 10),
+                razorpay_signature:  'sig_mock',
+              }),
+            });
+            
+            if (verifyRes.ok) {
+              toast.success("Payment verified successfully!");
+              await executeDatabaseSubmit(order.id, 'pay_mock_' + Math.random().toString(36).substring(2, 6));
+            } else {
+              toast.error("Payment verification failed.");
+              setIsSubmitting(false);
+            }
+          } catch (e) {
+            console.error("Payment Verification error:", e);
+            toast.error("Payment verification failed.");
+            setIsSubmitting(false);
+          }
+        }, 1500);
+        return;
+      }
+
+      // Step C: Live Razorpay order checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Bhavyam Properties",
+        description: `Property Verification Fee`,
+        order_id: order.id,
+        handler: async (rzpResponse: any) => {
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_order_id:   rzpResponse.razorpay_order_id,
+                razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                razorpay_signature:  rzpResponse.razorpay_signature,
+              }),
+            });
+            if (verifyRes.ok) {
+              toast.success("Payment verified successfully!");
+              await executeDatabaseSubmit(rzpResponse.razorpay_order_id, rzpResponse.razorpay_payment_id);
+            } else {
+              toast.error("Payment verification failed. Contact support if charged.");
+              setIsSubmitting(false);
+            }
+          } catch (e) {
+            console.error("Payment Verification error:", e);
+            toast.error("Failed to verify payment.");
+            setIsSubmitting(false);
+          }
+        },
+        prefill: { 
+          email: user.email, 
+          contact: formData.phoneNumber || "" 
+        },
+        theme: { color: "#00b48f" },
+        modal: {
+          ondismiss: () => setIsSubmitting(false),
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (r: any) => {
+        toast.error(`Payment failed: ${r.error.description}`);
+        setIsSubmitting(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to initialize payment gateway.");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Please login to submit verification request');
+      return;
+    }
+    setIsSubmitting(true);
+    await startPaymentAndSubmit();
   };
 
   if (isLoading) return <PremiumLoader />;
@@ -511,6 +636,7 @@ export default function VerifyPropertyPage() {
 
         </form>
       </div>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
     </main>
   );
 }

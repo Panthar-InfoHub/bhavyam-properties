@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-export default function EditPropertyPage() {
+export default function AdminEditPropertyPage() {
   const { id } = useParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +14,6 @@ export default function EditPropertyPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
-  const [adminFeedback, setAdminFeedback] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     property_type: '',
@@ -42,23 +41,22 @@ export default function EditPropertyPage() {
   useEffect(() => {
     const fetchPropertyData = async () => {
       const user = await getCurrentUser();
-      if (!user || user.profile?.role !== 'agent') {
+      if (!user || user.profile?.role !== 'admin') {
         router.push('/dashboard');
         return;
       }
       setCurrentUser(user);
 
-      // Fetch Property
+      // Fetch Property (Admin can fetch ANY property, so no owner_id check)
       const { data: prop, error: propErr } = await supabase
         .from('properties')
         .select('*')
         .eq('id', id)
-        .eq('owner_id', user.id)
         .single();
 
       if (propErr || !prop) {
         toast.error("Property not found or access denied.");
-        router.push('/agent');
+        router.push('/admin?section=properties');
         return;
       }
 
@@ -69,7 +67,6 @@ export default function EditPropertyPage() {
         .eq('property_id', id);
 
       setExistingMedia(media || []);
-      setAdminFeedback(prop.admin_feedback || null);
       setFormData({
         property_type: prop.property_type || '',
         listing_type: prop.listing_type || '',
@@ -131,12 +128,12 @@ export default function EditPropertyPage() {
     setIsSubmitting(true);
 
     try {
+      // Update property (without modifying status, so it keeps its current status and does NOT go to pending)
       const { error: propErr } = await supabase
         .from('properties')
         .update({
           ...formData,
-          price: parseFloat(formData.price) || 0,
-          status: 'pending'
+          price: parseFloat(formData.price) || 0
         })
         .eq('id', id);
 
@@ -167,8 +164,8 @@ export default function EditPropertyPage() {
         if (mediaErr) throw mediaErr;
       }
 
-      toast.success("Property updated and set to Pending for Admin approval.");
-      router.push('/agent');
+      toast.success("Property updated successfully.");
+      router.push('/admin?section=properties');
     } catch (err: any) {
       toast.error("Error: " + err.message);
     } finally {
@@ -189,30 +186,17 @@ export default function EditPropertyPage() {
       )}
 
       <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-[#00579e] px-8 py-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-[#112743] px-8 py-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-black tracking-tight">Editor Mode: {formData.property_type}</h1>
+            <h1 className="text-xl font-black tracking-tight">Admin Editor Mode: {formData.property_type}</h1>
             <p className="text-blue-100/60 font-bold uppercase text-[9px] tracking-widest mt-0.5">Asset ID: {id}</p>
           </div>
           <span className="text-[9px] bg-white/10 text-white/90 px-3 py-1 rounded-md font-black uppercase tracking-widest self-start md:self-auto">
-            Agent Update
+            Direct Update
           </span>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-12">
-          {adminFeedback && (
-            <div className="bg-red-50 border-2 border-red-100 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-500">
-               <div className="flex items-center gap-2 mb-3">
-                  <span className="bg-red-500 text-white p-1 rounded-lg text-xs">⚠️</span>
-                  <h3 className="text-red-700 font-black uppercase text-xs tracking-widest">Admin Improvement Request</h3>
-               </div>
-               <p className="text-red-800 text-sm font-bold leading-relaxed italic border-l-4 border-red-200 pl-4">
-                  "{adminFeedback}"
-               </p>
-               <p className="text-[10px] text-red-400 mt-4 uppercase font-black tracking-tighter">Please address the points above before resubmitting for approval.</p>
-            </div>
-          )}
-
           {/* Description / Summary */}
           <section>
             <h3 className="text-lg font-black text-gray-800 mb-6 flex items-center gap-2">
@@ -406,17 +390,17 @@ export default function EditPropertyPage() {
             </button>
             <button 
               type="button" 
-              onClick={() => router.push('/agent')}
+              onClick={() => router.push('/admin?section=properties')}
               className="px-10 border border-gray-200 text-gray-500 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 hover:border-red-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300 cursor-pointer"
             >
               Cancel Edit
             </button>
           </div>
           
-          <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100/50 flex items-start gap-4">
-             <span className="text-xl">⚠️</span>
-             <p className="text-[9px] text-orange-700 font-black leading-relaxed uppercase tracking-widest">
-                Security Alert: This action will freeze your listing in the public domain. Our moderation team will re-validate all media and data points before reactivating your listing.
+          <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100/50 flex items-start gap-4">
+             <span className="text-xl">🛡️</span>
+             <p className="text-[9px] text-blue-700 font-black leading-relaxed uppercase tracking-widest">
+                Admin Privilege: You are editing this listing directly. Changes are applied instantly and do not require further verification.
              </p>
           </div>
         </form>
