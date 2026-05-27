@@ -463,7 +463,7 @@ function AdminDashboardContent() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 pt-24 pb-8 px-4 sm:px-8 overflow-x-hidden">
+      <main className="flex-1 min-w-0 pt-24 pb-8 px-4 sm:px-8 overflow-x-hidden">
         {/* Top Actions */}
         <div className="flex justify-end items-center gap-4 mb-6">
           <button 
@@ -1593,29 +1593,29 @@ function AdminDashboardContent() {
             )}
 
             {/* Announcements List */}
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-6 w-full max-w-full">
               {announcements.map((ann) => (
-                <div key={ann.id} className={`bg-white rounded-3xl p-6 border shadow-sm transition-all flex flex-col md:flex-row gap-6 justify-between items-stretch ${ann.is_active ? 'border-teal-100 hover:shadow-md' : 'border-gray-100 opacity-75'}`}>
+                <div key={ann.id} className={`bg-white rounded-3xl p-6 border shadow-sm transition-all flex flex-col lg:flex-row gap-6 justify-between items-stretch w-full max-w-full min-w-0 ${ann.is_active ? 'border-teal-100 hover:shadow-md' : 'border-gray-100 opacity-75'}`}>
                   {ann.image_url && (
                     <div className="w-full md:w-44 h-28 rounded-2xl overflow-hidden shrink-0 border border-gray-100 relative bg-gray-50">
                       <img src={ann.image_url} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-xl font-black text-gray-800 tracking-tight">{ann.title}</h3>
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${ann.is_active ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                        <h3 className="text-xl font-black text-gray-800 tracking-tight break-words max-w-full">{ann.title}</h3>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full shrink-0 ${ann.is_active ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
                           {ann.is_active ? 'Live Broadcast' : 'Inactive'}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-2xl line-clamp-3">
+                      <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-2xl line-clamp-3 break-all">
                         {ann.message}
                       </p>
                     </div>
                     {ann.url && (
-                      <p className="text-xs text-[#00b48f] font-bold mt-2 truncate">
-                        🔗 Action Link: <a href={ann.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{ann.url}</a>
+                      <p className="text-xs text-[#00b48f] font-bold mt-2 break-all">
+                        🔗 Action Link: <a href={ann.url} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{ann.url}</a>
                       </p>
                     )}
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 block">
@@ -1623,7 +1623,7 @@ function AdminDashboardContent() {
                     </span>
                   </div>
 
-                  <div className="flex md:flex-col gap-2 justify-center shrink-0 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[150px]">
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2 justify-center w-full lg:w-[150px] lg:shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-6">
                     <button
                       onClick={async () => {
                         const targetStatus = !ann.is_active;

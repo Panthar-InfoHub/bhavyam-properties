@@ -230,6 +230,7 @@ export default function AdminEditPropertyPage() {
                   <option value="House">House</option>
                   <option value="Commercial">Commercial</option>
                   <option value="Plot">Plot</option>
+                  <option value="Agricultural">Agricultural Land</option>
                 </select>
               </div>
               <div>
