@@ -376,7 +376,7 @@ function AdminDashboardContent() {
           .from('property-media')
           .getPublicUrl(filePath);
 
-        setNewAnn(prev => ({ ...prev, image_url: publicData.publicUrl }));
+        setNewAnn((prev: any) => ({ ...prev, image_url: publicData.publicUrl }));
         toast.success("Image uploaded successfully!");
       }
     } catch (err: any) {
@@ -1482,7 +1482,7 @@ function AdminDashboardContent() {
                           <img src={newAnn.image_url} className="w-full h-full object-cover" alt="Announcement upload" />
                           <button
                             type="button"
-                            onClick={() => setNewAnn(prev => ({ ...prev, image_url: '' }))}
+                            onClick={() => setNewAnn((prev: any) => ({ ...prev, image_url: '' }))}
                             className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 font-bold"
                           >
                             🗑️ Delete Image
@@ -2125,7 +2125,7 @@ function AdminDashboardContent() {
                        if (error) toast.error("Failed to update status");
                        else {
                          setJobApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'shortlisted' } : a));
-                         setSelectedApp(prev => ({ ...prev, status: 'shortlisted' }));
+                         setSelectedApp((prev: any) => ({ ...prev, status: 'shortlisted' }));
                          toast.success("Candidate Shortlisted");
                        }
                      }}
@@ -2141,7 +2141,7 @@ function AdminDashboardContent() {
                        if (error) toast.error("Failed to update status");
                        else {
                          setJobApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'rejected' } : a));
-                         setSelectedApp(prev => ({ ...prev, status: 'rejected' }));
+                         setSelectedApp((prev: any) => ({ ...prev, status: 'rejected' }));
                          toast.success("Application Rejected");
                        }
                      }}
