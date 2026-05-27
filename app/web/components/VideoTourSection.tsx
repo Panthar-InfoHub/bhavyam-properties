@@ -25,7 +25,7 @@ export default function VideoTourSection() {
         muted
         loop
         playsInline
-        className="absolute inset-0 z-0 w-full h-full object-cover brightness-[0.7] transition-transform duration-[2000ms] group-hover:scale-105"
+        className="absolute inset-0 z-0 w-full h-full object-cover object-top brightness-[0.7]"
       >
         <source
           src="https://eyhzfduixvzlgrmaahry.supabase.co/storage/v1/object/public/property-media/82f3f4e7-103c-47ab-9ca9-7ce81a81be67/bathrooms/WhatsApp%20Video%202026-04-30%20at%2023.04.45.mp4"

@@ -9,6 +9,8 @@ import Script from "next/script";
 import PremiumLoader from "@/components/ui/PremiumLoader";
 
 
+import { loadRazorpayScript } from "@/lib/razorpayClient";
+
 export default function MembershipPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,6 +134,15 @@ export default function MembershipPage() {
       }
 
       // 2. Open Razorpay Checkout
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+      }
+
+      if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+        throw new Error("Razorpay Client Key ID is not configured (NEXT_PUBLIC_RAZORPAY_KEY_ID is missing in Vercel environment variables).");
+      }
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,

@@ -8,10 +8,10 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSection';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Briefcase } from 'lucide-react';
 import VerificationManager from '@/components/admin/VerificationManager';
 
-type Section = 'overview' | 'properties' | 'pending_properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications' | 'loan_inquiries';
+type Section = 'overview' | 'properties' | 'pending_properties' | 'users' | 'transactions' | 'interests' | 'service_requests' | 'reviews' | 'agents' | 'agents_list' | 'plans' | 'verifications' | 'loan_inquiries' | 'announcements' | 'careers' | 'platform_fees';
 
 function AdminDashboardContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -63,6 +63,32 @@ function AdminDashboardContent() {
     credits_awarded: 0
   });
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isCreatingAnn, setIsCreatingAnn] = useState(false);
+  const [newAnn, setNewAnn] = useState<any>({
+    title: '',
+    message: '',
+    image_url: '',
+    url: ''
+  });
+  const [isSubmittingAnn, setIsSubmittingAnn] = useState(false);
+  const [annUploading, setAnnUploading] = useState(false);
+  const [annDragActive, setAnnDragActive] = useState(false);
+
+  // Careers States
+  const [vacancies, setVacancies] = useState<any[]>([]);
+  const [jobApplications, setJobApplications] = useState<any[]>([]);
+  const [isCreatingVacancy, setIsCreatingVacancy] = useState(false);
+  const [isSubmittingVacancy, setIsSubmittingVacancy] = useState(false);
+  const [newVacancy, setNewVacancy] = useState<any>({
+    role: '',
+    min_experience: '',
+    description: '',
+    last_date: ''
+  });
+  const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [careerFilterRole, setCareerFilterRole] = useState('all');
+  const [careerFilterStatus, setCareerFilterStatus] = useState('all');
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,6 +162,25 @@ function AdminDashboardContent() {
       pending: propList.filter((p: any) => p.status === 'pending').length,
       pendingAgents: (apps || []).filter((a: any) => a.status === 'pending').length
     });
+
+    // Fetch announcements (separate try-catch to avoid breaking the dashboard if table is missing)
+    try {
+      const { data: anns } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+      setAnnouncements(anns || []);
+    } catch (err) {
+      console.warn("Announcements table might not exist yet:", err);
+    }
+
+    // Fetch Careers data (separate try-catch to avoid breaking the dashboard if tables are missing)
+    try {
+      const { data: vacs } = await supabase.from('job_vacancies').select('*').order('created_at', { ascending: false });
+      setVacancies(vacs || []);
+
+      const { data: jobApps } = await supabase.from('job_applications').select('*, vacancy:job_vacancies(role)').order('created_at', { ascending: false });
+      setJobApplications(jobApps || []);
+    } catch (err) {
+      console.warn("Careers tables might not exist yet:", err);
+    }
 
     setIsLoading(false);
     if (showToast) {
@@ -301,6 +346,61 @@ function AdminDashboardContent() {
     }
   };
 
+  // Announcements Image Drag, Drop, and Upload Helpers
+  const handleAnnDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setAnnDragActive(true);
+    } else if (e.type === "dragleave") {
+      setAnnDragActive(false);
+    }
+  };
+
+  const uploadAnnImage = async (file: File) => {
+    if (!file) return;
+    setAnnUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `announcements/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('property-media')
+        .upload(filePath, file);
+
+      if (error) {
+        toast.error("Upload failed: " + error.message);
+      } else {
+        const { data: publicData } = supabase.storage
+          .from('property-media')
+          .getPublicUrl(filePath);
+
+        setNewAnn(prev => ({ ...prev, image_url: publicData.publicUrl }));
+        toast.success("Image uploaded successfully!");
+      }
+    } catch (err: any) {
+      toast.error("Error uploading image");
+    } finally {
+      setAnnUploading(false);
+    }
+  };
+
+  const handleAnnDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAnnDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await uploadAnnImage(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleAnnFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      await uploadAnnImage(e.target.files[0]);
+    }
+  };
+
   const navItems: { key: Section; label: string; icon: string }[] = [
     { key: 'overview', label: 'Analytics', icon: '📊' },
     { key: 'properties', label: 'All Properties', icon: '🏠' },
@@ -314,7 +414,10 @@ function AdminDashboardContent() {
     { key: 'transactions', label: 'Transactions', icon: '💸' },
     { key: 'verifications', label: 'Verifications', icon: '🛡️' },
     { key: 'plans', label: 'Plan Settings', icon: '⚙️' },
+    { key: 'platform_fees', label: 'Platform Fees', icon: '🏷️' },
     { key: 'reviews', label: 'Reviews', icon: '⭐' },
+    { key: 'announcements', label: 'Announcements', icon: '📢' },
+    { key: 'careers', label: 'Careers Control', icon: '💼' },
   ];
 
   if (isLoading) {
@@ -1085,7 +1188,7 @@ function AdminDashboardContent() {
 
         {/* ─── PLANS MANAGEMENT ─── */}
         {section === 'plans' && (
-          <div>
+          <div className="animate-in fade-in duration-300">
              <div className="flex justify-between items-center mb-6">
                <h1 className="text-3xl font-extrabold text-[#00579e]">Plan Control Center</h1>
                <button
@@ -1096,7 +1199,7 @@ function AdminDashboardContent() {
                </button>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {plans.map(p => (
+                {plans.filter(p => p.name !== 'Agent Application Fee' && p.name !== 'Property Verification Fee').map(p => (
                   <div key={p.id} className={`bg-white rounded-3xl p-8 border shadow-sm transition-all flex flex-col ${p.is_active ? 'border-teal-100 hover:shadow-xl' : 'opacity-60 bg-gray-50'}`}>
                     <div className="flex justify-between items-start mb-6">
                        <span className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-tighter ${p.type === 'subscription' ? 'bg-blue-100 text-blue-700' : p.type === 'credit_pack' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}`}>
@@ -1225,8 +1328,649 @@ function AdminDashboardContent() {
           </div>
         )}
 
+        {/* ─── UNIQUE PLATFORM FEES ─── */}
+        {section === 'platform_fees' && (
+          <div className="animate-in fade-in duration-300">
+             <div className="mb-8">
+               <h1 className="text-3xl font-extrabold text-[#00579e]">Platform Fees Control</h1>
+               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Configure flat-rate fees for Verification & Onboarding (Read-only setup, Edit only)</p>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+                {plans.filter(p => p.name === 'Agent Application Fee' || p.name === 'Property Verification Fee').map(p => (
+                  <div key={p.id} className={`bg-white rounded-3xl p-8 border shadow-sm transition-all flex flex-col ${p.is_active ? 'border-teal-100 hover:shadow-xl' : 'opacity-60 bg-gray-50'}`}>
+                    <div className="flex justify-between items-start mb-6">
+                       <span className="text-[10px] font-black px-2.5 py-1 rounded bg-amber-100 text-amber-700 uppercase tracking-widest">
+                          🛡️ Platform Fee
+                       </span>
+                       <button 
+                         onClick={() => updatePlan(p.id, { is_active: !p.is_active })}
+                         className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${p.is_active ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white'}`}
+                       >
+                         {p.is_active ? 'Deactivate' : 'Activate'}
+                       </button>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <input 
+                        type="text" 
+                        disabled
+                        className="w-full bg-gray-100 border-none font-black text-gray-400 text-xl rounded-lg px-2 py-1 cursor-not-allowed"
+                        value={p.name}
+                        placeholder="Plan Name"
+                      />
+                      <textarea 
+                        className="w-full bg-gray-50 border-none text-xs text-gray-500 font-bold italic outline-none focus:ring-2 focus:ring-teal-500/20 rounded-lg px-2 py-1 resize-none"
+                        value={p.description || ''}
+                        rows={2}
+                        onChange={(e) => setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, description: e.target.value } : plan))}
+                        placeholder="Description"
+                      />
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t border-gray-100 flex-1">
+                       <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Price (INR)</span>
+                          <input 
+                            type="number" 
+                            min="0"
+                            className="w-24 bg-gray-50 border-none text-right font-black text-[#112743] rounded-lg p-2 outline-none focus:ring-2 focus:ring-teal-500/20"
+                            value={p.price}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val >= 0) {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, price: val } : plan));
+                              } else if (e.target.value === '') {
+                                setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, price: '' } : plan));
+                              }
+                            }}
+                          />
+                       </div>
+                       
+                       {/* Features Editor */}
+                        <div className="pt-4 border-t border-gray-100 mt-4">
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Display Features (One per line)</p>
+                           <textarea 
+                             className="w-full bg-gray-50 border-none text-xs text-gray-600 font-bold outline-none focus:ring-2 focus:ring-teal-500/20 rounded-xl px-3 py-2 resize-none"
+                             value={Array.isArray(p.features) ? p.features.join('\n') : (typeof p.features === 'string' ? JSON.parse(p.features).join('\n') : '')}
+                             rows={5}
+                             onChange={(e) => {
+                               const newFeatures = e.target.value.split('\n').filter(f => f.trim() !== '');
+                               setPlans(prev => prev.map(plan => plan.id === p.id ? { ...plan, features: newFeatures } : plan));
+                             }}
+                             placeholder="e.g. Dynamic features listing"
+                           />
+                        </div>
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        if (p.price === '') {
+                          toast.error("Price is required");
+                          return;
+                        }
+                        updatePlan(p.id, {
+                          name: p.name,
+                          description: p.description,
+                          price: parseFloat(p.price as any),
+                          features: p.features,
+                        });
+                      }}
+                      className="mt-8 w-full bg-[#00579e] hover:bg-[#1a3a61] text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95"
+                    >
+                      Save Fee Changes
+                    </button>
+                  </div>
+                ))}
+             </div>
+          </div>
+        )}
+
         {section === 'verifications' && (
           <VerificationManager />
+        )}
+
+        {/* ─── ANNOUNCEMENTS CONTROL CENTER ─── */}
+        {section === 'announcements' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-extrabold text-[#00579e]">Announcements Manager</h1>
+              <button
+                onClick={() => setIsCreatingAnn(!isCreatingAnn)}
+                className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+              >
+                {isCreatingAnn ? 'Close Form' : '+ Create Announcement'}
+              </button>
+            </div>
+
+            {/* Creation Form */}
+            {isCreatingAnn && (
+              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl mb-8 animate-in fade-in slide-in-from-top-4 duration-300 max-w-2xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  <span>📢</span> Draft Platform Announcement
+                </h3>
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Announcement Title *</label>
+                    <input 
+                      type="text"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-800 font-bold"
+                      value={newAnn.title}
+                      onChange={(e) => setNewAnn({ ...newAnn, title: e.target.value })}
+                      placeholder="e.g. Mega Summer Offer! ☀️"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Description Message *</label>
+                    <textarea 
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium resize-none"
+                      value={newAnn.message}
+                      onChange={(e) => setNewAnn({ ...newAnn, message: e.target.value })}
+                      placeholder="Write a compelling description that users will read upon landing..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Image Upload Area */}
+                    <div className="flex flex-col">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Announcement Image</label>
+                      
+                      {newAnn.image_url ? (
+                        <div className="relative w-full h-[160px] rounded-2xl overflow-hidden border border-teal-100 shadow-inner group">
+                          <img src={newAnn.image_url} className="w-full h-full object-cover" alt="Announcement upload" />
+                          <button
+                            type="button"
+                            onClick={() => setNewAnn(prev => ({ ...prev, image_url: '' }))}
+                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 font-bold"
+                          >
+                            🗑️ Delete Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div 
+                          onDragEnter={handleAnnDrag}
+                          onDragOver={handleAnnDrag}
+                          onDragLeave={handleAnnDrag}
+                          onDrop={handleAnnDrop}
+                          onClick={() => document.getElementById('ann-file-input')?.click()}
+                          className={`w-full h-[160px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all duration-300 ${
+                            annDragActive 
+                              ? 'border-[#00b48f] bg-teal-50/50 scale-[1.01]' 
+                              : 'border-gray-200 hover:border-[#00b48f] hover:bg-teal-50/10'
+                          }`}
+                        >
+                          <input 
+                            id="ann-file-input"
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleAnnFileChange}
+                            className="hidden" 
+                          />
+                          {annUploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <span className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></span>
+                              <span className="text-xs font-bold text-teal-600">Uploading to Supabase...</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <span className="text-3xl mb-2">📸</span>
+                              <p className="text-xs font-black text-gray-700 uppercase tracking-wider mb-1">Drag & Drop Image Here</p>
+                              <p className="text-[10px] text-gray-400 font-bold">Or click to browse files (JPEG, PNG, WEBP)</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Links & Manual URL Option */}
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Target Action Link (Optional)</label>
+                        <input 
+                          type="url"
+                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium"
+                          value={newAnn.url}
+                          onChange={(e) => setNewAnn({ ...newAnn, url: e.target.value })}
+                          placeholder="https://bhavyamproperties.com/membership"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Or Paste Image URL Manually</label>
+                        <input 
+                          type="url"
+                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium"
+                          value={newAnn.image_url}
+                          onChange={(e) => setNewAnn({ ...newAnn, image_url: e.target.value })}
+                          placeholder="https://images.unsplash.com/..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={async () => {
+                      if (!newAnn.title || !newAnn.message) {
+                        toast.error("Title and Message are required");
+                        return;
+                      }
+                      setIsSubmittingAnn(true);
+                      try {
+                        // 1. Deactivate other active announcements
+                        await supabase.from('announcements').update({ is_active: false } as any).eq('is_active', true);
+                        
+                        // 2. Insert new active announcement
+                        const { data, error } = await supabase.from('announcements').insert({
+                          title: newAnn.title,
+                          message: newAnn.message,
+                          image_url: newAnn.image_url || null,
+                          url: newAnn.url || null,
+                          is_active: true
+                        } as any).select().single();
+
+                        if (error) {
+                          toast.error("Failed to publish: " + error.message);
+                        } else if (data) {
+                          setAnnouncements(prev => [data, ...prev.map(a => ({ ...a, is_active: false }))]);
+                          toast.success("Announcement published successfully!");
+                          setIsCreatingAnn(false);
+                          setNewAnn({ title: '', message: '', image_url: '', url: '' });
+                        }
+                      } catch (err: any) {
+                        toast.error("Database error. Ensure migrations have run.");
+                      } finally {
+                        setIsSubmittingAnn(false);
+                      }
+                    }}
+                    disabled={isSubmittingAnn}
+                    className="w-full bg-[#00579e] hover:bg-[#1a3a61] text-white text-xs font-black uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95 disabled:opacity-50 mt-4 cursor-pointer"
+                  >
+                    {isSubmittingAnn ? 'Publishing...' : 'Publish & Broadcast Live'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Announcements List */}
+            <div className="grid grid-cols-1 gap-6">
+              {announcements.map((ann) => (
+                <div key={ann.id} className={`bg-white rounded-3xl p-6 border shadow-sm transition-all flex flex-col md:flex-row gap-6 justify-between items-stretch ${ann.is_active ? 'border-teal-100 hover:shadow-md' : 'border-gray-100 opacity-75'}`}>
+                  {ann.image_url && (
+                    <div className="w-full md:w-44 h-28 rounded-2xl overflow-hidden shrink-0 border border-gray-100 relative bg-gray-50">
+                      <img src={ann.image_url} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <h3 className="text-xl font-black text-gray-800 tracking-tight">{ann.title}</h3>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${ann.is_active ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                          {ann.is_active ? 'Live Broadcast' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-2xl line-clamp-3">
+                        {ann.message}
+                      </p>
+                    </div>
+                    {ann.url && (
+                      <p className="text-xs text-[#00b48f] font-bold mt-2 truncate">
+                        🔗 Action Link: <a href={ann.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{ann.url}</a>
+                      </p>
+                    )}
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 block">
+                      Published {new Date(ann.created_at).toLocaleDateString()} at {new Date(ann.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <div className="flex md:flex-col gap-2 justify-center shrink-0 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[150px]">
+                    <button
+                      onClick={async () => {
+                        const targetStatus = !ann.is_active;
+                        try {
+                          if (targetStatus) {
+                            // Deactivate others
+                            await supabase.from('announcements').update({ is_active: false } as any).eq('is_active', true);
+                          }
+                          const { error } = await supabase.from('announcements').update({ is_active: targetStatus } as any).eq('id', ann.id);
+                          if (error) {
+                            toast.error("Failed to update: " + error.message);
+                          } else {
+                            setAnnouncements(prev => prev.map(a => {
+                              if (a.id === ann.id) return { ...a, is_active: targetStatus };
+                              if (targetStatus) return { ...a, is_active: false }; // deactivate others
+                              return a;
+                            }));
+                            toast.success(targetStatus ? "Announcement broadcast is active!" : "Announcement deactivated.");
+                          }
+                        } catch (e) {
+                          toast.error("Database connection failure");
+                        }
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer text-center ${ann.is_active ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200' : 'bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white border border-teal-100'}`}
+                    >
+                      {ann.is_active ? 'Deactivate' : 'Activate Live'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to delete this announcement?')) return;
+                        try {
+                          const { error } = await supabase.from('announcements').delete().eq('id', ann.id);
+                          if (error) {
+                            toast.error("Failed to delete: " + error.message);
+                          } else {
+                            setAnnouncements(prev => prev.filter(a => a.id !== ann.id));
+                            toast.success("Announcement deleted successfully.");
+                          }
+                        } catch (e) {
+                          toast.error("Database deletion error");
+                        }
+                      }}
+                      className="w-full bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer text-center"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {announcements.length === 0 && (
+                <div className="bg-white p-16 rounded-3xl border border-gray-100 text-center text-gray-400 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <span className="text-5xl">📢</span>
+                  <p className="font-bold text-lg text-gray-500 uppercase tracking-widest">No Announcements Drafted</p>
+                  <p className="text-sm text-gray-400 max-w-sm">Draft announcements above to communicate new deals, membership discounts, or platform updates to landing users.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── CAREERS CONTROL PANEL ─── */}
+        {section === 'careers' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header & Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <h1 className="text-3xl font-extrabold text-[#00579e]">Careers Control Center</h1>
+              <button
+                onClick={() => setIsCreatingVacancy(!isCreatingVacancy)}
+                className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-black uppercase tracking-widest px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 cursor-pointer self-start sm:self-auto"
+              >
+                {isCreatingVacancy ? 'Close Form' : '+ Publish Job Vacancy'}
+              </button>
+            </div>
+
+            {/* Creation Form */}
+            {isCreatingVacancy && (
+              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl max-w-3xl animate-in fade-in slide-in-from-top-4 duration-300">
+                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  <span>💼</span> Publish New Job Vacancy
+                </h3>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Job Role / Title *</label>
+                      <input 
+                        type="text"
+                        required
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-800 font-bold"
+                        value={newVacancy.role}
+                        onChange={(e) => setNewVacancy({ ...newVacancy, role: e.target.value })}
+                        placeholder="e.g. Senior Frontend Architect"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Required Experience *</label>
+                      <input 
+                        type="text"
+                        required
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium"
+                        value={newVacancy.min_experience}
+                        onChange={(e) => setNewVacancy({ ...newVacancy, min_experience: e.target.value })}
+                        placeholder="e.g. 3+ Years"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Job Description & Responsibilities *</label>
+                    <textarea 
+                      required
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium resize-none"
+                      value={newVacancy.description}
+                      onChange={(e) => setNewVacancy({ ...newVacancy, description: e.target.value })}
+                      placeholder="Outline core requirements, duties, and technology stack..."
+                      rows={5}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Application Deadline *</label>
+                    <input 
+                      type="date"
+                      required
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 text-gray-700 font-medium cursor-pointer"
+                      value={newVacancy.last_date}
+                      onChange={(e) => setNewVacancy({ ...newVacancy, last_date: e.target.value })}
+                    />
+                  </div>
+
+                  <button 
+                    onClick={async () => {
+                      if (!newVacancy.role || !newVacancy.min_experience || !newVacancy.description || !newVacancy.last_date) {
+                        toast.error("Please fill out all required fields");
+                        return;
+                      }
+                      setIsSubmittingVacancy(true);
+                      try {
+                        const { data, error } = await supabase.from('job_vacancies').insert({
+                          role: newVacancy.role,
+                          min_experience: newVacancy.min_experience,
+                          description: newVacancy.description,
+                          last_date: newVacancy.last_date,
+                          is_active: true
+                        } as any).select().single();
+
+                        if (error) {
+                          toast.error("Failed to publish vacancy: " + error.message);
+                        } else if (data) {
+                          setVacancies(prev => [data, ...prev]);
+                          toast.success("Job vacancy published successfully!");
+                          setIsCreatingVacancy(false);
+                          setNewVacancy({ role: '', min_experience: '', description: '', last_date: '' });
+                        }
+                      } catch (err) {
+                        toast.error("Database connection failure. Ensure migrations have run.");
+                      } finally {
+                        setIsSubmittingVacancy(false);
+                      }
+                    }}
+                    disabled={isSubmittingVacancy}
+                    className="w-full bg-[#00579e] hover:bg-[#1a3a61] text-white text-xs font-black uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95 disabled:opacity-50 mt-4 cursor-pointer text-center"
+                  >
+                    {isSubmittingVacancy ? 'Publishing...' : 'Publish & Make Live'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Split Management Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+              
+              {/* Left Column: Vacancies List */}
+              <div className="lg:col-span-1 space-y-4">
+                <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest px-2">Job Vacancies Feed ({vacancies.length})</h3>
+                <div className="flex flex-col gap-4">
+                  {vacancies.map(vac => (
+                    <div key={vac.id} className={`bg-white rounded-2xl p-5 border shadow-sm flex flex-col justify-between ${vac.is_active ? 'border-teal-100' : 'opacity-60 bg-gray-50'}`}>
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-gray-800 text-base">{vac.role}</h4>
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${vac.is_active ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                            {vac.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Exp: {vac.min_experience}</p>
+                        <p className="text-xs text-gray-500 mt-2 line-clamp-3 leading-relaxed whitespace-pre-wrap">{vac.description}</p>
+                      </div>
+
+                      <div className="border-t border-gray-100 mt-4 pt-4 flex gap-2 justify-end">
+                        <button
+                          onClick={async () => {
+                            const newStatus = !vac.is_active;
+                            const { error } = await supabase.from('job_vacancies').update({ is_active: newStatus } as any).eq('id', vac.id);
+                            if (error) {
+                              toast.error("Failed to update status");
+                            } else {
+                              setVacancies(prev => prev.map(v => v.id === vac.id ? { ...v, is_active: newStatus } : v));
+                              toast.success(newStatus ? "Vacancy activated." : "Vacancy deactivated.");
+                            }
+                          }}
+                          className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${vac.is_active ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100' : 'bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white border border-teal-100'}`}
+                        >
+                          {vac.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Are you sure you want to delete this vacancy?')) return;
+                            const { error } = await supabase.from('job_vacancies').delete().eq('id', vac.id);
+                            if (error) {
+                              toast.error("Failed to delete vacancy");
+                            } else {
+                              setVacancies(prev => prev.filter(v => v.id !== vac.id));
+                              toast.success("Vacancy deleted.");
+                            }
+                          }}
+                          className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {vacancies.length === 0 && (
+                    <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center text-gray-400 font-medium shadow-sm">No vacancies published.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Applications Auditor */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
+                  <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest">Candidate Applications</h3>
+                  
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-2">
+                    <select
+                      value={careerFilterRole}
+                      onChange={(e) => setCareerFilterRole(e.target.value)}
+                      className="bg-white border text-[11px] font-bold text-gray-600 border-gray-200 outline-none px-3 py-1.5 rounded-lg shadow-sm focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="all">All Profiles</option>
+                      <option value="general">Self-Applied / General</option>
+                      {vacancies.map(vac => (
+                        <option key={vac.id} value={vac.id}>{vac.role}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={careerFilterStatus}
+                      onChange={(e) => setCareerFilterStatus(e.target.value)}
+                      className="bg-white border text-[11px] font-bold text-gray-600 border-gray-200 outline-none px-3 py-1.5 rounded-lg shadow-sm focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="shortlisted">Shortlisted</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Audit Grid list */}
+                <div className="flex flex-col gap-4">
+                  {jobApplications
+                    .filter(app => {
+                      if (careerFilterRole === 'all') return true;
+                      if (careerFilterRole === 'general') return app.vacancy_id === null;
+                      return app.vacancy_id === careerFilterRole;
+                    })
+                    .filter(app => {
+                      if (careerFilterStatus === 'all') return true;
+                      return app.status === careerFilterStatus;
+                    })
+                    .map(app => (
+                      <div
+                        key={app.id}
+                        onClick={() => setSelectedApp(app)}
+                        className={`bg-white rounded-2xl border shadow-sm p-5 cursor-pointer hover:shadow-md hover:translate-x-0.5 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-l-4 ${
+                          app.status === 'shortlisted' ? 'border-l-teal-400' : app.status === 'rejected' ? 'border-l-red-400' : 'border-l-yellow-400'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0 text-left">
+                          <h4 className="font-bold text-gray-800 text-base">{app.full_name}</h4>
+                          <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">
+                            Role: <span className="text-[#00579e]">{app.vacancy?.role || 'Self-Applied / General'}</span> &nbsp;·&nbsp; Exp: {app.experience}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-medium mt-1 truncate">📞 {app.phone} &nbsp;·&nbsp; ✉️ {app.email} &nbsp;·&nbsp; Applied {new Date(app.created_at).toLocaleDateString()}</p>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                            app.status === 'shortlisted' ? 'bg-teal-50 text-teal-700' : app.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-700'
+                          }`}>
+                            {app.status}
+                          </span>
+                          <div className="flex gap-1.5">
+                            {app.status !== 'shortlisted' && (
+                              <button
+                                onClick={async () => {
+                                  const { error } = await supabase.from('job_applications').update({ status: 'shortlisted' } as any).eq('id', app.id);
+                                  if (error) toast.error("Failed to shortlist candidate");
+                                  else {
+                                    setJobApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'shortlisted' } : a));
+                                    toast.success("Candidate Shortlisted");
+                                  }
+                                }}
+                                className="bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white p-2 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+                                title="Shortlist Candidate"
+                              >
+                                ✓
+                              </button>
+                            )}
+                            {app.status !== 'rejected' && (
+                              <button
+                                onClick={async () => {
+                                  const { error } = await supabase.from('job_applications').update({ status: 'rejected' } as any).eq('id', app.id);
+                                  if (error) toast.error("Failed to reject candidate");
+                                  else {
+                                    setJobApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'rejected' } : a));
+                                    toast.success("Candidate Application Rejected");
+                                  }
+                                }}
+                                className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+                                title="Reject Application"
+                              >
+                                ✗
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {jobApplications.filter(app => {
+                    if (careerFilterRole === 'all') return true;
+                    if (careerFilterRole === 'general') return app.vacancy_id === null;
+                    return app.vacancy_id === careerFilterRole;
+                  }).filter(app => {
+                    if (careerFilterStatus === 'all') return true;
+                    return app.status === careerFilterStatus;
+                  }).length === 0 && (
+                    <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400 font-medium shadow-sm">No candidate applications match this filter query.</div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
         )}
 
       </main>
@@ -1302,6 +2046,111 @@ function AdminDashboardContent() {
                    Mark as Contacted
                  </button>
                )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CANDIDATE APPLICATION DETAIL MODAL */}
+      {selectedApp && (
+        <div className="fixed inset-0 bg-[#112743]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedApp(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedApp(null)} className="absolute top-4 right-4 h-8 w-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-black transition-colors cursor-pointer z-[100]">✕</button>
+
+            {/* Header */}
+            <div className="bg-[#00579e] p-6 text-white pb-8 relative overflow-hidden text-left">
+               <div className="absolute top-0 right-0 opacity-10">
+                  <Briefcase className="w-32 h-32" />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-[#56bdfa] mb-1 relative z-10">Candidate Application</p>
+               <h2 className="text-2xl font-black relative z-10 mb-1">{selectedApp.full_name}</h2>
+               <p className="text-xs text-blue-100 font-bold relative z-10 uppercase tracking-wider">📞 {selectedApp.phone} &nbsp;|&nbsp; ✉️ {selectedApp.email}</p>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-6 text-left">
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Target Profile</p>
+                     <p className="text-sm font-bold text-gray-800">{selectedApp.vacancy?.role || 'Self-Applied / General'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Applicant Experience</p>
+                     <p className="text-sm font-bold text-gray-800">{selectedApp.experience}</p>
+                  </div>
+               </div>
+
+               {selectedApp.cover_letter && (
+                 <div className="pl-4 border-l-2 border-teal-300">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Cover Note / Experience Details</p>
+                    <p className="text-sm text-gray-700 italic leading-relaxed">"{selectedApp.cover_letter}"</p>
+                 </div>
+               )}
+
+               {/* Clickable Resume Link */}
+               {selectedApp.resume_url && (
+                 <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <span className="text-2xl">📄</span>
+                       <div>
+                          <p className="text-xs font-black text-teal-800 uppercase tracking-wider">Resume Document</p>
+                          <p className="text-[10px] text-teal-600 font-bold">PDF / Word file attached by candidate</p>
+                       </div>
+                    </div>
+                    <a 
+                      href={selectedApp.resume_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white text-teal-600 border border-teal-200 hover:bg-teal-600 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      View Resume Document ↗
+                    </a>
+                 </div>
+               )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="bg-gray-50 p-4 px-6 border-t border-gray-100 flex justify-between items-center bg-gray-50 rounded-b-3xl">
+               <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full ${
+                 selectedApp.status === 'shortlisted' ? 'bg-teal-100 text-teal-800' : selectedApp.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+               }`}>
+                 Status: {selectedApp.status}
+               </span>
+               
+               <div className="flex gap-2">
+                 {selectedApp.status !== 'shortlisted' && (
+                   <button 
+                     onClick={async () => {
+                       const { error } = await supabase.from('job_applications').update({ status: 'shortlisted' } as any).eq('id', selectedApp.id);
+                       if (error) toast.error("Failed to update status");
+                       else {
+                         setJobApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'shortlisted' } : a));
+                         setSelectedApp(prev => ({ ...prev, status: 'shortlisted' }));
+                         toast.success("Candidate Shortlisted");
+                       }
+                     }}
+                     className="bg-[#00b48f] hover:bg-teal-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-lg transition-all shadow-md cursor-pointer"
+                   >
+                     Shortlist
+                   </button>
+                 )}
+                 {selectedApp.status !== 'rejected' && (
+                   <button 
+                     onClick={async () => {
+                       const { error } = await supabase.from('job_applications').update({ status: 'rejected' } as any).eq('id', selectedApp.id);
+                       if (error) toast.error("Failed to update status");
+                       else {
+                         setJobApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'rejected' } : a));
+                         setSelectedApp(prev => ({ ...prev, status: 'rejected' }));
+                         toast.success("Application Rejected");
+                       }
+                     }}
+                     className="bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-lg transition-all shadow-md cursor-pointer"
+                   >
+                     Reject
+                   </button>
+                 )}
+               </div>
             </div>
           </div>
         </div>

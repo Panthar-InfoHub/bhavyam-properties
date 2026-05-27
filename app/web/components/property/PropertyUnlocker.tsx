@@ -8,6 +8,7 @@ import Link from 'next/link';
 import PhoneVerificationModal from '@/components/auth/PhoneVerificationModal';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
+import { loadRazorpayScript } from '@/lib/razorpayClient';
 
 type AccessType = 'plan' | 'unlock' | 'credit' | 'admin' | 'membership' | null;
 
@@ -193,6 +194,15 @@ export default function PropertyUnlocker({ propertyId }: { propertyId: string })
           }
         }, 1500);
         return;
+      }
+
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+      }
+
+      if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+        throw new Error("Razorpay Client Key ID is not configured (NEXT_PUBLIC_RAZORPAY_KEY_ID is missing in Vercel environment variables).");
       }
 
       const options = {

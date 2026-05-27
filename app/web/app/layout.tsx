@@ -8,6 +8,7 @@ import GlobalPreloader from "@/components/ui/GlobalPreloader";
 import WhatsAppFAB from "@/components/WhatsAppFAB";
 import VerifyFAB from "@/components/VerifyFAB";
 import LoanFAB from "@/components/LoanFAB";
+import AnnouncementModal from "@/components/ui/AnnouncementModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,6 +70,7 @@ export default function RootLayout({
         <WhatsAppFAB />
         <VerifyFAB />
         <LoanFAB />
+        <AnnouncementModal />
         <Footer />
       </body>
     </html>

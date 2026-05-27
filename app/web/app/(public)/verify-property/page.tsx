@@ -8,6 +8,7 @@ import { ShieldCheck, Upload, MapPin, Building2, User, FileText, Camera, Video, 
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import Script from 'next/script';
+import { loadRazorpayScript } from '@/lib/razorpayClient';
 
 export default function VerifyPropertyPage() {
   const router = useRouter();
@@ -229,6 +230,15 @@ export default function VerifyPropertyPage() {
       }
 
       // Step C: Live Razorpay order checkout
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+      }
+
+      if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+        throw new Error("Razorpay Client Key ID is not configured (NEXT_PUBLIC_RAZORPAY_KEY_ID is missing in Vercel environment variables).");
+      }
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -623,7 +633,7 @@ export default function VerifyPropertyPage() {
             >
               {isSubmitting ? 'Processing Documents...' : (
                 <>
-                  {(!user || isFormValid) ? 'Submit For Verification' : 'Fill All Required Fields'}
+                  {(!user || isFormValid) ? `Pay ₹${verificationFee} & Submit` : 'Fill All Required Fields'}
                   <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}

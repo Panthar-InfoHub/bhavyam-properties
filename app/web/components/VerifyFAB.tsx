@@ -20,7 +20,7 @@ export default function VerifyFAB() {
   return (
     <Link
       href="/verify-property"
-      className="fixed bottom-3 left-3 z-[100] group flex items-center gap-1.5 bg-[#00ecbd] hover:bg-white text-[#112743] px-3.5 py-2 md:px-5 md:py-2.5 rounded-full font-black text-[9px] md:text-[10px] uppercase tracking-wider shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition-all duration-300 animate-in fade-in slide-in-from-bottom-10 duration-500"
+      className="fixed top-32 right-2.5 z-[90] w-[125px] md:w-[145px] justify-center group flex items-center gap-1.5 bg-[#00ecbd] hover:bg-white text-[#112743] py-2 md:py-2.5 rounded-full font-black text-[9px] md:text-[10px] uppercase tracking-wider shadow-lg border-2 border-white hover:scale-105 active:scale-95 transition-all duration-300 animate-in fade-in slide-in-from-top-10 duration-500 cursor-pointer focus:outline-none"
       aria-label="Get Your Property Verified"
     >
       <ShieldCheck className="w-4 h-4 md:w-4.5 md:h-4.5 animate-pulse text-[#112743] fill-none" />

@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
+  const [agentApp, setAgentApp] = useState<any>(null);
+  const [jobApps, setJobApps] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,6 +32,26 @@ export default function ProfilePage() {
       if (!prof) { router.replace('/login'); return; }
 
       setProfile(prof);
+
+      // Defensively fetch applications
+      try {
+        const { data: agentData } = await supabase
+          .from('agent_applications')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        setAgentApp(agentData);
+
+        const { data: jobData } = await supabase
+          .from('job_applications')
+          .select('*, vacancy:job_vacancies(role)')
+          .eq('email', prof.email)
+          .order('created_at', { ascending: false });
+        setJobApps(jobData || []);
+      } catch (err) {
+        console.warn("Could not load application statuses:", err);
+      }
+
       setIsLoading(false);
     };
 
@@ -118,6 +140,104 @@ export default function ProfilePage() {
                <p className="text-gray-500 font-medium leading-relaxed italic">
                   {profile?.bio || "You haven't added a bio yet. Tell us a bit about yourself in the 'Edit Profile' section."}
                </p>
+            </div>
+
+            {/* Career & Partner Applications (Always Visible for all user types) */}
+            <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-xl text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-black text-[#112743] uppercase tracking-widest flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-sm">💼</span>
+                    Application Status Tracker
+                  </h2>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Real-time onboarding & career submissions (Read-Only)</p>
+                </div>
+                <span className="bg-gray-50 text-gray-400 border border-gray-100 text-[8px] font-black uppercase tracking-widest px-3.5 py-1.5 rounded-full w-fit self-start sm:self-auto">
+                  🔒 No Edit Mode
+                </span>
+              </div>
+
+              {!agentApp && (!jobApps || jobApps.length === 0) ? (
+                <div className="border-2 border-dashed border-gray-100 rounded-3xl p-10 text-center flex flex-col items-center justify-center">
+                  <span className="text-4xl mb-3">📁</span>
+                  <p className="text-gray-800 font-extrabold text-base tracking-tight">No Active Applications</p>
+                  <p className="text-gray-400 font-semibold text-xs mt-1 max-w-md text-center">
+                    You haven't submitted any applications for our partner agent program or employee job vacancies yet.
+                  </p>
+                  <div className="flex flex-wrap gap-4 mt-6">
+                    {profile?.role !== 'agent' && (
+                      <Link 
+                        href="/user/apply-agent" 
+                        className="bg-[#112743] hover:bg-[#1a3a60] text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-md"
+                      >
+                        Apply as Agent
+                      </Link>
+                    )}
+                    <Link 
+                      href="/careers" 
+                      className="bg-teal-500 hover:bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-md"
+                    >
+                      Browse Vacancies
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Agent Application */}
+                  {agentApp && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-gradient-to-r from-gray-50/50 to-white rounded-2xl border border-gray-100 gap-4 shadow-xs">
+                      <div className="flex items-start gap-4">
+                        <span className="text-3xl mt-0.5">🤝</span>
+                        <div>
+                          <p className="font-extrabold text-gray-800 text-base">Partner Agent Application</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Role: Registered Platform Agent</p>
+                          <p className="text-[10px] font-medium text-gray-400 mt-1">
+                            Submitted: {new Date(agentApp.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border ${
+                          agentApp.status === 'approved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : agentApp.status === 'rejected'
+                            ? 'bg-rose-50 text-rose-600 border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border-amber-100'
+                        }`}>
+                          {agentApp.status}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Job Applications */}
+                  {jobApps.map((job) => (
+                    <div key={job.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-gradient-to-r from-gray-50/50 to-white rounded-2xl border border-gray-100 gap-4 shadow-xs">
+                      <div className="flex items-start gap-4">
+                        <span className="text-3xl mt-0.5">🏢</span>
+                        <div>
+                          <p className="font-extrabold text-gray-800 text-base">Job Application</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Role: {job.vacancy?.role || 'Self-Applied / General'}</p>
+                          <p className="text-[10px] font-medium text-gray-400 mt-1">
+                            Submitted: {new Date(job.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border ${
+                          job.status === 'shortlisted'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : job.status === 'rejected'
+                            ? 'bg-rose-50 text-rose-600 border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border-amber-100'
+                        }`}>
+                          {job.status === 'shortlisted' ? 'shortlisted' : job.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             {profile?.role === 'agent' && profile?.agent_code && (

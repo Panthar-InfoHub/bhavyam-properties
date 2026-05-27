@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
+import { loadRazorpayScript } from '@/lib/razorpayClient';
 
 export default function ApplyAgentPage() {
   const [hasApplied, setHasApplied] = useState(false);
@@ -241,6 +242,15 @@ export default function ApplyAgentPage() {
         }
 
         // Live Razorpay order checkout
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded) {
+          throw new Error("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+        }
+
+        if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+          throw new Error("Razorpay Client Key ID is not configured (NEXT_PUBLIC_RAZORPAY_KEY_ID is missing in Vercel environment variables).");
+        }
+
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: order.amount,
@@ -614,15 +624,15 @@ export default function ApplyAgentPage() {
                           </div>
                       </div>
 
-                     <div className="flex justify-center pt-4">
-                         <button 
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-[#00c69d] hover:bg-[#00b48f] text-white font-black py-5 px-16 rounded-xl transition-all shadow-[0_15px_30px_rgba(0,198,157,0.2)] hover:shadow-[0_20px_40px_rgba(0,198,157,0.3)] disabled:opacity-50 text-sm uppercase tracking-widest active:scale-95"
-                         >
-                            {isSubmitting ? 'Processing Submission...' : 'Submit Application'}
-                         </button>
-                     </div>
+                      <div className="flex justify-center pt-4">
+                          <button 
+                             type="submit"
+                             disabled={isSubmitting}
+                             className="bg-[#00c69d] hover:bg-[#00b48f] text-white font-black py-5 px-16 rounded-xl transition-all shadow-[0_15px_30px_rgba(0,198,157,0.2)] hover:shadow-[0_20px_40px_rgba(0,198,157,0.3)] disabled:opacity-50 text-sm uppercase tracking-widest active:scale-95"
+                          >
+                             {isSubmitting ? 'Processing Submission...' : `Pay ₹${agentFee} & Submit Application`}
+                          </button>
+                      </div>
                  </form>
              </div>
          </div>

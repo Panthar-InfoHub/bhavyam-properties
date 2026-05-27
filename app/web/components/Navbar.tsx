@@ -238,6 +238,9 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
             <Link href="/membership" className={`transition-colors ${pathname === '/membership' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Membership</Link>
           </li>
           <li>
+            <Link href="/careers" className={`transition-colors ${pathname === '/careers' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>Careers</Link>
+          </li>
+          <li>
             <Link href="/terms-and-conditions" className={`transition-colors ${pathname === '/terms-and-conditions' ? 'text-[#00b48f]' : 'hover:text-[#00b48f]'}`}>T&C</Link>
           </li>
           <li>
@@ -369,30 +372,18 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
             </Link>
           )}
 
-          {/* Loan Options Button */}
-          <button
-            onClick={() => setIsLoanModalOpen(true)}
-            suppressHydrationWarning
-            className="hidden md:flex items-center gap-2 bg-[#112743] hover:bg-[#1a3b63] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-blue-900/10"
-          >
-            <div className="w-5 h-5 bg-white text-[#112743] rounded-full flex items-center justify-center shadow-sm">
-              <span className="text-xs group-hover:scale-110 transition-transform font-bold">🏦</span>
-            </div>
-            <span className="whitespace-nowrap">Loan Options</span>
-          </button>
-
           {/* Add Property Button (Always Visible) */}
           <button
             onClick={handleAddProperty}
             suppressHydrationWarning
-            className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20"
+            className="hidden md:flex items-center gap-2 bg-[#00b48f] hover:bg-[#00c69d] text-white px-3.5 py-2.5 rounded-full text-sm font-semibold transition-all group shadow-md shadow-teal-500/20 md:mr-[-34px]"
           >
             <div className="w-5 h-5 bg-white text-[#00b48f] rounded-full flex items-center justify-center shadow-sm">
               <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <span className="whitespace-nowrap">Add Property</span>
+            <span className="whitespace-nowrap font-semibold">Add Property</span>
           </button>
         </div>
       </nav>
@@ -453,6 +444,7 @@ export default function Navbar({ transparent: propTransparent }: NavbarProps) {
                   { label: 'About', href: '/about' },
                   { label: 'Properties', href: '/properties' },
                   { label: 'Membership', href: '/membership' },
+                  { label: 'Careers', href: '/careers' },
                   { label: 'Terms & Conditions', href: '/terms-and-conditions' },
                   { label: 'Privacy Policy', href: '/privacy-policy' }
                 ]).map((item) => (
