@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter, useParams } from 'next/navigation';
+import { uploadToR2 } from '@/lib/upload-utils';
 import toast from 'react-hot-toast';
 
 export default function AdminEditPropertyPage() {
@@ -84,15 +85,8 @@ export default function AdminEditPropertyPage() {
   }, [id, router]);
 
   const uploadFile = async (file: File, folder: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-    const filePath = `${currentUser.id}/${folder}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage.from('property-media').upload(filePath, file);
-    if (uploadError) throw uploadError;
-    
-    const { data } = supabase.storage.from('property-media').getPublicUrl(filePath);
-    return data.publicUrl;
+    const folderPath = `property-media/${currentUser.id}/${folder}`;
+    return await uploadToR2(file, folderPath);
   };
 
   const deleteMedia = async (mediaId: string) => {

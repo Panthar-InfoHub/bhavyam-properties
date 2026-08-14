@@ -6,6 +6,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { ArrowRight, Briefcase, Award, CheckCircle2, CloudUpload, X, Users, Compass, HelpCircle } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
+import { uploadToR2 } from '@/lib/upload-utils';
 
 export default function CareersPage() {
   const [activeTab, setActiveTab] = useState<'agent' | 'employee'>('agent');
@@ -85,23 +86,9 @@ export default function CareersPage() {
 
     setIsUploadingResume(true);
     try {
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `resumes/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from('property-media') // Use existing bucket
-        .upload(filePath, file);
-
-      if (error) {
-        toast.error("Resume upload failed: " + error.message);
-      } else {
-        const { data: publicData } = supabase.storage
-          .from('property-media')
-          .getPublicUrl(filePath);
-
-        setResumeUrl(publicData.publicUrl);
-        toast.success("Resume uploaded successfully!");
-      }
+      const publicUrl = await uploadToR2(file, 'resumes');
+      setResumeUrl(publicUrl);
+      toast.success("Resume uploaded successfully!");
     } catch (err) {
       toast.error("Error uploading resume doc");
     } finally {

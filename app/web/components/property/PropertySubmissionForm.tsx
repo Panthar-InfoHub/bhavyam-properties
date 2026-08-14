@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { uploadToR2 } from '@/lib/upload-utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -202,16 +203,11 @@ export default function PropertySubmissionForm() {
   const uploadFileToSupabase = async (file: File, folder: string) => {
     if (!currentUser) throw new Error("No authenticated user");
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-    // Path: user_id/category/filename (e.g. "82f3.../bedrooms/abc.jpg")
-    const filePath = `${currentUser.id}/${folder}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage.from('property-media').upload(filePath, file);
-    if (uploadError) throw uploadError;
+    // Path: property-media/user_id/category (e.g. "property-media/82f3.../bedrooms")
+    const folderPath = `property-media/${currentUser.id}/${folder}`;
     
-    const { data } = supabase.storage.from('property-media').getPublicUrl(filePath);
-    return data.publicUrl;
+    // uploadToR2 already generates a unique filename to prevent collisions
+    return await uploadToR2(file, folderPath);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

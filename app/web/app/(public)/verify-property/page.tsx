@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck, Upload, MapPin, Building2, User, FileText, Camera, Video, ArrowRight, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PremiumLoader from '@/components/ui/PremiumLoader';
+import { uploadToR2 } from '@/lib/upload-utils';
 import Script from 'next/script';
 import { loadRazorpayScript } from '@/lib/razorpayClient';
 
@@ -108,12 +109,8 @@ export default function VerifyPropertyPage() {
   };
 
   const uploadFile = async (file: File, path: string) => {
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-    const filePath = `${path}/${fileName}`;
-    const { error } = await supabase.storage.from('verification-docs').upload(filePath, file);
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from('verification-docs').getPublicUrl(filePath);
-    return publicUrl;
+    const folderPath = `verification-docs/${path}`;
+    return await uploadToR2(file, folderPath);
   };
 
   const isFormValid = !!(

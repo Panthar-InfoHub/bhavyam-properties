@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { uploadToR2 } from '@/lib/upload-utils';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import ServiceRequestsSection from '@/components/dashboard/ServiceRequestsSection';
 import { RefreshCw, Briefcase } from 'lucide-react';
@@ -361,24 +362,10 @@ function AdminDashboardContent() {
     if (!file) return;
     setAnnUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `announcements/${fileName}`;
+      const publicUrl = await uploadToR2(file, 'announcements');
+      setNewAnn((prev: any) => ({ ...prev, image_url: publicUrl }));
+      toast.success("Image uploaded successfully!");
 
-      const { data, error } = await supabase.storage
-        .from('property-media')
-        .upload(filePath, file);
-
-      if (error) {
-        toast.error("Upload failed: " + error.message);
-      } else {
-        const { data: publicData } = supabase.storage
-          .from('property-media')
-          .getPublicUrl(filePath);
-
-        setNewAnn((prev: any) => ({ ...prev, image_url: publicData.publicUrl }));
-        toast.success("Image uploaded successfully!");
-      }
     } catch (err: any) {
       toast.error("Error uploading image");
     } finally {

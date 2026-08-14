@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { uploadToR2 } from '@/lib/upload-utils';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
 import { loadRazorpayScript } from '@/lib/razorpayClient';
@@ -93,16 +94,9 @@ export default function ApplyAgentPage() {
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${currentUser.id}/${folder}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const { data, error } = await supabase.storage.from('agent-docs').upload(fileName, file);
-    if (error) throw error;
-    
-    // Create a signed URL valid for 10 years instead of a public URL
-    const { data: signedData, error: signError } = await supabase.storage.from('agent-docs').createSignedUrl(data.path, 60 * 60 * 24 * 365 * 10);
-    if (signError) throw signError;
-    
-    return signedData.signedUrl;
+    // We prefix with 'agent-docs' to keep R2 organized
+    const folderPath = `agent-docs/${currentUser.id}`;
+    return await uploadToR2(file, folderPath);
   };
 
   const executeDatabaseSubmit = async (
