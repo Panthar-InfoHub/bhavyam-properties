@@ -112,8 +112,15 @@ export default function PropertyDetailsPage() {
 
   if (!property) return notFound();
 
-  const images = property.media?.filter((m: any) => m.media_type === 'image') || [];
-  const videos = property.media?.filter((m: any) => m.media_type === 'video') || [];
+  const isVideoUrl = (url?: string) => {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return cleanUrl.endsWith('.mp4') || cleanUrl.endsWith('.webm') || cleanUrl.endsWith('.mov') || cleanUrl.endsWith('.ogg');
+  };
+
+  const rawMedia = property.media || [];
+  const images = rawMedia.filter((m: any) => m.media_type === 'image' || (!isVideoUrl(m.url) && m.media_type === 'video'));
+  const videos = rawMedia.filter((m: any) => isVideoUrl(m.url));
   const allMedia = [...images, ...videos];
 
   const hasMainVideo = videos.length > 0;
@@ -149,10 +156,10 @@ export default function PropertyDetailsPage() {
              <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
            </button>
 
-           {allMedia[carouselIndex].media_type === 'image' ? (
-             <img src={allMedia[carouselIndex].url} className="max-w-[90vw] max-h-[85vh] object-contain" alt="Gallery View"/>
+           {isVideoUrl(allMedia[carouselIndex].url) ? (
+             <video src={allMedia[carouselIndex].url} autoPlay controls playsInline preload="auto" className="max-w-[90vw] max-h-[85vh] rounded-2xl shadow-2xl" />
            ) : (
-             <video src={allMedia[carouselIndex].url} autoPlay controls className="max-w-[90vw] max-h-[85vh]" />
+             <img src={allMedia[carouselIndex].url} className="max-w-[90vw] max-h-[85vh] object-contain" alt="Gallery View"/>
            )}
 
            <button onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => prev !== null && prev < allMedia.length - 1 ? prev + 1 : 0); }} className="absolute right-4 md:right-10 text-white/30 hover:text-white transition-all p-4 z-[1100] hidden sm:block cursor-pointer">
@@ -170,7 +177,7 @@ export default function PropertyDetailsPage() {
             {/* Main Image Banner */}
             <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden mb-6 group cursor-pointer" onClick={() => setCarouselIndex(hasMainVideo ? allMedia.indexOf(videos[0]) : 0)}>
               {hasMainVideo ? (
-                <video src={mainMediaUrl} muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
+                <video src={mainMediaUrl} autoPlay muted loop playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
               ) : (
                 <img src={mainMediaUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Main Property" />
               )}
@@ -188,7 +195,13 @@ export default function PropertyDetailsPage() {
               {/* Play Button Overlay (Only for Video) */}
               {hasMainVideo && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                   <div className="w-16 h-16 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40 pointer-events-auto shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-110 hover:bg-white/40 transition cursor-pointer">
+                   <div 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setCarouselIndex(allMedia.indexOf(videos[0]));
+                     }}
+                     className="w-16 h-16 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40 pointer-events-auto shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-110 hover:bg-white/40 transition cursor-pointer"
+                   >
                       <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
                    </div>
                 </div>
@@ -196,9 +209,9 @@ export default function PropertyDetailsPage() {
 
               {/* Discover Story Float */}
               {videos.length > 0 && (
-                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-2 rounded-xl flex items-center gap-3 shadow-xl pr-6 cursor-pointer" onClick={() => setCarouselIndex(allMedia.indexOf(videos[0]))}>
+                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-2 rounded-xl flex items-center gap-3 shadow-xl pr-6 cursor-pointer" onClick={(e) => { e.stopPropagation(); setCarouselIndex(allMedia.indexOf(videos[0])); }}>
                    <div className="w-16 h-12 rounded-lg overflow-hidden relative">
-                      <video src={videos[0].url} className="w-full h-full object-cover" />
+                      <video src={videos[0].url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-white border-b-[4px] border-b-transparent"></div></div>
                    </div>
                    <div className="flex flex-col">

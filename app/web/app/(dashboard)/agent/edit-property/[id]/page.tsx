@@ -376,11 +376,29 @@ export default function EditPropertyPage() {
                 <label className="block text-[10px] font-black text-[#00579e] uppercase tracking-widest mb-4">Update Map Photo</label>
                 <input type="file" accept="image/*" onChange={e => setNewFiles({...newFiles, map: e.target.files?.[0] || null})} className="text-[10px] w-full file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-teal-100 file:text-teal-700 hover:file:bg-teal-200 cursor-pointer" />
               </div>
-
               <div className="p-6 border-2 border-dashed border-gray-100 rounded-4xl bg-gray-50/30 flex flex-col items-center text-center">
                 <span className="text-2xl mb-2">🎞️</span>
                 <label className="block text-[10px] font-black text-[#00579e] uppercase tracking-widest mb-4">Update Video</label>
-                <input type="file" accept="video/*" onChange={e => setNewFiles({...newFiles, video: e.target.files?.[0] || null})} className="text-[10px] w-full file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
+                <input 
+                  type="file" 
+                  accept="video/mp4,video/webm,video/quicktime,video/*" 
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      setNewFiles({ ...newFiles, video: null });
+                      return;
+                    }
+                    const validExts = ['mp4', 'webm', 'mov', 'mkv', 'avi'];
+                    const ext = file.name.split('.').pop()?.toLowerCase();
+                    if (!file.type.startsWith('video/') && !validExts.includes(ext || '')) {
+                      toast.error(`"${file.name}" is not a valid video file. Please upload an MP4, MOV, or WEBM video.`);
+                      e.target.value = '';
+                      return;
+                    }
+                    setNewFiles({ ...newFiles, video: file });
+                  }} 
+                  className="text-[10px] w-full file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" 
+                />
               </div>
               <div className="p-6 border-2 border-dashed border-gray-100 rounded-4xl bg-gray-50/30 flex flex-col items-center text-center">
                 <span className="text-2xl mb-2">📐</span>

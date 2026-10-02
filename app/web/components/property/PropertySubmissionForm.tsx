@@ -153,14 +153,38 @@ export default function PropertySubmissionForm() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, name: keyof typeof formData, maxFiles: number = 5) => {
-    if (!e.target.files) return;
+    if (!e.target.files || e.target.files.length === 0) return;
     const newFiles = Array.from(e.target.files);
     
     // Validate Size
     for (const f of newFiles) {
       if (f.size > MAX_FILE_SIZE_BYTES) {
         toast.error(`File ${f.name} exceeds standard 10MB limit!`);
+        e.target.value = '';
         return;
+      }
+    }
+
+    // Validate Video Type for propertyVideo
+    if (name === 'propertyVideo') {
+      const videoFile = newFiles[0];
+      const validExts = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogg'];
+      const ext = videoFile.name.split('.').pop()?.toLowerCase();
+      if (!videoFile.type.startsWith('video/') && !validExts.includes(ext || '')) {
+        toast.error(`"${videoFile.name}" is not a valid video. Please upload an MP4, MOV, or WEBM video file.`);
+        e.target.value = '';
+        return;
+      }
+    }
+
+    // Validate Image Type for photo fields
+    if (['bedroomPhotos', 'bathroomPhotos', 'frontElevationPhotos', 'mapPhoto'].includes(name)) {
+      for (const f of newFiles) {
+        if (!f.type.startsWith('image/')) {
+          toast.error(`"${f.name}" is not an image file. Please upload a JPG, PNG, or WEBP image.`);
+          e.target.value = '';
+          return;
+        }
       }
     }
     
